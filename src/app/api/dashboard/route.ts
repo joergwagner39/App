@@ -9,24 +9,21 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   // Token can come from env (server) or query param (browser-stored)
   const ouraToken = process.env.OURA_ACCESS_TOKEN || searchParams.get('oura_token') || ''
-  const garminEmail = process.env.GARMIN_EMAIL
-  const garminPassword = process.env.GARMIN_PASSWORD
+  const garminEmail = process.env.GARMIN_EMAIL || searchParams.get('garmin_email') || ''
+  const garminPassword = process.env.GARMIN_PASSWORD || searchParams.get('garmin_password') || ''
 
   if (ouraToken) {
     try {
       const data = await fetchOuraData(ouraToken)
-      // If Garmin env credentials exist, try those too
       if (garminEmail && garminPassword) {
         try {
           const garminData = await fetchGarminData(garminEmail, garminPassword)
           return NextResponse.json({ ...data, garmin: garminData, isMockData: false })
         } catch {
-          // Garmin failed — return Oura data with mock Garmin
           const mock = generateMockData(30)
-          return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
+          return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false, garminFailed: true })
         }
       }
-      // No Garmin credentials — use mock Garmin data alongside real Oura
       const mock = generateMockData(30)
       return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
     } catch (e) {

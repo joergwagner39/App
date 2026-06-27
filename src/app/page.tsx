@@ -17,9 +17,12 @@ import SleepBreakdown from '@/components/SleepBreakdown'
 import ComparisonWidget from '@/components/ComparisonWidget'
 import FitUpload from '@/components/FitUpload'
 import OuraSetup from '@/components/OuraSetup'
+import GarminSetup from '@/components/GarminSetup'
 import SleepDebt from '@/components/SleepDebt'
 
 const OURA_TOKEN_KEY = 'oura_token'
+const GARMIN_EMAIL_KEY = 'garmin_email'
+const GARMIN_PASSWORD_KEY = 'garmin_password'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -42,19 +45,33 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('oura')
   const [ouraToken, setOuraToken] = useState<string>('')
+  const [garminEmail, setGarminEmail] = useState<string>('')
+  const [garminPassword, setGarminPassword] = useState<string>('')
+  const [garminDisplayName, setGarminDisplayName] = useState<string>('')
   const [garminOverride, setGarminOverride] = useState<{ activities: GarminActivityData[]; daily: GarminDailyData[] } | null>(null)
 
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(OURA_TOKEN_KEY) : null
-    if (saved) setOuraToken(saved)
+    if (typeof window === 'undefined') return
+    const token = localStorage.getItem(OURA_TOKEN_KEY)
+    const email = localStorage.getItem(GARMIN_EMAIL_KEY)
+    const pw = localStorage.getItem(GARMIN_PASSWORD_KEY)
+    if (token) setOuraToken(token)
+    if (email) setGarminEmail(email)
+    if (pw) setGarminPassword(pw)
   }, [])
 
-  const loadData = useCallback(async (token?: string) => {
+  const loadData = useCallback(async (opts?: { token?: string; email?: string; pw?: string }) => {
     setLoading(true)
     setError(null)
     try {
-      const t = token ?? ouraToken
-      const url = t ? `/api/dashboard?oura_token=${encodeURIComponent(t)}` : '/api/dashboard'
+      const t = opts?.token ?? ouraToken
+      const e = opts?.email ?? garminEmail
+      const p = opts?.pw ?? garminPassword
+      const params = new URLSearchParams()
+      if (t) params.set('oura_token', t)
+      if (e) params.set('garmin_email', e)
+      if (p) params.set('garmin_password', p)
+      const url = `/api/dashboard${params.toString() ? '?' + params.toString() : ''}`
       const res = await fetch(url)
       if (!res.ok) throw new Error('API-Fehler')
       const json = await res.json()
@@ -65,15 +82,26 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [ouraToken])
+  }, [ouraToken, garminEmail, garminPassword])
 
   useEffect(() => { loadData() }, [loadData])
 
   function handleTokenSaved(token: string) {
     setOuraToken(token)
     localStorage.setItem(OURA_TOKEN_KEY, token)
-    loadData(token)
+    loadData({ token })
     setActiveTab('oura')
+  }
+
+  function handleGarminSaved(email: string, password: string, displayName: string) {
+    setGarminEmail(email)
+    setGarminPassword(password)
+    setGarminDisplayName(displayName)
+    setGarminOverride(null) // clear FIT override, use live data
+    localStorage.setItem(GARMIN_EMAIL_KEY, email)
+    localStorage.setItem(GARMIN_PASSWORD_KEY, password)
+    loadData({ email, pw: password })
+    setActiveTab('garmin')
   }
 
   function handleFitData(activities: GarminActivityData[], daily: GarminDailyData[]) {
@@ -134,7 +162,7 @@ export default function Dashboard() {
     }
   })
 
-  const hasGarmin = garminOverride !== null
+  const hasGarmin = garminOverride !== null || garminEmail.length > 0
   const hasOura = ouraToken.length > 0
 
   const tabs: { id: Tab; label: string; icon?: typeof Settings }[] = [
@@ -553,6 +581,22 @@ export default function Dashboard() {
             </div>
 
             <OuraSetup onTokenSaved={handleTokenSaved} currentToken={ouraToken} />
+
+            <GarminSetup
+              onCredentialsSaved={handleGarminSaved}
+              currentEmail={garminEmail}
+              isConnected={garminEmail.length > 0}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-[#0a0f1e] px-3 text-xs text-gray-500">oder Garmin manuell</span>
+              </div>
+            </div>
+
             <FitUpload onDataLoaded={handleFitData} />
 
             <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
@@ -565,11 +609,19 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Garmin (FIT)</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${hasGarmin ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-700 text-gray-500'}`}>
-                    {hasGarmin ? `${effectiveGarmin.activities.length} Aktivitäten` : 'Keine FIT-Daten'}
+                  <span className="text-sm text-gray-400">Garmin Connect</span>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${garminEmail ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-700 text-gray-500'}`}>
+                    {garminEmail ? (garminDisplayName || garminEmail) : 'Nicht verbunden'}
                   </span>
                 </div>
+                {garminOverride && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Garmin (FIT-Dateien)</span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
+                      {garminOverride.activities.length} Aktivitäten
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </>
