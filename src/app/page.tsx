@@ -17,6 +17,7 @@ import SleepBreakdown from '@/components/SleepBreakdown'
 import ComparisonWidget from '@/components/ComparisonWidget'
 import FitUpload from '@/components/FitUpload'
 import OuraSetup from '@/components/OuraSetup'
+import SleepDebt from '@/components/SleepDebt'
 
 const OURA_TOKEN_KEY = 'oura_token'
 
@@ -283,8 +284,10 @@ export default function Dashboard() {
               <MetricCard label="Körpertemp. Δ" value={todayReadiness?.temperature_deviation ?? '–'} unit="°C" icon={Thermometer} source="oura" />
             </div>
 
+            <SleepDebt sleepData={data.oura.sleep} targetHours={8} />
+
             <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <TrendChart title="Schlaf Score & HRV (30 Tage)" data={trendData} lines={[
+              <TrendChart title="Schlaf Score & Schlafdauer (30 Tage)" data={trendData} lines={[
                 { key: 'oura_sleep', label: 'Schlaf Score', color: '#a855f7' },
                 { key: 'oura_hrv', label: 'HRV', color: '#6366f1', dashed: true },
               ]} height={220} />
