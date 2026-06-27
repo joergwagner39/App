@@ -78,10 +78,41 @@ async function fetchGarminData(garminEmail: string, garminPassword: string) {
   const { GarminConnect } = await import('garmin-connect')
   const garmin = new GarminConnect({ username: garminEmail, password: garminPassword })
   await garmin.login()
-  const garminActivities = await garmin.getActivities(0, 50)
+
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  // Fetch in parallel — only today to stay within timeout
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [hrData, stepsData, activities] = await Promise.all([
+    garmin.getHeartRate(today).catch(() => null) as Promise<any>,
+    garmin.getSteps(today).catch(() => null) as Promise<any>,
+    garmin.getActivities(0, 50).catch(() => []) as Promise<any[]>,
+  ])
+
+  const stepsToday = Array.isArray(stepsData)
+    ? stepsData.reduce((sum: number, s: { steps?: number }) => sum + (s.steps ?? 0), 0)
+    : 0
+
+  const todayDaily = {
+    date: todayStr,
+    steps: stepsToday,
+    totalKilocalories: 0,
+    activeKilocalories: 0,
+    floorsClimbed: 0,
+    minHeartRate: hrData?.minHeartRate ?? 0,
+    maxHeartRate: hrData?.maxHeartRate ?? 0,
+    restingHeartRate: hrData?.restingHeartRate ?? 0,
+    averageStressLevel: 0,
+    bodyBatteryChargedValue: 0,
+    bodyBatteryDrainedValue: 0,
+    bodyBatteryHighestValue: 0,
+    bodyBatteryLowestValue: 0,
+  }
+
   return {
-    daily: [],
-    activities: Array.isArray(garminActivities) ? garminActivities.map(mapGarminActivity) : [],
+    daily: [todayDaily],
+    activities: Array.isArray(activities) ? activities.map(mapGarminActivity) : [],
   }
 }
 
