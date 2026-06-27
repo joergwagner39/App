@@ -19,10 +19,9 @@ export default function OuraSetup({ onTokenSaved, currentToken }: OuraSetupProps
     setStatus('idle')
 
     try {
-      const res = await fetch('https://api.ouraring.com/v2/usercollection/personal_info', {
-        headers: { Authorization: `Bearer ${token.trim()}` },
-      })
-      if (!res.ok) throw new Error()
+      const res = await fetch(`/api/verify-oura?token=${encodeURIComponent(token.trim())}`)
+      const data = await res.json()
+      if (!data.valid) throw new Error()
       setStatus('ok')
       onTokenSaved(token.trim())
     } catch {
