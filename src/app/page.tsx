@@ -413,11 +413,47 @@ export default function Dashboard() {
         {/* ── GARMIN TAB ── */}
         {activeTab === 'garmin' && (
           <>
-            {!hasGarmin && (
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-sm text-blue-300">
-                Noch keine Garmin-Daten —{' '}
+            {/* Login form always visible at top if not connected */}
+            {!garminEmail && (
+              <GarminSetup
+                onCredentialsSaved={handleGarminSaved}
+                currentEmail={garminEmail}
+                isConnected={false}
+              />
+            )}
+
+            {/* Already connected — show small reconnect option */}
+            {garminEmail && (
+              <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2.5">
+                <span className="text-xs text-blue-300">Verbunden als <strong>{garminEmail}</strong></span>
+                <button
+                  onClick={() => {
+                    setGarminEmail('')
+                    setGarminPassword('')
+                    localStorage.removeItem(GARMIN_EMAIL_KEY)
+                    localStorage.removeItem(GARMIN_PASSWORD_KEY)
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-300 underline"
+                >
+                  Abmelden
+                </button>
+              </div>
+            )}
+
+            {!hasGarmin && garminEmail && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
+                Garmin-Login fehlgeschlagen (Garmin blockiert Server-Logins) —{' '}
                 <button onClick={() => setActiveTab('setup')} className="underline font-medium">
-                  FIT-Dateien im Setup hochladen
+                  FIT-Dateien manuell hochladen
+                </button>
+              </div>
+            )}
+
+            {!hasGarmin && !garminEmail && (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-500">oder</p>
+                <button onClick={() => setActiveTab('setup')} className="mt-2 text-xs text-blue-400 underline">
+                  FIT-Dateien manuell hochladen
                 </button>
               </div>
             )}
