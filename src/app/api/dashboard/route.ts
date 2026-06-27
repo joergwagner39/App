@@ -47,21 +47,29 @@ async function fetchOuraData(ouraToken: string) {
   const end = endDate.toISOString().split('T')[0]
 
   const headers = { Authorization: `Bearer ${ouraToken}` }
-  const [sleepRes, readinessRes, activityRes] = await Promise.all([
+  const [sleepRes, dailySleepRes, readinessRes, activityRes] = await Promise.all([
     fetch(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`, { headers }),
+    fetch(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${start}&end_date=${end}`, { headers }),
     fetch(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`, { headers }),
     fetch(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`, { headers }),
   ])
 
   if (!sleepRes.ok) throw new Error(`Oura API error: ${sleepRes.status}`)
 
-  const [sleepJson, readinessJson, activityJson] = await Promise.all([
-    sleepRes.json(), readinessRes.json(), activityRes.json(),
+  const [sleepJson, dailySleepJson, readinessJson, activityJson] = await Promise.all([
+    sleepRes.json(), dailySleepRes.json(), readinessRes.json(), activityRes.json(),
   ])
+
+  // daily_sleep has the score; sleep has HRV, efficiency etc. — merge by date
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scoreByDate: Record<string, number> = {}
+  for (const d of dailySleepJson.data ?? []) {
+    scoreByDate[d.day] = d.score
+  }
 
   return {
     oura: {
-      sleep: sleepJson.data?.map(mapOuraSleep) ?? [],
+      sleep: sleepJson.data?.map((d: Parameters<typeof mapOuraSleep>[0]) => mapOuraSleep(d, scoreByDate)) ?? [],
       readiness: readinessJson.data?.map(mapOuraReadiness) ?? [],
       activity: activityJson.data?.map(mapOuraActivity) ?? [],
     },
@@ -81,10 +89,10 @@ async function fetchGarminData(garminEmail: string, garminPassword: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapOuraSleep(d: any) {
+function mapOuraSleep(d: any, scoreByDate: Record<string, number> = {}) {
   return {
     date: d.day,
-    score: d.score,
+    score: scoreByDate[d.day] ?? d.score ?? 0,
     total_sleep_duration: d.total_sleep_duration,
     rem_sleep_duration: d.rem_sleep_duration,
     deep_sleep_duration: d.deep_sleep_duration,
