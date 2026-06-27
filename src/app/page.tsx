@@ -19,6 +19,8 @@ import FitUpload from '@/components/FitUpload'
 import OuraSetup from '@/components/OuraSetup'
 import GarminSetup from '@/components/GarminSetup'
 import SleepDebt from '@/components/SleepDebt'
+import HomeScores from '@/components/HomeScores'
+import { calcWellnessScore, calcFitnessScore } from '@/lib/scores'
 
 const OURA_TOKEN_KEY = 'oura_token'
 const GARMIN_EMAIL_KEY = 'garmin_email'
@@ -37,13 +39,13 @@ function formatPace(secondsPerMeter: number): string {
   return `${min}:${sec.toString().padStart(2, '0')}/km`
 }
 
-type Tab = 'oura' | 'garmin' | 'kombiniert' | 'setup'
+type Tab = 'home' | 'oura' | 'garmin' | 'kombiniert' | 'setup'
 
 export default function Dashboard() {
   const [data, setData] = useState<(DashboardData & { isMockData?: boolean }) | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('oura')
+  const [activeTab, setActiveTab] = useState<Tab>('home')
   const [ouraToken, setOuraToken] = useState<string>('')
   const [garminEmail, setGarminEmail] = useState<string>('')
   const [garminPassword, setGarminPassword] = useState<string>('')
@@ -90,7 +92,7 @@ export default function Dashboard() {
     setOuraToken(token)
     localStorage.setItem(OURA_TOKEN_KEY, token)
     loadData({ token })
-    setActiveTab('oura')
+    setActiveTab('home')
   }
 
   function handleGarminSaved(email: string, password: string, displayName: string) {
@@ -101,12 +103,12 @@ export default function Dashboard() {
     localStorage.setItem(GARMIN_EMAIL_KEY, email)
     localStorage.setItem(GARMIN_PASSWORD_KEY, password)
     loadData({ email, pw: password })
-    setActiveTab('garmin')
+    setActiveTab('home')
   }
 
   function handleFitData(activities: GarminActivityData[], daily: GarminDailyData[]) {
     setGarminOverride({ activities, daily })
-    setActiveTab('garmin')
+    setActiveTab('home')
   }
 
   if (loading) {
@@ -147,6 +149,9 @@ export default function Dashboard() {
     todaySleep, todayReadiness, todayGarmin, recentActivities
   )
 
+  const wellnessScore = calcWellnessScore(todaySleep, todayReadiness, todayGarmin)
+  const fitnessScore = calcFitnessScore(recentActivities, data.oura.sleep, effectiveGarmin.daily)
+
   const trendData = data.oura.sleep.map((s, i) => {
     const readiness = data.oura.readiness[i]
     const garmin = effectiveGarmin.daily[i]
@@ -166,6 +171,7 @@ export default function Dashboard() {
   const hasOura = ouraToken.length > 0
 
   const tabs: { id: Tab; label: string; icon?: typeof Settings }[] = [
+    { id: 'home', label: 'Start' },
     { id: 'oura', label: 'Oura Ring' },
     { id: 'garmin', label: 'Garmin' },
     { id: 'kombiniert', label: 'Kombiniert' },
@@ -226,6 +232,39 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+        {/* ── HOME TAB ── */}
+        {activeTab === 'home' && (
+          <>
+            {/* Scores */}
+            <HomeScores wellness={wellnessScore} fitness={fitnessScore} />
+
+            {/* Training recommendation */}
+            <div>
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+                Trainingsempfehlung heute
+              </h2>
+              <TrainingCard recommendation={recommendation} />
+            </div>
+
+            {/* Quick metrics */}
+            <div>
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+                Wichtigste Werte heute
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <MetricCard label="Readiness" value={todayReadiness?.score ?? '–'} icon={Zap} source="oura" subtitle="Oura" />
+                <MetricCard label="Schlaf Score" value={todaySleep?.score ?? '–'} icon={Moon} source="oura" subtitle={todaySleep ? formatDuration(todaySleep.total_sleep_duration) : undefined} />
+                <MetricCard label="HRV" value={todaySleep?.average_hrv?.toFixed(0) ?? '–'} unit="ms" icon={Heart} source="oura" />
+                <MetricCard label="Body Battery" value={todayGarmin?.bodyBatteryHighestValue ?? '–'} unit="%" icon={Battery} source="garmin" subtitle="Max heute" />
+                <MetricCard label="Ruhepuls" value={todayGarmin?.restingHeartRate ?? todaySleep?.lowest_heart_rate ?? '–'} unit="bpm" icon={Heart} source="garmin" />
+                <MetricCard label="Stress" value={todayGarmin?.averageStressLevel?.toFixed(0) ?? '–'} unit="/100" icon={Thermometer} source="garmin" />
+                <MetricCard label="Schritte" value={todayGarmin?.steps?.toLocaleString('de-DE') ?? '–'} icon={Footprints} source="garmin" />
+                <MetricCard label="Akt. Kalorien" value={todayGarmin?.activeKilocalories ?? '–'} unit="kcal" icon={Flame} source="garmin" />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ── OURA TAB ── */}
         {activeTab === 'oura' && (

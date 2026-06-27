@@ -10,12 +10,15 @@ export async function POST(request: NextRequest) {
     const { GarminConnect } = await import('garmin-connect')
     const garmin = new GarminConnect({ username: email, password })
     await garmin.login()
-    const profile = await garmin.getUserProfile()
 
-    return NextResponse.json({
-      valid: true,
-      displayName: profile?.displayName ?? email,
-    })
+    let displayName = email
+    try {
+      const profile = await garmin.getUserProfile()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      displayName = (profile as any)?.displayName ?? (profile as any)?.userName ?? email
+    } catch { /* profile optional */ }
+
+    return NextResponse.json({ valid: true, displayName })
   } catch (e) {
     console.error('Garmin login error:', e)
     return NextResponse.json({
