@@ -5,17 +5,32 @@ import { generateMockData } from '@/lib/mockData'
 // Oura: https://cloud.ouraring.com/v2/usercollection/sleep
 // Garmin: via garmin-connect npm package with credentials
 
-export async function GET() {
-  const ouraToken = process.env.OURA_ACCESS_TOKEN
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  // Token can come from env (server) or query param (browser-stored)
+  const ouraToken = process.env.OURA_ACCESS_TOKEN || searchParams.get('oura_token') || ''
   const garminEmail = process.env.GARMIN_EMAIL
   const garminPassword = process.env.GARMIN_PASSWORD
 
-  if (ouraToken && garminEmail && garminPassword) {
+  if (ouraToken) {
     try {
-      const data = await fetchRealData(ouraToken, garminEmail, garminPassword)
-      return NextResponse.json(data)
+      const data = await fetchOuraData(ouraToken)
+      // If Garmin env credentials exist, try those too
+      if (garminEmail && garminPassword) {
+        try {
+          const garminData = await fetchGarminData(garminEmail, garminPassword)
+          return NextResponse.json({ ...data, garmin: garminData, isMockData: false })
+        } catch {
+          // Garmin failed — return Oura data with mock Garmin
+          const mock = generateMockData(30)
+          return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
+        }
+      }
+      // No Garmin credentials — use mock Garmin data alongside real Oura
+      const mock = generateMockData(30)
+      return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
     } catch (e) {
-      console.error('Real API fetch failed, falling back to mock data:', e)
+      console.error('Oura API fetch failed:', e)
     }
   }
 
@@ -24,40 +39,25 @@ export async function GET() {
   return NextResponse.json({ ...data, isMockData: true })
 }
 
-async function fetchRealData(ouraToken: string, garminEmail: string, garminPassword: string) {
-  const { GarminConnect } = await import('garmin-connect')
+async function fetchOuraData(ouraToken: string) {
   const endDate = new Date()
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - 30)
-
   const start = startDate.toISOString().split('T')[0]
   const end = endDate.toISOString().split('T')[0]
 
-  // Fetch Oura data
+  const headers = { Authorization: `Bearer ${ouraToken}` }
   const [sleepRes, readinessRes, activityRes] = await Promise.all([
-    fetch(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`, {
-      headers: { Authorization: `Bearer ${ouraToken}` },
-    }),
-    fetch(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`, {
-      headers: { Authorization: `Bearer ${ouraToken}` },
-    }),
-    fetch(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`, {
-      headers: { Authorization: `Bearer ${ouraToken}` },
-    }),
+    fetch(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`, { headers }),
+    fetch(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`, { headers }),
+    fetch(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`, { headers }),
   ])
+
+  if (!sleepRes.ok) throw new Error(`Oura API error: ${sleepRes.status}`)
 
   const [sleepJson, readinessJson, activityJson] = await Promise.all([
-    sleepRes.json(),
-    readinessRes.json(),
-    activityRes.json(),
+    sleepRes.json(), readinessRes.json(), activityRes.json(),
   ])
-
-  // Fetch Garmin data
-  const garmin = new GarminConnect({ username: garminEmail, password: garminPassword })
-  await garmin.login()
-
-  const garminActivities = await garmin.getActivities(0, 50)
-  const garminDaily: unknown[] = []
 
   return {
     oura: {
@@ -65,12 +65,18 @@ async function fetchRealData(ouraToken: string, garminEmail: string, garminPassw
       readiness: readinessJson.data?.map(mapOuraReadiness) ?? [],
       activity: activityJson.data?.map(mapOuraActivity) ?? [],
     },
-    garmin: {
-      daily: [],
-      activities: Array.isArray(garminActivities) ? garminActivities.map(mapGarminActivity) : [],
-    },
     lastUpdated: new Date().toISOString(),
-    isMockData: false,
+  }
+}
+
+async function fetchGarminData(garminEmail: string, garminPassword: string) {
+  const { GarminConnect } = await import('garmin-connect')
+  const garmin = new GarminConnect({ username: garminEmail, password: garminPassword })
+  await garmin.login()
+  const garminActivities = await garmin.getActivities(0, 50)
+  return {
+    daily: [],
+    activities: Array.isArray(garminActivities) ? garminActivities.map(mapGarminActivity) : [],
   }
 }
 
