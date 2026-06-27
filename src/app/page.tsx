@@ -20,6 +20,7 @@ import OuraSetup from '@/components/OuraSetup'
 import GarminSetup from '@/components/GarminSetup'
 import SleepDebt from '@/components/SleepDebt'
 import HomeScores from '@/components/HomeScores'
+import SleepRecommendation from '@/components/SleepRecommendation'
 import { calcWellnessScore, calcFitnessScore } from '@/lib/scores'
 
 const OURA_TOKEN_KEY = 'oura_token'
@@ -236,33 +237,58 @@ export default function Dashboard() {
         {/* ── HOME TAB ── */}
         {activeTab === 'home' && (
           <>
-            {/* Scores */}
+            {/* 1. Scores */}
             <HomeScores wellness={wellnessScore} fitness={fitnessScore} />
 
-            {/* Training recommendation */}
+            {/* 2. Training recommendation */}
             <div>
               <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Trainingsempfehlung heute
+                Training heute
               </h2>
               <TrainingCard recommendation={recommendation} />
             </div>
 
-            {/* Quick metrics */}
+            {/* 3. Sleep recommendation */}
             <div>
               <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Wichtigste Werte heute
+                Schlafempfehlung
+              </h2>
+              <SleepRecommendation sleepData={data.oura.sleep} targetHours={8} />
+            </div>
+
+            {/* 4. Key numbers — compact */}
+            <div>
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
+                Heute auf einen Blick
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Readiness" value={todayReadiness?.score ?? '–'} icon={Zap} source="oura" subtitle="Oura" />
-                <MetricCard label="Schlaf Score" value={todaySleep?.score ?? '–'} icon={Moon} source="oura" subtitle={todaySleep ? formatDuration(todaySleep.total_sleep_duration) : undefined} />
+                <MetricCard label="Readiness" value={todayReadiness?.score ?? '–'} icon={Zap} source="oura" />
                 <MetricCard label="HRV" value={todaySleep?.average_hrv?.toFixed(0) ?? '–'} unit="ms" icon={Heart} source="oura" />
-                <MetricCard label="Body Battery" value={todayGarmin?.bodyBatteryHighestValue ?? '–'} unit="%" icon={Battery} source="garmin" subtitle="Max heute" />
-                <MetricCard label="Ruhepuls" value={todayGarmin?.restingHeartRate ?? todaySleep?.lowest_heart_rate ?? '–'} unit="bpm" icon={Heart} source="garmin" />
+                <MetricCard label="Body Battery" value={todayGarmin?.bodyBatteryHighestValue ?? '–'} unit="%" icon={Battery} source="garmin" />
                 <MetricCard label="Stress" value={todayGarmin?.averageStressLevel?.toFixed(0) ?? '–'} unit="/100" icon={Thermometer} source="garmin" />
-                <MetricCard label="Schritte" value={todayGarmin?.steps?.toLocaleString('de-DE') ?? '–'} icon={Footprints} source="garmin" />
-                <MetricCard label="Akt. Kalorien" value={todayGarmin?.activeKilocalories ?? '–'} unit="kcal" icon={Flame} source="garmin" />
               </div>
             </div>
+
+            {/* 5. Garmin vs Oura — collapsed at bottom */}
+            <details className="group">
+              <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none py-2">
+                <span className="border border-gray-700 rounded px-2 py-0.5 group-open:bg-gray-800">
+                  Oura vs. Garmin Vergleich
+                </span>
+                <span className="text-gray-600">— weniger wichtig</span>
+              </summary>
+              <div className="mt-3 bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                <ComparisonWidget
+                  title="Vergleich heute"
+                  rows={[
+                    { label: 'Ruhepuls', ouraValue: todaySleep?.lowest_heart_rate ?? '–', garminValue: todayGarmin?.restingHeartRate ?? '–', unit: 'bpm', better: (todaySleep?.lowest_heart_rate ?? 99) < (todayGarmin?.restingHeartRate ?? 99) ? 'oura' : 'garmin' },
+                    { label: 'HRV', ouraValue: todaySleep?.average_hrv?.toFixed(0) ?? '–', garminValue: '–', unit: 'ms', better: 'oura' },
+                    { label: 'Schritte', ouraValue: todayActivity?.steps?.toLocaleString('de-DE') ?? '–', garminValue: todayGarmin?.steps?.toLocaleString('de-DE') ?? '–', better: 'equal' },
+                    { label: 'Kalorien', ouraValue: todayActivity?.active_calories ?? '–', garminValue: todayGarmin?.activeKilocalories ?? '–', unit: 'kcal', better: 'equal' },
+                  ]}
+                />
+              </div>
+            </details>
           </>
         )}
 
