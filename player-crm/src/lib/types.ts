@@ -51,7 +51,6 @@ export interface Player {
   outfitter: {
     has: boolean
     brand?: string
-    logoDataUrl?: string
   }
 
   createdAt: string
@@ -79,7 +78,7 @@ export function createEmptyPlayer(): Player {
     family: '',
     notes: '',
     conversationNotes: '',
-    outfitter: { has: false, brand: '', logoDataUrl: '' },
+    outfitter: { has: false, brand: '' },
     createdAt: now,
     updatedAt: now,
   }

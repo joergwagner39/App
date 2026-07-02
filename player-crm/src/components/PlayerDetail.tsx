@@ -10,6 +10,7 @@ import {
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
 import { detectExpiryDate } from '@/lib/ocr'
+import { getBrandLogoUrl } from '@/lib/brandLogos'
 import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 
@@ -97,10 +98,7 @@ export default function PlayerDetail({
     }
   }
 
-  async function handleLogoUpload(file: File) {
-    const dataUrl = await fileToDataUrl(file)
-    updateOutfitter({ logoDataUrl: dataUrl })
-  }
+  const brandLogoUrl = player.outfitter.brand ? getBrandLogoUrl(player.outfitter.brand) : null
 
   function addTodo() {
     if (!newTodo.trim()) return
@@ -493,35 +491,21 @@ export default function PlayerDetail({
             <Field label="Marke">
               <input
                 className={inputClass}
+                placeholder="z.B. Nike, adidas, Puma…"
                 value={player.outfitter.brand ?? ''}
                 onChange={(e) => updateOutfitter({ brand: e.target.value })}
               />
             </Field>
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50">
-              {player.outfitter.logoDataUrl ? (
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 p-2">
+              {brandLogoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={player.outfitter.logoDataUrl}
-                  alt="Logo"
-                  className="h-full w-full object-contain"
-                />
+                <img src={brandLogoUrl} alt={`${player.outfitter.brand} Logo`} className="h-full w-full object-contain" />
               ) : (
-                <span className="text-[10px] text-slate-400">Logo</span>
+                <span className="text-center text-[10px] text-slate-400">
+                  {player.outfitter.brand ? 'Kein Logo gefunden' : 'Logo'}
+                </span>
               )}
             </div>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-              <Upload className="h-4 w-4" />
-              Logo hochladen
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleLogoUpload(file)
-                }}
-              />
-            </label>
           </div>
         )}
       </section>

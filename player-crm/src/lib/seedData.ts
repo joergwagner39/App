@@ -40,7 +40,7 @@ export function seedPlayers(): Player[] {
       family: 'In fester Beziehung (Beispielangabe, bitte durch echte Daten ersetzen).',
       notes: 'Beispieldatensatz – Eckdaten von Transfermarkt/Wikipedia übernommen. Adresse, Familie und Ausrüster sind frei erfunden.',
       conversationNotes: 'Spielt gerne Playstation, Fan von Tischtennis in der Freizeit.',
-      outfitter: { has: true, brand: 'Nike (Beispiel)', logoDataUrl: '' },
+      outfitter: { has: true, brand: 'Nike (Beispiel)' },
       createdAt: now,
       updatedAt: now,
     },

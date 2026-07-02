@@ -10,7 +10,7 @@ function migrate(raw: any): Player {
     idCard: raw.idCard ?? {},
     insurance: raw.insurance ?? { valid: false, note: '' },
     tax: raw.tax ?? { valid: false, note: '' },
-    outfitter: raw.outfitter ?? { has: false, brand: '', logoDataUrl: '' },
+    outfitter: raw.outfitter ?? { has: false, brand: '' },
     address: raw.address ?? { street: '', zip: '', city: '', country: '' },
     todos: raw.todos ?? [],
     family: raw.family ?? '',
