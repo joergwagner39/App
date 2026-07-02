@@ -50,10 +50,12 @@ export default function Home() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-2 border-b border-slate-200 bg-white px-6 py-4">
-        <Users className="h-5 w-5 text-brand-600" />
-        <h1 className="text-lg font-semibold">Player Relations CRM</h1>
-        <span className="ml-auto text-xs text-slate-400">
+      <header className="flex items-center gap-3 border-b-4 border-brand-400 bg-navy-700 px-6 py-4 text-white">
+        <Users className="h-5 w-5 text-brand-400" />
+        <h1 className="font-heading text-xl font-semibold uppercase tracking-wide">
+          Player Relations <span className="text-brand-400">CRM</span>
+        </h1>
+        <span className="ml-auto text-xs text-navy-200">
           Daten werden lokal im Browser gespeichert
         </span>
       </header>

@@ -161,7 +161,9 @@ export default function PlayerDetail({
 
       {/* Stammdaten */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-semibold text-slate-700">Stammdaten</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
+          Stammdaten
+        </h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <Field label="Verein">
             <input
@@ -238,7 +240,7 @@ export default function PlayerDetail({
 
       {/* Ausweis */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-semibold text-slate-700">Ausweis</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Ausweis</h2>
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex h-32 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50">
             {player.idCard.fileDataUrl ? (
@@ -297,7 +299,7 @@ export default function PlayerDetail({
       {/* Versicherung, Steuer, Zufriedenheit & Kontakt */}
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 font-semibold text-slate-700">Versicherung</h2>
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Versicherung</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={() => updateInsurance({ valid: !player.insurance.valid })}
@@ -323,7 +325,7 @@ export default function PlayerDetail({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 font-semibold text-slate-700">Steuer</h2>
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Steuer</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={() => updateTax({ valid: !player.tax.valid })}
@@ -347,7 +349,7 @@ export default function PlayerDetail({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 font-semibold text-slate-700">Letzter Kontakt</h2>
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
           <Field label="Datum">
             <input
               type="date"
@@ -366,7 +368,7 @@ export default function PlayerDetail({
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-semibold text-slate-700">Zufriedenheit</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Zufriedenheit</h2>
         <SatisfactionScore
           value={player.satisfaction}
           onChange={(v) => update({ satisfaction: v })}
@@ -375,7 +377,7 @@ export default function PlayerDetail({
 
       {/* To-Dos */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 flex items-center gap-2 font-semibold text-slate-700">
+        <h2 className="mb-3 flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
           Offene To-Dos & Erinnerungen
         </h2>
         <div className="mb-3 flex flex-wrap gap-2">
@@ -444,7 +446,7 @@ export default function PlayerDetail({
 
       {/* Familie & weitere Infos */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-semibold text-slate-700">Familie & weitere Infos</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Familie & weitere Infos</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Familie">
             <textarea
@@ -475,7 +477,7 @@ export default function PlayerDetail({
 
       {/* Ausrüster */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-semibold text-slate-700">Ausrüster</h2>
+        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Ausrüster</h2>
         <div className="flex items-center gap-3">
           <button
             onClick={() => updateOutfitter({ has: !player.outfitter.has })}
