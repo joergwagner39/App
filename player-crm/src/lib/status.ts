@@ -32,6 +32,14 @@ export function lastContactStatus(player: Player): 'green' | 'red' {
   return days <= 7 ? 'green' : 'red'
 }
 
+export function lastPersonalVisitStatus(player: Player): 'green' | 'red' {
+  if (!player.lastPersonalVisit) return 'red'
+  const date = parseISO(player.lastPersonalVisit)
+  if (!isValid(date)) return 'red'
+  const days = differenceInCalendarDays(new Date(), date)
+  return days <= 30 ? 'green' : 'red'
+}
+
 export function openTodoCount(player: Player): number {
   return player.todos.filter((t) => !t.done).length
 }

@@ -12,6 +12,7 @@ export function seedPlayers(): Player[] {
       birthCountry: 'Deutschland',
       height: '1,80 m',
       clothingSize: 'M',
+      photoUrl: '',
       address: {
         street: 'Musterweg 12 (Beispiel)',
         zip: '52152',
@@ -23,6 +24,7 @@ export function seedPlayers(): Player[] {
       tax: { valid: true, note: 'Steuererklärung 2025 eingereicht' },
       satisfaction: 8,
       lastContact: now.slice(0, 10),
+      lastPersonalVisit: now.slice(0, 10),
       todos: [
         {
           id: crypto.randomUUID(),
@@ -38,7 +40,7 @@ export function seedPlayers(): Player[] {
         },
       ],
       family: 'In fester Beziehung (Beispielangabe, bitte durch echte Daten ersetzen).',
-      notes: 'Beispieldatensatz – Eckdaten von Transfermarkt/Wikipedia übernommen. Adresse, Familie und Ausrüster sind frei erfunden.',
+      notes: 'Beispieldatensatz – Eckdaten von Transfermarkt/Wikipedia übernommen. Adresse, Familie und Ausrüster sind frei erfunden. Foto-URL kann oben unter dem Namen manuell ergänzt werden (z.B. Bildadresse von Transfermarkt kopieren).',
       conversationNotes: 'Spielt gerne Playstation, Fan von Tischtennis in der Freizeit.',
       outfitter: { has: true, brand: 'Nike (Beispiel)' },
       createdAt: now,

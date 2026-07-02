@@ -16,6 +16,8 @@ function migrate(raw: any): Player {
     family: raw.family ?? '',
     notes: raw.notes ?? '',
     conversationNotes: raw.conversationNotes ?? '',
+    photoUrl: raw.photoUrl ?? '',
+    lastPersonalVisit: raw.lastPersonalVisit ?? '',
   }
 }
 

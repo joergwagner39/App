@@ -5,13 +5,14 @@ import {
   idCardStatus,
   insuranceStatus,
   lastContactStatus,
+  lastPersonalVisitStatus,
   taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
-import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload } from 'lucide-react'
+import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
 import { useState } from 'react'
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -126,26 +127,49 @@ export default function PlayerDetail({
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-start justify-between">
-        <div>
-          <div className="flex gap-3">
-            <input
-              className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
-              value={player.firstName}
-              placeholder="Vorname"
-              onChange={(e) => update({ firstName: e.target.value })}
-            />
-            <input
-              className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
-              value={player.lastName}
-              placeholder="Nachname"
-              onChange={(e) => update({ lastName: e.target.value })}
-            />
+        <div className="flex items-start gap-4">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+            {player.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={player.photoUrl}
+                alt={`${player.firstName} ${player.lastName}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <User className="h-8 w-8 text-slate-400" />
+            )}
           </div>
-          <div className="mt-1 flex flex-wrap gap-2 px-2">
-            <StatusBadge color={idCardStatus(player)} label="Ausweis" />
-            <StatusBadge color={insuranceStatus(player)} label="Versicherung" />
-            <StatusBadge color={taxStatus(player)} label="Steuer" />
-            <StatusBadge color={lastContactStatus(player)} label="Letzter Kontakt" />
+          <div>
+            <div className="flex gap-3">
+              <input
+                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
+                value={player.firstName}
+                placeholder="Vorname"
+                onChange={(e) => update({ firstName: e.target.value })}
+              />
+              <input
+                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
+                value={player.lastName}
+                placeholder="Nachname"
+                onChange={(e) => update({ lastName: e.target.value })}
+              />
+            </div>
+            <div className="px-2">
+              <input
+                className="w-80 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-brand-500 focus:px-2 focus:outline-none"
+                value={player.photoUrl ?? ''}
+                placeholder="Bild-URL einfügen (z.B. von Transfermarkt kopieren)"
+                onChange={(e) => update({ photoUrl: e.target.value })}
+              />
+            </div>
+            <div className="mt-1 flex flex-wrap gap-2 px-2">
+              <StatusBadge color={idCardStatus(player)} label="Ausweis" />
+              <StatusBadge color={insuranceStatus(player)} label="Versicherung" />
+              <StatusBadge color={taxStatus(player)} label="Steuer" />
+              <StatusBadge color={lastContactStatus(player)} label="Letzter Kontakt" />
+              <StatusBadge color={lastPersonalVisitStatus(player)} label="Letzter Besuch" />
+            </div>
           </div>
         </div>
         <button
@@ -348,7 +372,7 @@ export default function PlayerDetail({
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
-          <Field label="Datum">
+          <Field label="Datum (Anruf/Nachricht/E-Mail)">
             <input
               type="date"
               className={inputClass}
@@ -361,6 +385,24 @@ export default function PlayerDetail({
             className="mt-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
           >
             Heute als Kontakt setzen
+          </button>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter persönlicher Besuch</h2>
+          <Field label="Datum (vor Ort/Termin)">
+            <input
+              type="date"
+              className={inputClass}
+              value={player.lastPersonalVisit ?? ''}
+              onChange={(e) => update({ lastPersonalVisit: e.target.value })}
+            />
+          </Field>
+          <button
+            onClick={() => update({ lastPersonalVisit: new Date().toISOString().slice(0, 10) })}
+            className="mt-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
+          >
+            Heute als Besuch setzen
           </button>
         </div>
       </section>

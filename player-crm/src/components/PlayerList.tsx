@@ -5,6 +5,7 @@ import {
   idCardStatus,
   insuranceStatus,
   lastContactStatus,
+  lastPersonalVisitStatus,
   openTodoCount,
   satisfactionStatus,
   taxStatus,
@@ -76,8 +77,17 @@ export default function PlayerList({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-500">
-                        <User className="h-4 w-4" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
+                        {p.photoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.photoUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-4 w-4" />
+                        )}
                       </div>
                       <div>
                         <div className="font-medium text-slate-800">
@@ -102,6 +112,7 @@ export default function PlayerList({
                     <StatusBadge color={taxStatus(p)} label="Steuer" />
                     <StatusBadge color={satisfactionStatus(p)} label={`Zufr. ${p.satisfaction}`} />
                     <StatusBadge color={lastContactStatus(p)} label="Kontakt" />
+                    <StatusBadge color={lastPersonalVisitStatus(p)} label="Besuch" />
                     {todos > 0 && (
                       <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
                         {todos} offene To-Do{todos > 1 ? 's' : ''}

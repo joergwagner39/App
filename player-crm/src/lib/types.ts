@@ -14,6 +14,7 @@ export interface Player {
   birthCountry?: string
   height?: string // e.g. "1,84 m"
   clothingSize?: string // e.g. "L"
+  photoUrl?: string
 
   address: {
     street: string
@@ -41,6 +42,7 @@ export interface Player {
   satisfaction: number // 1-10
 
   lastContact?: string // ISO date
+  lastPersonalVisit?: string // ISO date
 
   todos: Todo[]
 
@@ -68,12 +70,14 @@ export function createEmptyPlayer(): Player {
     birthCountry: '',
     height: '',
     clothingSize: '',
+    photoUrl: '',
     address: { street: '', zip: '', city: '', country: '' },
     idCard: {},
     insurance: { valid: false, note: '' },
     tax: { valid: false, note: '' },
     satisfaction: 5,
     lastContact: '',
+    lastPersonalVisit: '',
     todos: [],
     family: '',
     notes: '',
