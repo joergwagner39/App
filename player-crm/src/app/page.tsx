@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Player, createEmptyPlayer } from '@/lib/types'
 import { loadPlayers, savePlayers } from '@/lib/storage'
+import { seedPlayers } from '@/lib/seedData'
 import PlayerList from '@/components/PlayerList'
 import PlayerDetail from '@/components/PlayerDetail'
 import { Users } from 'lucide-react'
@@ -14,8 +15,9 @@ export default function Home() {
 
   useEffect(() => {
     const loaded = loadPlayers()
-    setPlayers(loaded)
-    if (loaded.length > 0) setSelectedId(loaded[0].id)
+    const initial = loaded.length > 0 ? loaded : seedPlayers()
+    setPlayers(initial)
+    if (initial.length > 0) setSelectedId(initial[0].id)
     setHydrated(true)
   }, [])
 

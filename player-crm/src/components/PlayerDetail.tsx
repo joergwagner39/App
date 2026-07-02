@@ -8,7 +8,8 @@ import {
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
-import { Bell, Plus, Trash2, Upload } from 'lucide-react'
+import { detectExpiryDate } from '@/lib/ocr'
+import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -49,6 +50,8 @@ export default function PlayerDetail({
 }) {
   const [newTodo, setNewTodo] = useState('')
   const [newReminder, setNewReminder] = useState('')
+  const [ocrRunning, setOcrRunning] = useState(false)
+  const [ocrHint, setOcrHint] = useState<string | null>(null)
 
   function update(patch: Partial<Player>) {
     onChange({ ...player, ...patch, updatedAt: new Date().toISOString() })
@@ -69,6 +72,24 @@ export default function PlayerDetail({
   async function handleIdCardUpload(file: File) {
     const dataUrl = await fileToDataUrl(file)
     update({ idCard: { ...player.idCard, fileDataUrl: dataUrl, fileName: file.name } })
+
+    setOcrRunning(true)
+    setOcrHint(null)
+    try {
+      const detected = await detectExpiryDate(dataUrl)
+      if (detected) {
+        update({
+          idCard: { ...player.idCard, fileDataUrl: dataUrl, fileName: file.name, validUntil: detected },
+        })
+        setOcrHint(`Gültig bis automatisch erkannt: ${detected}. Bitte prüfen.`)
+      } else {
+        setOcrHint('Kein Ablaufdatum automatisch erkannt – bitte manuell eintragen.')
+      }
+    } catch {
+      setOcrHint('Automatische Erkennung fehlgeschlagen – bitte manuell eintragen.')
+    } finally {
+      setOcrRunning(false)
+    }
   }
 
   async function handleLogoUpload(file: File) {
@@ -251,6 +272,18 @@ export default function PlayerDetail({
                 }
               />
             </Field>
+            {ocrRunning && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Ablaufdatum wird automatisch erkannt…
+              </div>
+            )}
+            {!ocrRunning && ocrHint && (
+              <div className="flex items-start gap-1.5 text-xs text-brand-700">
+                <ScanSearch className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {ocrHint}
+              </div>
+            )}
           </div>
         </div>
       </section>
