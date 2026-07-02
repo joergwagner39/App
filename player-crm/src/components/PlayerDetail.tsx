@@ -5,6 +5,7 @@ import {
   idCardStatus,
   insuranceStatus,
   lastContactStatus,
+  taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
@@ -63,6 +64,10 @@ export default function PlayerDetail({
 
   function updateInsurance(patch: Partial<Player['insurance']>) {
     update({ insurance: { ...player.insurance, ...patch } })
+  }
+
+  function updateTax(patch: Partial<Player['tax']>) {
+    update({ tax: { ...player.tax, ...patch } })
   }
 
   function updateOutfitter(patch: Partial<Player['outfitter']>) {
@@ -141,6 +146,7 @@ export default function PlayerDetail({
           <div className="mt-1 flex flex-wrap gap-2 px-2">
             <StatusBadge color={idCardStatus(player)} label="Ausweis" />
             <StatusBadge color={insuranceStatus(player)} label="Versicherung" />
+            <StatusBadge color={taxStatus(player)} label="Steuer" />
             <StatusBadge color={lastContactStatus(player)} label="Letzter Kontakt" />
           </div>
         </div>
@@ -288,7 +294,7 @@ export default function PlayerDetail({
         </div>
       </section>
 
-      {/* Versicherung & Zufriedenheit & Kontakt */}
+      {/* Versicherung, Steuer, Zufriedenheit & Kontakt */}
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-semibold text-slate-700">Versicherung</h2>
@@ -311,6 +317,30 @@ export default function PlayerDetail({
                 className={inputClass}
                 value={player.insurance.note ?? ''}
                 onChange={(e) => updateInsurance({ note: e.target.value })}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="mb-3 font-semibold text-slate-700">Steuer</h2>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => updateTax({ valid: !player.tax.valid })}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                player.tax.valid ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+              }`}
+            >
+              {player.tax.valid ? 'Erledigt' : 'Offen'}
+            </button>
+            <span className="text-xs text-slate-400">Klicken zum Umschalten</span>
+          </div>
+          <div className="mt-3">
+            <Field label="Notiz">
+              <input
+                className={inputClass}
+                value={player.tax.note ?? ''}
+                onChange={(e) => updateTax({ note: e.target.value })}
               />
             </Field>
           </div>
@@ -428,6 +458,16 @@ export default function PlayerDetail({
               className={`${inputClass} h-24 resize-none`}
               value={player.notes}
               onChange={(e) => update({ notes: e.target.value })}
+            />
+          </Field>
+        </div>
+        <div className="mt-3">
+          <Field label="Hobbys & Gesprächsnotizen (für den nächsten Call/Termin)">
+            <textarea
+              className={`${inputClass} h-24 resize-none`}
+              placeholder="z.B. Hobbys, Anekdoten, Themen fürs nächste Gespräch…"
+              value={player.conversationNotes}
+              onChange={(e) => update({ conversationNotes: e.target.value })}
             />
           </Field>
         </div>

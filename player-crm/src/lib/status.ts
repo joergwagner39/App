@@ -14,6 +14,10 @@ export function insuranceStatus(player: Player): 'green' | 'red' {
   return player.insurance.valid ? 'green' : 'red'
 }
 
+export function taxStatus(player: Player): 'green' | 'red' {
+  return player.tax.valid ? 'green' : 'red'
+}
+
 export function satisfactionStatus(player: Player): 'green' | 'yellow' | 'red' {
   if (player.satisfaction >= 7) return 'green'
   if (player.satisfaction >= 4) return 'yellow'

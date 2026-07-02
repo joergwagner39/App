@@ -33,6 +33,11 @@ export interface Player {
     note?: string
   }
 
+  tax: {
+    valid: boolean
+    note?: string
+  }
+
   satisfaction: number // 1-10
 
   lastContact?: string // ISO date
@@ -41,6 +46,7 @@ export interface Player {
 
   family: string
   notes: string
+  conversationNotes: string
 
   outfitter: {
     has: boolean
@@ -66,11 +72,13 @@ export function createEmptyPlayer(): Player {
     address: { street: '', zip: '', city: '', country: '' },
     idCard: {},
     insurance: { valid: false, note: '' },
+    tax: { valid: false, note: '' },
     satisfaction: 5,
     lastContact: '',
     todos: [],
     family: '',
     notes: '',
+    conversationNotes: '',
     outfitter: { has: false, brand: '', logoDataUrl: '' },
     createdAt: now,
     updatedAt: now,

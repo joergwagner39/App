@@ -7,6 +7,7 @@ import {
   lastContactStatus,
   openTodoCount,
   satisfactionStatus,
+  taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import { Plus, Search, Shirt, User } from 'lucide-react'
@@ -98,6 +99,7 @@ export default function PlayerList({
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <StatusBadge color={idCardStatus(p)} label="Ausweis" />
                     <StatusBadge color={insuranceStatus(p)} label="Versicherung" />
+                    <StatusBadge color={taxStatus(p)} label="Steuer" />
                     <StatusBadge color={satisfactionStatus(p)} label={`Zufr. ${p.satisfaction}`} />
                     <StatusBadge color={lastContactStatus(p)} label="Kontakt" />
                     {todos > 0 && (

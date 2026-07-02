@@ -15,6 +15,7 @@ export function seedPlayers(): Player[] {
       address: { street: '', zip: '', city: 'Simmerath', country: 'Deutschland' },
       idCard: {},
       insurance: { valid: true, note: '' },
+      tax: { valid: true, note: 'Steuererklärung 2025 eingereicht' },
       satisfaction: 8,
       lastContact: now.slice(0, 10),
       todos: [
@@ -27,6 +28,7 @@ export function seedPlayers(): Player[] {
       ],
       family: '',
       notes: 'Beispieldatensatz – Eckdaten von Transfermarkt/Wikipedia übernommen.',
+      conversationNotes: 'Spielt gerne Playstation, Fan von Tischtennis in der Freizeit.',
       outfitter: { has: false, brand: '', logoDataUrl: '' },
       createdAt: now,
       updatedAt: now,
