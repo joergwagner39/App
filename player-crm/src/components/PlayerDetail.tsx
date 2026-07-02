@@ -13,7 +13,7 @@ import SatisfactionScore from './SatisfactionScore'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
 import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -55,6 +55,11 @@ export default function PlayerDetail({
   const [newReminder, setNewReminder] = useState('')
   const [ocrRunning, setOcrRunning] = useState(false)
   const [ocrHint, setOcrHint] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState(false)
+
+  useEffect(() => {
+    setPhotoError(false)
+  }, [player.photoUrl])
 
   function update(patch: Partial<Player>) {
     onChange({ ...player, ...patch, updatedAt: new Date().toISOString() })
@@ -129,12 +134,15 @@ export default function PlayerDetail({
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-            {player.photoUrl ? (
+            {player.photoUrl && !photoError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={player.photoUrl}
                 alt={`${player.firstName} ${player.lastName}`}
                 className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={() => setPhotoError(true)}
+                onLoad={() => setPhotoError(false)}
               />
             ) : (
               <User className="h-8 w-8 text-slate-400" />
@@ -155,14 +163,36 @@ export default function PlayerDetail({
                 onChange={(e) => update({ lastName: e.target.value })}
               />
             </div>
-            <div className="px-2">
+            <div className="flex items-center gap-2 px-2">
               <input
-                className="w-80 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-brand-500 focus:px-2 focus:outline-none"
+                className="w-64 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-brand-500 focus:px-2 focus:outline-none"
                 value={player.photoUrl ?? ''}
-                placeholder="Bild-URL einfügen (z.B. von Transfermarkt kopieren)"
+                placeholder="Bild-URL einfügen…"
                 onChange={(e) => update({ photoUrl: e.target.value })}
               />
+              <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">
+                <Upload className="h-3.5 w-3.5" />
+                oder Foto hochladen
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    const dataUrl = await fileToDataUrl(file)
+                    update({ photoUrl: dataUrl })
+                  }}
+                />
+              </label>
             </div>
+            {player.photoUrl && photoError && (
+              <p className="mt-0.5 px-2 text-xs text-red-500">
+                Bild-URL konnte nicht geladen werden – die Quelle blockt evtl. externe
+                Einbettung. Lade das Bild stattdessen direkt hoch (Foto speichern, dann
+                „oder Foto hochladen“).
+              </p>
+            )}
             <div className="mt-1 flex flex-wrap gap-2 px-2">
               <StatusBadge color={idCardStatus(player)} label="Ausweis" />
               <StatusBadge color={insuranceStatus(player)} label="Versicherung" />

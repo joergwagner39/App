@@ -11,7 +11,8 @@ import {
   taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
-import { Plus, Search, Shirt, User } from 'lucide-react'
+import Avatar from './Avatar'
+import { Plus, Search, Shirt } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 export default function PlayerList({
@@ -77,18 +78,12 @@ export default function PlayerList({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
-                        {p.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.photoUrl}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-4 w-4" />
-                        )}
-                      </div>
+                      <Avatar
+                        photoUrl={p.photoUrl}
+                        alt=""
+                        className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500"
+                        iconClassName="h-4 w-4"
+                      />
                       <div>
                         <div className="font-medium text-slate-800">
                           {p.firstName || p.lastName
