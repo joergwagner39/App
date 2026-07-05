@@ -1,0 +1,37 @@
+name: Mail Outbox Sender
+
+on:
+  push:
+    paths:
+      - "mail_outbox/*.json"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send queued outbox emails
+        env:
+          SMTP_USER: ${{ secrets.FOOD_DEALS_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.FOOD_DEALS_SMTP_PASS }}
+        run: python scripts/mail_outbox/send_outbox.py
+
+      - name: Commit outbox cleanup
+        if: always()
+        run: |
+          git config user.name "mail-outbox-bot"
+          git config user.email "actions@github.com"
+          git add mail_outbox/
+          if ! git diff --cached --quiet; then
+            git commit -m "Clear sent outbox emails"
+            git push
+          fi
