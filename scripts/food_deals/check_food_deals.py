@@ -4,35 +4,29 @@ Daily food-deals checker.
 
 Scrapes marktguru.de (which aggregates Lidl, Rewe and other German
 retailers' weekly leaflets) for a configured list of specific products plus
-a list of generic "healthy / longevity superfood" keywords, and emails any
-newly found offers via SMTP.
+a list of generic "healthy / longevity superfood" keywords.
 
 Intended to run as a scheduled GitHub Actions job (see
 .github/workflows/food-deals.yml) — NOT inside the Claude sandbox, whose
 network policy blocks direct requests to retail sites.
 
-Required environment variables:
-    SMTP_HOST   (default: smtp.gmail.com)
-    SMTP_PORT   (default: 587)
-    SMTP_USER   sender address, e.g. joergwagner39@gmail.com
-    SMTP_PASS   Gmail app password (NOT the normal account password)
-    MAIL_FROM   defaults to SMTP_USER
-    MAIL_TO     recipient, e.g. joerg.wagner@rogon.tv
+This script does NOT send email itself (no SMTP credentials needed). New
+offers are appended to pending_offers.json, which the workflow commits back
+to the repo. A separate Claude trigger reads that file shortly after and
+sends the notification via the already-connected Gmail MCP connector, then
+clears the file — the same pattern as the existing Watchlist/Morning
+Briefing routines.
 
 State (which offers were already notified about) is kept in
-seen_offers.json next to this script; the workflow commits changes to that
-file back to the repo so we don't re-notify on the next run.
+seen_offers.json next to this script.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
-import smtplib
 import sys
 from dataclasses import dataclass, asdict
-from email.mime.text import MIMEText
 from pathlib import Path
 from urllib.parse import quote
 
@@ -40,6 +34,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SEEN_FILE = SCRIPT_DIR / "seen_offers.json"
+PENDING_FILE = SCRIPT_DIR / "pending_offers.json"
 
 # NOTE: marktguru's search results live at /search/<term> (path segment),
 # NOT /search?q=<term> (that returns a 404). Confirmed by dumping the real
@@ -117,6 +112,19 @@ def load_seen() -> set[str]:
 
 def save_seen(seen: set[str]) -> None:
     SEEN_FILE.write_text(json.dumps(sorted(seen), ensure_ascii=False, indent=2))
+
+
+def append_pending(new_offers: list[Offer]) -> None:
+    if not new_offers:
+        return
+    existing = []
+    if PENDING_FILE.exists():
+        try:
+            existing = json.loads(PENDING_FILE.read_text())
+        except (json.JSONDecodeError, OSError):
+            existing = []
+    existing.extend(asdict(o) for o in new_offers)
+    PENDING_FILE.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
 
 
 def dismiss_cookie_banner(page) -> None:
@@ -218,31 +226,6 @@ def scrape_all() -> tuple[list[Offer], list[str]]:
     return all_offers, errors
 
 
-def send_email(new_offers: list[Offer]) -> None:
-    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ["SMTP_USER"]
-    smtp_pass = os.environ["SMTP_PASS"]
-    mail_from = os.environ.get("MAIL_FROM", smtp_user)
-    mail_to = os.environ["MAIL_TO"]
-
-    lines = []
-    for o in new_offers:
-        kind_label = "Produkt" if o.kind == "product" else "Superfood"
-        lines.append(f"[{kind_label}] {o.title}\nPreis: {o.price}\nSuche: {o.query}\nLink: {o.url}\n")
-    body = "\n".join(lines)
-
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = f"Food-Deals gefunden ({len(new_offers)})"
-    msg["From"] = mail_from
-    msg["To"] = mail_to
-
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(mail_from, [mail_to], msg.as_string())
-
-
 def run() -> dict:
     seen = load_seen()
     offers, errors = scrape_all()
@@ -251,9 +234,7 @@ def run() -> dict:
     for o in new_offers:
         seen.add(o.key())
     save_seen(seen)
-
-    if new_offers:
-        send_email(new_offers)
+    append_pending(new_offers)
 
     return {
         "new_offers": [asdict(o) for o in new_offers],

@@ -25,18 +25,14 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run food deals check
-        env:
-          SMTP_USER: ${{ secrets.FOOD_DEALS_SMTP_USER }}
-          SMTP_PASS: ${{ secrets.FOOD_DEALS_SMTP_PASS }}
-          MAIL_TO: ${{ secrets.FOOD_DEALS_MAIL_TO }}
         run: python scripts/food_deals/check_food_deals.py
 
-      - name: Persist seen-offers state
+      - name: Persist seen/pending offers state
         run: |
           git config user.name "food-deals-bot"
           git config user.email "actions@github.com"
-          git add scripts/food_deals/seen_offers.json
+          git add scripts/food_deals/seen_offers.json scripts/food_deals/pending_offers.json
           if ! git diff --cached --quiet; then
-            git commit -m "Update seen food deals"
+            git commit -m "Update food deals state"
             git push
           fi
