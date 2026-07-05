@@ -15,9 +15,3 @@ jobs:
           pip install -r scripts/food_deals/requirements.txt
           playwright install --with-deps chromium
       - run: python scripts/food_deals/debug_dump.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: marktguru-debug
-          path: |
-            debug.html
-            debug.png
