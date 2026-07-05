@@ -34,13 +34,19 @@ import sys
 from dataclasses import dataclass, asdict
 from email.mime.text import MIMEText
 from pathlib import Path
+from urllib.parse import quote
 
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SEEN_FILE = SCRIPT_DIR / "seen_offers.json"
 
-SEARCH_BASE_URL = "https://www.marktguru.de/search?q={query}"
+# NOTE: marktguru's search results live at /search/<term> (path segment),
+# NOT /search?q=<term> (that returns a 404). Confirmed by dumping the real
+# page: https://www.marktguru.de/search/butter renders offer cards as
+# plain text lines: Title / "Marke:" / Brand / "Preis:" / "€ X,XX" /
+# validity / "Händler:" / Retailer.
+SEARCH_BASE_URL = "https://www.marktguru.de/search/{query}"
 
 # Exact products the user wants tracked.
 PRODUCTS = [
@@ -77,7 +83,7 @@ ALL_QUERIES = [(p, "product") for p in PRODUCTS] + [
     (k, "superfood") for k in SUPERFOOD_KEYWORDS
 ]
 
-PRICE_RE = re.compile(r"(\d{1,3}(?:[.,]\d{2}))\s*€")
+PRICE_RE = re.compile(r"€\s*(\d{1,3}(?:[.,]\d{2}))")
 COOKIE_BUTTON_TEXTS = [
     "Alle akzeptieren",
     "Akzeptieren",
@@ -125,7 +131,7 @@ def dismiss_cookie_banner(page) -> None:
 
 
 def scrape_marktguru(page, query: str, kind: str) -> list[Offer]:
-    url = SEARCH_BASE_URL.format(query=query.replace(" ", "+"))
+    url = SEARCH_BASE_URL.format(query=quote(query))
     offers: list[Offer] = []
 
     page.goto(url, timeout=30000, wait_until="domcontentloaded")
@@ -135,68 +141,55 @@ def scrape_marktguru(page, query: str, kind: str) -> list[Offer]:
     except PWTimeout:
         pass
 
-    # Generic heuristic: find every DOM node whose own text contains a price
-    # ("x,xx €"), then look at a small ancestor block for the offer title
-    # and a link. This avoids depending on exact CSS class names, which
-    # marktguru changes periodically.
-    candidates = page.locator("*").filter(has_text=re.compile(r"\d,\d{2}\s*€"))
-    count = min(candidates.count(), 60)
+    lines = [line.strip() for line in page.inner_text("body").splitlines() if line.strip()]
 
-    seen_urls_this_query: set[str] = set()
-
-    for i in range(count):
-        node = candidates.nth(i)
-        try:
-            text = node.inner_text(timeout=1000)
-        except Exception:
+    # Offer cards render as a flat sequence of text lines:
+    #   <Title>
+    #   Marke:
+    #   <Brand>
+    #   Preis:
+    #   € X,XX
+    #   ...Gültig:<dates>
+    #   Händler:
+    #   <Retailer>
+    # We anchor on "Marke:" (reliable label) and look a few lines around it
+    # for the rest, since exact spacing/wording of the surrounding lines can
+    # vary slightly between offer types.
+    for i, line in enumerate(lines):
+        if line != "Marke:" or i + 1 >= len(lines):
             continue
 
-        price_match = PRICE_RE.search(text)
-        if not price_match:
+        title = lines[i - 1] if i - 1 >= 0 else query
+        brand = lines[i + 1]
+
+        price = None
+        for j in range(i + 2, min(i + 6, len(lines))):
+            if lines[j] == "Preis:" and j + 1 < len(lines):
+                m = PRICE_RE.search(lines[j + 1])
+                if m:
+                    price = m.group(1) + " €"
+                break
+
+        retailer = None
+        for j in range(i + 2, min(i + 14, len(lines))):
+            if lines[j] == "Händler:" and j + 1 < len(lines):
+                retailer = lines[j + 1]
+                break
+
+        if not price:
             continue
 
-        block = node
-        block_text = text
-        link_href = None
-        for _ in range(4):
-            try:
-                parent = block.locator("xpath=..")
-                parent_text = parent.inner_text(timeout=1000)
-            except Exception:
-                break
-            if len(parent_text) > 600:
-                break
-            block, block_text = parent, parent_text
+        full_title = f"{title} ({brand})" if brand and brand not in title else title
+        if retailer:
+            full_title = f"{full_title} – {retailer}"
 
-        try:
-            link_locator = block.locator("a").first
-            if link_locator.count() > 0:
-                link_href = link_locator.get_attribute("href", timeout=1000)
-        except Exception:
-            link_href = None
-
-        if link_href and link_href.startswith("/"):
-            link_href = "https://www.marktguru.de" + link_href
-
-        full_url = link_href or url
-        if full_url in seen_urls_this_query:
-            continue
-
-        title = query
-        for line in block_text.splitlines():
-            line = line.strip()
-            if line and not PRICE_RE.fullmatch(line + "€") and len(line) > 3:
-                title = line
-                break
-
-        seen_urls_this_query.add(full_url)
         offers.append(
             Offer(
                 query=query,
                 kind=kind,
-                title=title[:200],
-                price=price_match.group(1) + " €",
-                url=full_url,
+                title=full_title[:200],
+                price=price,
+                url=url,
             )
         )
 
