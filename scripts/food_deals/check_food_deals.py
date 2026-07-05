@@ -10,12 +10,17 @@ Intended to run as a scheduled GitHub Actions job (see
 .github/workflows/food-deals.yml) — NOT inside the Claude sandbox, whose
 network policy blocks direct requests to retail sites.
 
-This script does NOT send email itself (no SMTP credentials needed). New
-offers are appended to pending_offers.json, which the workflow commits back
-to the repo. A separate Claude trigger reads that file shortly after and
-sends the notification via the already-connected Gmail MCP connector, then
-clears the file — the same pattern as the existing Watchlist/Morning
-Briefing routines.
+New offers are emailed via SMTP (see required env vars below) AND appended
+to pending_offers.json as a backup record, in case SMTP is ever
+misconfigured or down — nothing gets silently lost.
+
+Required environment variables:
+    SMTP_HOST   (default: smtp.gmail.com)
+    SMTP_PORT   (default: 587)
+    SMTP_USER   sender address, e.g. joergwagner39@gmail.com
+    SMTP_PASS   Gmail app password (NOT the normal account password)
+    MAIL_FROM   defaults to SMTP_USER
+    MAIL_TO     recipient, e.g. joerg.wagner@rogon.tv
 
 State (which offers were already notified about) is kept in
 seen_offers.json next to this script.
@@ -24,9 +29,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import smtplib
 import sys
 from dataclasses import dataclass, asdict
+from email.mime.text import MIMEText
 from pathlib import Path
 from urllib.parse import quote
 
@@ -226,6 +234,31 @@ def scrape_all() -> tuple[list[Offer], list[str]]:
     return all_offers, errors
 
 
+def send_email(new_offers: list[Offer]) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ["SMTP_USER"]
+    smtp_pass = os.environ["SMTP_PASS"]
+    mail_from = os.environ.get("MAIL_FROM", smtp_user)
+    mail_to = os.environ["MAIL_TO"]
+
+    lines = []
+    for o in new_offers:
+        kind_label = "Produkt" if o.kind == "product" else "Superfood"
+        lines.append(f"[{kind_label}] {o.title}\nPreis: {o.price}\nSuche: {o.query}\nLink: {o.url}\n")
+    body = "\n".join(lines)
+
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = f"Food-Deals gefunden ({len(new_offers)})"
+    msg["From"] = mail_from
+    msg["To"] = mail_to
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(mail_from, [mail_to], msg.as_string())
+
+
 def run() -> dict:
     seen = load_seen()
     offers, errors = scrape_all()
@@ -234,11 +267,24 @@ def run() -> dict:
     for o in new_offers:
         seen.add(o.key())
     save_seen(seen)
-    append_pending(new_offers)
+
+    email_sent = False
+    email_error = None
+    if new_offers:
+        try:
+            send_email(new_offers)
+            email_sent = True
+        except Exception as exc:  # noqa: BLE001 - report but don't fail the whole run
+            email_error = str(exc)
+            # SMTP failed — fall back to the pending-offers file so nothing
+            # is lost; the "Food Deals Notify" Claude trigger can pick it up.
+            append_pending(new_offers)
 
     return {
         "new_offers": [asdict(o) for o in new_offers],
         "errors": errors,
+        "email_sent": email_sent,
+        "email_error": email_error,
         "total_seen_count": len(seen),
     }
 

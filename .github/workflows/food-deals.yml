@@ -25,6 +25,10 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run food deals check
+        env:
+          SMTP_USER: ${{ secrets.FOOD_DEALS_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.FOOD_DEALS_SMTP_PASS }}
+          MAIL_TO: ${{ secrets.FOOD_DEALS_MAIL_TO }}
         run: python scripts/food_deals/check_food_deals.py
 
       - name: Persist seen/pending offers state
