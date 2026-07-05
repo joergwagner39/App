@@ -2,8 +2,8 @@ name: Daily Food Deals Check
 
 on:
   schedule:
-    # 06:30 UTC ≈ 07:30/08:30 Europe/Berlin depending on DST
-    - cron: "30 6 * * *"
+    # 06:30 UTC ≈ 07:30/08:30 Europe/Berlin depending on DST, every 3 days
+    - cron: "30 6 */3 * *"
   workflow_dispatch: {}
 
 permissions:
