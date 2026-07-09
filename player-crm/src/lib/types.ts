@@ -5,6 +5,12 @@ export interface Todo {
   reminderDate?: string // ISO date
 }
 
+export interface UploadedFile {
+  id: string
+  name: string
+  dataUrl: string
+}
+
 export interface Player {
   id: string
   firstName: string
@@ -33,14 +39,19 @@ export interface Player {
     private: boolean
     liability: boolean // Haftpflichtversicherung
     sickPay: boolean // Krankentagegeldversicherung
+    sickPaySum?: string // abgesicherte Summe/Tagessatz
     disability: boolean // Invaliditätsversicherung
+    disabilitySum?: string // Summe der Absicherung
     note?: string
+    files: UploadedFile[]
   }
 
   tax: {
     managedByUs: boolean
+    taxAdvisor?: string // Steuerberater, falls nicht über uns
     years: { year: number; done: boolean }[]
     note?: string
+    files: UploadedFile[]
   }
 
   satisfaction: number // 1-10
@@ -77,8 +88,17 @@ export function createEmptyPlayer(): Player {
     photoUrl: '',
     address: { street: '', zip: '', city: '', country: '' },
     idCard: {},
-    insurance: { private: false, liability: false, sickPay: false, disability: false, note: '' },
-    tax: { managedByUs: false, years: [], note: '' },
+    insurance: {
+      private: false,
+      liability: false,
+      sickPay: false,
+      sickPaySum: '',
+      disability: false,
+      disabilitySum: '',
+      note: '',
+      files: [],
+    },
+    tax: { managedByUs: false, taxAdvisor: '', years: [], note: '', files: [] },
     satisfaction: 5,
     lastContact: '',
     lastPersonalVisit: '',

@@ -10,6 +10,7 @@ import {
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
+import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
 import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
@@ -374,6 +375,33 @@ export default function PlayerDetail({
               </button>
             ))}
           </div>
+
+          {player.insurance.sickPay && (
+            <div className="mt-3">
+              <Field label="Krankentagegeld – abgesicherte Summe/Tagessatz">
+                <input
+                  className={inputClass}
+                  placeholder="z.B. 150 € / Tag"
+                  value={player.insurance.sickPaySum ?? ''}
+                  onChange={(e) => updateInsurance({ sickPaySum: e.target.value })}
+                />
+              </Field>
+            </div>
+          )}
+
+          {player.insurance.disability && (
+            <div className="mt-3">
+              <Field label="Invalidität – Summe der Absicherung">
+                <input
+                  className={inputClass}
+                  placeholder="z.B. 500.000 €"
+                  value={player.insurance.disabilitySum ?? ''}
+                  onChange={(e) => updateInsurance({ disabilitySum: e.target.value })}
+                />
+              </Field>
+            </div>
+          )}
+
           <div className="mt-3">
             <Field label="Notiz">
               <input
@@ -382,6 +410,15 @@ export default function PlayerDetail({
                 onChange={(e) => updateInsurance({ note: e.target.value })}
               />
             </Field>
+          </div>
+
+          <div className="mt-3">
+            <span className="mb-1 block text-xs font-medium text-slate-500">Unterlagen</span>
+            <FileList
+              files={player.insurance.files}
+              onChange={(files) => updateInsurance({ files })}
+              label="Versicherungsunterlagen hochladen"
+            />
           </div>
         </div>
 
@@ -398,7 +435,7 @@ export default function PlayerDetail({
             </button>
           </div>
 
-          {player.tax.managedByUs && (
+          {player.tax.managedByUs ? (
             <div className="mt-3">
               <span className="mb-1 block text-xs font-medium text-slate-500">Jahre</span>
               <div className="flex flex-wrap gap-2">
@@ -437,6 +474,17 @@ export default function PlayerDetail({
                 </button>
               </div>
             </div>
+          ) : (
+            <div className="mt-3">
+              <Field label="Steuerberater">
+                <input
+                  className={inputClass}
+                  placeholder="Name / Kanzlei / Kontakt"
+                  value={player.tax.taxAdvisor ?? ''}
+                  onChange={(e) => updateTax({ taxAdvisor: e.target.value })}
+                />
+              </Field>
+            </div>
           )}
 
           <div className="mt-3">
@@ -447,6 +495,15 @@ export default function PlayerDetail({
                 onChange={(e) => updateTax({ note: e.target.value })}
               />
             </Field>
+          </div>
+
+          <div className="mt-3">
+            <span className="mb-1 block text-xs font-medium text-slate-500">Unterlagen</span>
+            <FileList
+              files={player.tax.files}
+              onChange={(files) => updateTax({ files })}
+              label="Steuerunterlagen hochladen"
+            />
           </div>
         </div>
 

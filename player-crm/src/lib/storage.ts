@@ -3,36 +3,61 @@ import { Player } from './types'
 const STORAGE_KEY = 'player-crm.players.v1'
 
 function migrateInsurance(raw: any) {
-  if (!raw) return { private: false, liability: false, sickPay: false, disability: false, note: '' }
+  if (!raw) {
+    return {
+      private: false,
+      liability: false,
+      sickPay: false,
+      sickPaySum: '',
+      disability: false,
+      disabilitySum: '',
+      note: '',
+      files: [],
+    }
+  }
   if ('valid' in raw) {
     // old shape: a single valid flag
     return {
       private: !!raw.valid,
       liability: !!raw.valid,
       sickPay: !!raw.valid,
+      sickPaySum: '',
       disability: !!raw.valid,
+      disabilitySum: '',
       note: raw.note ?? '',
+      files: [],
     }
   }
   return {
     private: raw.private ?? false,
     liability: raw.liability ?? false,
     sickPay: raw.sickPay ?? false,
+    sickPaySum: raw.sickPaySum ?? '',
     disability: raw.disability ?? false,
+    disabilitySum: raw.disabilitySum ?? '',
     note: raw.note ?? '',
+    files: raw.files ?? [],
   }
 }
 
 function migrateTax(raw: any) {
-  if (!raw) return { managedByUs: false, years: [], note: '' }
+  if (!raw) return { managedByUs: false, taxAdvisor: '', years: [], note: '', files: [] }
   if ('valid' in raw) {
     // old shape: a single valid flag
-    return { managedByUs: !!raw.valid, years: [], note: raw.note ?? '' }
+    return {
+      managedByUs: !!raw.valid,
+      taxAdvisor: '',
+      years: [],
+      note: raw.note ?? '',
+      files: [],
+    }
   }
   return {
     managedByUs: raw.managedByUs ?? false,
+    taxAdvisor: raw.taxAdvisor ?? '',
     years: raw.years ?? [],
     note: raw.note ?? '',
+    files: raw.files ?? [],
   }
 }
 
