@@ -16,9 +16,11 @@ import SatisfactionChart from './SatisfactionChart'
 import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
+import { downloadTodoAsIcs } from '@/lib/ics'
 import {
   Bell,
   CalendarClock,
+  CalendarPlus,
   CheckCircle2,
   Loader2,
   Plus,
@@ -69,6 +71,7 @@ export default function PlayerDetail({
   const [newReminder, setNewReminder] = useState('')
   const [newDueDate, setNewDueDate] = useState('')
   const [todoTab, setTodoTab] = useState<'open' | 'done'>('open')
+  const [expandedTodoId, setExpandedTodoId] = useState<string | null>(null)
   const [ocrRunning, setOcrRunning] = useState(false)
   const [ocrHint, setOcrHint] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState(false)
@@ -859,51 +862,85 @@ export default function PlayerDetail({
               !t.done &&
               ((t.reminderDate && new Date(t.reminderDate) <= today) ||
                 (t.dueDate && new Date(t.dueDate) <= today))
+            const expanded = expandedTodoId === t.id
             return (
               <li
                 key={t.id}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                className={`rounded-lg border text-sm ${
                   t.done
-                    ? 'border-slate-100 bg-slate-50 text-slate-400 line-through'
+                    ? 'border-slate-100 bg-slate-50 text-slate-400'
                     : overdue
                     ? 'border-red-200 bg-red-50'
                     : 'border-slate-200 bg-white'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={t.done}
-                  onChange={() => toggleTodo(t.id)}
-                  className="h-4 w-4"
-                />
-                <span className="flex-1">{t.text}</span>
-                <label
-                  className="flex items-center gap-1 text-xs text-slate-500"
-                  title="Erinnerung"
-                >
-                  <Bell className="h-3.5 w-3.5 shrink-0" />
+                <div className="flex items-center gap-2 px-3 py-2">
                   <input
-                    type="date"
-                    value={t.reminderDate ?? ''}
-                    onChange={(e) => updateTodo(t.id, { reminderDate: e.target.value || undefined })}
-                    className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
+                    type="checkbox"
+                    checked={t.done}
+                    onChange={() => toggleTodo(t.id)}
+                    className="h-4 w-4 shrink-0"
                   />
-                </label>
-                <label
-                  className="flex items-center gap-1 text-xs text-slate-500"
-                  title="Zu erledigen bis"
-                >
-                  <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-                  <input
-                    type="date"
-                    value={t.dueDate ?? ''}
-                    onChange={(e) => updateTodo(t.id, { dueDate: e.target.value || undefined })}
-                    className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
-                  />
-                </label>
-                <button onClick={() => removeTodo(t.id)}>
-                  <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                </button>
+                  <button
+                    onClick={() => setExpandedTodoId(expanded ? null : t.id)}
+                    className={`flex-1 text-left ${t.done ? 'line-through' : ''}`}
+                  >
+                    {t.text}
+                  </button>
+                  <label
+                    className="flex items-center gap-1 text-xs text-slate-500"
+                    title="Erinnerung"
+                  >
+                    <Bell className="h-3.5 w-3.5 shrink-0" />
+                    <input
+                      type="date"
+                      value={t.reminderDate ?? ''}
+                      onChange={(e) =>
+                        updateTodo(t.id, { reminderDate: e.target.value || undefined })
+                      }
+                      className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
+                    />
+                  </label>
+                  <label
+                    className="flex items-center gap-1 text-xs text-slate-500"
+                    title="Zu erledigen bis"
+                  >
+                    <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                    <input
+                      type="date"
+                      value={t.dueDate ?? ''}
+                      onChange={(e) => updateTodo(t.id, { dueDate: e.target.value || undefined })}
+                      className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
+                    />
+                  </label>
+                  <button onClick={() => removeTodo(t.id)}>
+                    <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                  </button>
+                </div>
+
+                {expanded && (
+                  <div className="border-t border-slate-100 px-3 py-2">
+                    <Field label="Weitere Infos">
+                      <textarea
+                        className={`${inputClass} h-20 resize-none`}
+                        placeholder="Details, Kontext, nächste Schritte…"
+                        value={t.details ?? ''}
+                        onChange={(e) => updateTodo(t.id, { details: e.target.value })}
+                      />
+                    </Field>
+                    {(t.reminderDate || t.dueDate) && (
+                      <button
+                        onClick={() =>
+                          downloadTodoAsIcs(t, `${player.firstName} ${player.lastName}`.trim())
+                        }
+                        className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                      >
+                        <CalendarPlus className="h-3.5 w-3.5" />
+                        Als Kalender-Termin exportieren (.ics)
+                      </button>
+                    )}
+                  </div>
+                )}
               </li>
             )
           })}

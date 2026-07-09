@@ -2,6 +2,7 @@ export interface Todo {
   id: string
   text: string
   done: boolean
+  details?: string
   reminderDate?: string // ISO date – wann erinnert werden soll
   dueDate?: string // ISO date – bis wann es erledigt sein soll
 }
