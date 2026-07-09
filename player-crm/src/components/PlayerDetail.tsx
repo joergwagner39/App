@@ -85,6 +85,10 @@ export default function PlayerDetail({
     update({ address: { ...player.address, ...patch } })
   }
 
+  function updateStaff(patch: Partial<Player['staff']>) {
+    update({ staff: { ...player.staff, ...patch } })
+  }
+
   function updateInsurance(patch: Partial<Player['insurance']>) {
     update({ insurance: { ...player.insurance, ...patch } })
   }
@@ -364,6 +368,31 @@ export default function PlayerDetail({
               className={inputClass}
               value={player.address.country}
               onChange={(e) => updateAddress({ country: e.target.value })}
+            />
+          </Field>
+        </div>
+
+        <h3 className="mb-2 mt-4 text-sm font-medium text-slate-500">Zuständigkeiten</h3>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <Field label="Mitarbeiter Player Relations">
+            <input
+              className={inputClass}
+              value={player.staff.playerRelations ?? ''}
+              onChange={(e) => updateStaff({ playerRelations: e.target.value })}
+            />
+          </Field>
+          <Field label="Geschäftsführer">
+            <input
+              className={inputClass}
+              value={player.staff.ceo ?? ''}
+              onChange={(e) => updateStaff({ ceo: e.target.value })}
+            />
+          </Field>
+          <Field label="Talentberater">
+            <input
+              className={inputClass}
+              value={player.staff.scout ?? ''}
+              onChange={(e) => updateStaff({ scout: e.target.value })}
             />
           </Field>
         </div>

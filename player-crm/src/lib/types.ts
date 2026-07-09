@@ -30,6 +30,12 @@ export interface Player {
     country: string
   }
 
+  staff: {
+    playerRelations?: string // zuständiger Mitarbeiter Player Relations
+    ceo?: string // Geschäftsführer
+    scout?: string // Talentberater
+  }
+
   idCard: {
     fileDataUrl?: string
     fileName?: string
@@ -92,6 +98,7 @@ export function createEmptyPlayer(): Player {
     clothingSize: '',
     photoUrl: '',
     address: { street: '', zip: '', city: '', country: '' },
+    staff: { playerRelations: '', ceo: '', scout: '' },
     idCard: {},
     insurance: {
       private: false,

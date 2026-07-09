@@ -101,6 +101,7 @@ function migrate(raw: any): Player {
     tax: migrateTax(raw.tax),
     outfitter: raw.outfitter ?? { has: false, brand: '' },
     address: raw.address ?? { street: '', zip: '', city: '', country: '' },
+    staff: raw.staff ?? { playerRelations: '', ceo: '', scout: '' },
     todos: raw.todos ?? [],
     family: raw.family ?? '',
     notes: raw.notes ?? '',
