@@ -11,6 +11,8 @@ function migrateInsurance(raw: any) {
       sickPaySum: '',
       disability: false,
       disabilitySum: '',
+      broker: '',
+      brokerContact: '',
       note: '',
       files: [],
     }
@@ -24,6 +26,8 @@ function migrateInsurance(raw: any) {
       sickPaySum: '',
       disability: !!raw.valid,
       disabilitySum: '',
+      broker: '',
+      brokerContact: '',
       note: raw.note ?? '',
       files: [],
     }
@@ -35,18 +39,30 @@ function migrateInsurance(raw: any) {
     sickPaySum: raw.sickPaySum ?? '',
     disability: raw.disability ?? false,
     disabilitySum: raw.disabilitySum ?? '',
+    broker: raw.broker ?? '',
+    brokerContact: raw.brokerContact ?? '',
     note: raw.note ?? '',
     files: raw.files ?? [],
   }
 }
 
 function migrateTax(raw: any) {
-  if (!raw) return { managedByUs: false, taxAdvisor: '', years: [], note: '', files: [] }
+  if (!raw) {
+    return {
+      managedByUs: false,
+      taxAdvisor: '',
+      taxAdvisorEmail: '',
+      years: [],
+      note: '',
+      files: [],
+    }
+  }
   if ('valid' in raw) {
     // old shape: a single valid flag
     return {
       managedByUs: !!raw.valid,
       taxAdvisor: '',
+      taxAdvisorEmail: '',
       years: [],
       note: raw.note ?? '',
       files: [],
@@ -55,6 +71,7 @@ function migrateTax(raw: any) {
   return {
     managedByUs: raw.managedByUs ?? false,
     taxAdvisor: raw.taxAdvisor ?? '',
+    taxAdvisorEmail: raw.taxAdvisorEmail ?? '',
     years: raw.years ?? [],
     note: raw.note ?? '',
     files: raw.files ?? [],

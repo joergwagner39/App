@@ -42,13 +42,16 @@ export interface Player {
     sickPaySum?: string // abgesicherte Summe/Tagessatz
     disability: boolean // Invaliditätsversicherung
     disabilitySum?: string // Summe der Absicherung
+    broker?: string // Versicherungsmakler
+    brokerContact?: string // Kontaktdaten des Maklers
     note?: string
     files: UploadedFile[]
   }
 
   tax: {
     managedByUs: boolean
-    taxAdvisor?: string // Steuerberater, falls nicht über uns
+    taxAdvisor?: string // Steuerberater
+    taxAdvisorEmail?: string
     years: { year: number; done: boolean }[]
     note?: string
     files: UploadedFile[]
@@ -95,10 +98,19 @@ export function createEmptyPlayer(): Player {
       sickPaySum: '',
       disability: false,
       disabilitySum: '',
+      broker: '',
+      brokerContact: '',
       note: '',
       files: [],
     },
-    tax: { managedByUs: false, taxAdvisor: '', years: [], note: '', files: [] },
+    tax: {
+      managedByUs: false,
+      taxAdvisor: '',
+      taxAdvisorEmail: '',
+      years: [],
+      note: '',
+      files: [],
+    },
     satisfaction: 5,
     lastContact: '',
     lastPersonalVisit: '',

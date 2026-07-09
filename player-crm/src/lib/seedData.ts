@@ -27,12 +27,15 @@ export function seedPlayers(): Player[] {
         sickPaySum: '150 € / Tag (Beispiel)',
         disability: false,
         disabilitySum: '',
+        broker: 'Musterhaus Versicherungsmakler (Beispiel)',
+        brokerContact: 'makler@beispiel.de',
         note: 'Sportversicherung über den Verein',
         files: [],
       },
       tax: {
         managedByUs: true,
         taxAdvisor: '',
+        taxAdvisorEmail: '',
         years: [
           { year: 2024, done: true },
           { year: 2025, done: false },

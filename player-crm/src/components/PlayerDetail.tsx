@@ -402,6 +402,25 @@ export default function PlayerDetail({
             </div>
           )}
 
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Versicherungsmakler">
+              <input
+                className={inputClass}
+                placeholder="Name / Kanzlei"
+                value={player.insurance.broker ?? ''}
+                onChange={(e) => updateInsurance({ broker: e.target.value })}
+              />
+            </Field>
+            <Field label="Kontaktdaten Makler">
+              <input
+                className={inputClass}
+                placeholder="Telefon / E-Mail"
+                value={player.insurance.brokerContact ?? ''}
+                onChange={(e) => updateInsurance({ brokerContact: e.target.value })}
+              />
+            </Field>
+          </div>
+
           <div className="mt-3">
             <Field label="Notiz">
               <input
@@ -424,18 +443,50 @@ export default function PlayerDetail({
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Steuer</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => updateTax({ managedByUs: !player.tax.managedByUs })}
+              onClick={() => updateTax({ managedByUs: true })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                player.tax.managedByUs ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
+                player.tax.managedByUs
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-slate-200 text-slate-600'
               }`}
             >
-              {player.tax.managedByUs ? 'Läuft über uns' : 'Läuft nicht über uns'}
+              Läuft über uns
+            </button>
+            <button
+              onClick={() => updateTax({ managedByUs: false })}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                !player.tax.managedByUs
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              Läuft nicht über uns
             </button>
           </div>
 
-          {player.tax.managedByUs ? (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Steuerberater">
+              <input
+                className={inputClass}
+                placeholder="Name / Kanzlei"
+                value={player.tax.taxAdvisor ?? ''}
+                onChange={(e) => updateTax({ taxAdvisor: e.target.value })}
+              />
+            </Field>
+            <Field label="E-Mail Steuerberater">
+              <input
+                type="email"
+                className={inputClass}
+                placeholder="name@kanzlei.de"
+                value={player.tax.taxAdvisorEmail ?? ''}
+                onChange={(e) => updateTax({ taxAdvisorEmail: e.target.value })}
+              />
+            </Field>
+          </div>
+
+          {player.tax.managedByUs && (
             <div className="mt-3">
               <span className="mb-1 block text-xs font-medium text-slate-500">Jahre</span>
               <div className="flex flex-wrap gap-2">
@@ -473,17 +524,6 @@ export default function PlayerDetail({
                   + Jahr hinzufügen
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <Field label="Steuerberater">
-                <input
-                  className={inputClass}
-                  placeholder="Name / Kanzlei / Kontakt"
-                  value={player.tax.taxAdvisor ?? ''}
-                  onChange={(e) => updateTax({ taxAdvisor: e.target.value })}
-                />
-              </Field>
             </div>
           )}
 
