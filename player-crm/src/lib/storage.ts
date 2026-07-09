@@ -94,6 +94,7 @@ function migrate(raw: any): Player {
     conversationNotes: raw.conversationNotes ?? '',
     photoUrl: raw.photoUrl ?? '',
     lastPersonalVisit: raw.lastPersonalVisit ?? '',
+    satisfactionHistory: raw.satisfactionHistory ?? [],
   }
 }
 

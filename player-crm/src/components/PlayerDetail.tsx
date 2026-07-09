@@ -2,14 +2,17 @@
 
 import { Player, Todo } from '@/lib/types'
 import {
+  daysUntilNextSatisfactionCheckIn,
   idCardStatus,
   insuranceStatus,
   lastContactStatus,
   lastPersonalVisitStatus,
+  satisfactionCheckInDoneThisMonth,
   taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import SatisfactionScore from './SatisfactionScore'
+import SatisfactionChart from './SatisfactionChart'
 import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
@@ -106,6 +109,21 @@ export default function PlayerDetail({
   }
 
   const brandLogoUrl = player.outfitter.brand ? getBrandLogoUrl(player.outfitter.brand) : null
+
+  function updateSatisfaction(value: number) {
+    const today = new Date().toISOString().slice(0, 10)
+    const history = player.satisfactionHistory.filter((h) => h.date !== today)
+    update({ satisfaction: value, satisfactionHistory: [...history, { date: today, value }] })
+  }
+
+  const checkInDone = satisfactionCheckInDoneThisMonth(player)
+  const daysUntilCheckIn = daysUntilNextSatisfactionCheckIn()
+  const nextCheckInDate = new Date()
+  nextCheckInDate.setMonth(nextCheckInDate.getMonth() + 1, 1)
+  const nextCheckInLabel = nextCheckInDate.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+  })
 
   function addTodo() {
     if (!newTodo.trim()) return
@@ -585,11 +603,26 @@ export default function PlayerDetail({
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Zufriedenheit</h2>
-        <SatisfactionScore
-          value={player.satisfaction}
-          onChange={(v) => update({ satisfaction: v })}
-        />
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
+            Zufriedenheit
+          </h2>
+          {checkInDone ? (
+            <span className="text-xs text-slate-400">
+              Diesen Monat erledigt · nächste Abfrage in {daysUntilCheckIn} Tag
+              {daysUntilCheckIn === 1 ? '' : 'en'} (am {nextCheckInLabel})
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-red-500">
+              Abfrage für diesen Monat noch offen · nächste Abfrage in {daysUntilCheckIn} Tag
+              {daysUntilCheckIn === 1 ? '' : 'en'} (am {nextCheckInLabel})
+            </span>
+          )}
+        </div>
+        <SatisfactionScore value={player.satisfaction} onChange={updateSatisfaction} />
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <SatisfactionChart history={player.satisfactionHistory} />
+        </div>
       </section>
 
       {/* To-Dos */}

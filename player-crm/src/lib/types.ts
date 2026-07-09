@@ -58,6 +58,7 @@ export interface Player {
   }
 
   satisfaction: number // 1-10
+  satisfactionHistory: { date: string; value: number }[] // ISO date -> value
 
   lastContact?: string // ISO date
   lastPersonalVisit?: string // ISO date
@@ -112,6 +113,7 @@ export function createEmptyPlayer(): Player {
       files: [],
     },
     satisfaction: 5,
+    satisfactionHistory: [],
     lastContact: '',
     lastPersonalVisit: '',
     todos: [],

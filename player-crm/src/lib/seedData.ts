@@ -1,5 +1,11 @@
 import { Player } from './types'
 
+function monthsAgo(n: number): string {
+  const d = new Date()
+  d.setMonth(d.getMonth() - n, 1)
+  return d.toISOString().slice(0, 10)
+}
+
 export function seedPlayers(): Player[] {
   const now = new Date().toISOString()
   return [
@@ -44,6 +50,12 @@ export function seedPlayers(): Player[] {
         files: [],
       },
       satisfaction: 8,
+      satisfactionHistory: [
+        { date: monthsAgo(3), value: 6 },
+        { date: monthsAgo(2), value: 7 },
+        { date: monthsAgo(1), value: 6 },
+        { date: now.slice(0, 10), value: 8 },
+      ],
       lastContact: now.slice(0, 10),
       lastPersonalVisit: now.slice(0, 10),
       todos: [
