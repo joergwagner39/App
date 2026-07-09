@@ -11,11 +11,14 @@ export function idCardStatus(player: Player): 'green' | 'red' {
 }
 
 export function insuranceStatus(player: Player): 'green' | 'red' {
-  return player.insurance.valid ? 'green' : 'red'
+  const { private: p, liability, sickPay, disability } = player.insurance
+  return p && liability && sickPay && disability ? 'green' : 'red'
 }
 
 export function taxStatus(player: Player): 'green' | 'red' {
-  return player.tax.valid ? 'green' : 'red'
+  if (!player.tax.managedByUs) return 'red'
+  if (player.tax.years.length === 0) return 'red'
+  return player.tax.years.every((y) => y.done) ? 'green' : 'red'
 }
 
 export function satisfactionStatus(player: Player): 'green' | 'yellow' | 'red' {

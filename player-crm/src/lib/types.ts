@@ -30,12 +30,16 @@ export interface Player {
   }
 
   insurance: {
-    valid: boolean
+    private: boolean
+    liability: boolean // Haftpflichtversicherung
+    sickPay: boolean // Krankentagegeldversicherung
+    disability: boolean // Invaliditätsversicherung
     note?: string
   }
 
   tax: {
-    valid: boolean
+    managedByUs: boolean
+    years: { year: number; done: boolean }[]
     note?: string
   }
 
@@ -73,8 +77,8 @@ export function createEmptyPlayer(): Player {
     photoUrl: '',
     address: { street: '', zip: '', city: '', country: '' },
     idCard: {},
-    insurance: { valid: false, note: '' },
-    tax: { valid: false, note: '' },
+    insurance: { private: false, liability: false, sickPay: false, disability: false, note: '' },
+    tax: { managedByUs: false, years: [], note: '' },
     satisfaction: 5,
     lastContact: '',
     lastPersonalVisit: '',

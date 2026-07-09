@@ -352,18 +352,27 @@ export default function PlayerDetail({
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Versicherung</h2>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => updateInsurance({ valid: !player.insurance.valid })}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                player.insurance.valid
-                  ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
-              }`}
-            >
-              {player.insurance.valid ? 'Gültig' : 'Nicht gültig'}
-            </button>
-            <span className="text-xs text-slate-400">Klicken zum Umschalten</span>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ['private', 'Private Versicherung'],
+                ['liability', 'Haftpflichtversicherung'],
+                ['sickPay', 'Krankentagegeldversicherung'],
+                ['disability', 'Invaliditätsversicherung'],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => updateInsurance({ [key]: !player.insurance[key] })}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  player.insurance[key]
+                    ? 'bg-green-500 text-white'
+                    : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <div className="mt-3">
             <Field label="Notiz">
@@ -380,15 +389,56 @@ export default function PlayerDetail({
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Steuer</h2>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => updateTax({ valid: !player.tax.valid })}
+              onClick={() => updateTax({ managedByUs: !player.tax.managedByUs })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                player.tax.valid ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                player.tax.managedByUs ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
               }`}
             >
-              {player.tax.valid ? 'Erledigt' : 'Offen'}
+              {player.tax.managedByUs ? 'Läuft über uns' : 'Läuft nicht über uns'}
             </button>
-            <span className="text-xs text-slate-400">Klicken zum Umschalten</span>
           </div>
+
+          {player.tax.managedByUs && (
+            <div className="mt-3">
+              <span className="mb-1 block text-xs font-medium text-slate-500">Jahre</span>
+              <div className="flex flex-wrap gap-2">
+                {[...player.tax.years]
+                  .sort((a, b) => a.year - b.year)
+                  .map((y) => (
+                    <button
+                      key={y.year}
+                      onClick={() =>
+                        updateTax({
+                          years: player.tax.years.map((x) =>
+                            x.year === y.year ? { ...x, done: !x.done } : x
+                          ),
+                        })
+                      }
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                        y.done ? 'bg-green-500 text-white' : 'bg-red-100 text-red-600'
+                      }`}
+                    >
+                      {y.year} {y.done ? '✓' : '– offen'}
+                    </button>
+                  ))}
+                <button
+                  onClick={() => {
+                    const usedYears = player.tax.years.map((y) => y.year)
+                    const currentYear = new Date().getFullYear()
+                    let nextYear = currentYear
+                    while (usedYears.includes(nextYear)) nextYear -= 1
+                    updateTax({
+                      years: [...player.tax.years, { year: nextYear, done: false }],
+                    })
+                  }}
+                  className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+                >
+                  + Jahr hinzufügen
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-3">
             <Field label="Notiz">
               <input

@@ -20,8 +20,21 @@ export function seedPlayers(): Player[] {
         country: 'Deutschland',
       },
       idCard: {},
-      insurance: { valid: true, note: 'Sportversicherung über den Verein' },
-      tax: { valid: true, note: 'Steuererklärung 2025 eingereicht' },
+      insurance: {
+        private: true,
+        liability: true,
+        sickPay: true,
+        disability: false,
+        note: 'Sportversicherung über den Verein',
+      },
+      tax: {
+        managedByUs: true,
+        years: [
+          { year: 2024, done: true },
+          { year: 2025, done: false },
+        ],
+        note: 'Steuererklärung 2025 in Bearbeitung',
+      },
       satisfaction: 8,
       lastContact: now.slice(0, 10),
       lastPersonalVisit: now.slice(0, 10),
