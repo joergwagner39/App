@@ -2,7 +2,8 @@ export interface Todo {
   id: string
   text: string
   done: boolean
-  reminderDate?: string // ISO date
+  reminderDate?: string // ISO date – wann erinnert werden soll
+  dueDate?: string // ISO date – bis wann es erledigt sein soll
 }
 
 export interface UploadedFile {

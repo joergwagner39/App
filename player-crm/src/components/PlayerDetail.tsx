@@ -16,7 +16,17 @@ import SatisfactionChart from './SatisfactionChart'
 import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
-import { Bell, CheckCircle2, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
+import {
+  Bell,
+  CalendarClock,
+  CheckCircle2,
+  Loader2,
+  Plus,
+  ScanSearch,
+  Trash2,
+  Upload,
+  User,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -57,6 +67,8 @@ export default function PlayerDetail({
 }) {
   const [newTodo, setNewTodo] = useState('')
   const [newReminder, setNewReminder] = useState('')
+  const [newDueDate, setNewDueDate] = useState('')
+  const [todoTab, setTodoTab] = useState<'open' | 'done'>('open')
   const [ocrRunning, setOcrRunning] = useState(false)
   const [ocrHint, setOcrHint] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState(false)
@@ -169,10 +181,12 @@ export default function PlayerDetail({
       text: newTodo.trim(),
       done: false,
       reminderDate: newReminder || undefined,
+      dueDate: newDueDate || undefined,
     }
     update({ todos: [...player.todos, todo] })
     setNewTodo('')
     setNewReminder('')
+    setNewDueDate('')
   }
 
   function toggleTodo(id: string) {
@@ -181,9 +195,18 @@ export default function PlayerDetail({
     })
   }
 
+  function updateTodo(id: string, patch: Partial<Todo>) {
+    update({
+      todos: player.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    })
+  }
+
   function removeTodo(id: string) {
     update({ todos: player.todos.filter((t) => t.id !== id) })
   }
+
+  const openTodos = player.todos.filter((t) => !t.done)
+  const doneTodos = player.todos.filter((t) => t.done)
 
   return (
     <div className="space-y-6 p-6">
@@ -733,22 +756,36 @@ export default function PlayerDetail({
       {/* To-Dos */}
       <section className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="mb-3 flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
-          Offene To-Dos & Erinnerungen
+          To-Dos & Erinnerungen
         </h2>
-        <div className="mb-3 flex flex-wrap gap-2">
-          <input
-            className={`${inputClass} flex-1`}
-            placeholder="Neues To-Do…"
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTodo()}
-          />
-          <input
-            type="date"
-            className={inputClass}
-            value={newReminder}
-            onChange={(e) => setNewReminder(e.target.value)}
-          />
+        <div className="mb-3 flex flex-wrap items-end gap-2">
+          <div className="flex-1">
+            <Field label="To-Do">
+              <input
+                className={inputClass}
+                placeholder="Neues To-Do…"
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTodo()}
+              />
+            </Field>
+          </div>
+          <Field label="Erinnerung">
+            <input
+              type="date"
+              className={inputClass}
+              value={newReminder}
+              onChange={(e) => setNewReminder(e.target.value)}
+            />
+          </Field>
+          <Field label="Zu erledigen bis">
+            <input
+              type="date"
+              className={inputClass}
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+            />
+          </Field>
           <button
             onClick={addTodo}
             className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
@@ -757,15 +794,42 @@ export default function PlayerDetail({
             Hinzufügen
           </button>
         </div>
+
+        <div className="mb-3 flex gap-1 border-b border-slate-200">
+          <button
+            onClick={() => setTodoTab('open')}
+            className={`px-3 py-1.5 text-sm font-medium ${
+              todoTab === 'open'
+                ? 'border-b-2 border-brand-600 text-brand-700'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Offen ({openTodos.length})
+          </button>
+          <button
+            onClick={() => setTodoTab('done')}
+            className={`px-3 py-1.5 text-sm font-medium ${
+              todoTab === 'done'
+                ? 'border-b-2 border-brand-600 text-brand-700'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Erledigt ({doneTodos.length})
+          </button>
+        </div>
+
         <ul className="space-y-1.5">
-          {player.todos.length === 0 && (
-            <li className="text-sm text-slate-400">Keine To-Dos.</li>
+          {(todoTab === 'open' ? openTodos : doneTodos).length === 0 && (
+            <li className="text-sm text-slate-400">
+              {todoTab === 'open' ? 'Keine offenen To-Dos.' : 'Noch nichts erledigt.'}
+            </li>
           )}
-          {player.todos.map((t) => {
+          {(todoTab === 'open' ? openTodos : doneTodos).map((t) => {
+            const today = new Date(new Date().toDateString())
             const overdue =
               !t.done &&
-              t.reminderDate &&
-              new Date(t.reminderDate) <= new Date(new Date().toDateString())
+              ((t.reminderDate && new Date(t.reminderDate) <= today) ||
+                (t.dueDate && new Date(t.dueDate) <= today))
             return (
               <li
                 key={t.id}
@@ -784,12 +848,30 @@ export default function PlayerDetail({
                   className="h-4 w-4"
                 />
                 <span className="flex-1">{t.text}</span>
-                {t.reminderDate && (
-                  <span className="flex items-center gap-1 text-xs text-slate-500">
-                    <Bell className="h-3.5 w-3.5" />
-                    {t.reminderDate}
-                  </span>
-                )}
+                <label
+                  className="flex items-center gap-1 text-xs text-slate-500"
+                  title="Erinnerung"
+                >
+                  <Bell className="h-3.5 w-3.5 shrink-0" />
+                  <input
+                    type="date"
+                    value={t.reminderDate ?? ''}
+                    onChange={(e) => updateTodo(t.id, { reminderDate: e.target.value || undefined })}
+                    className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
+                  />
+                </label>
+                <label
+                  className="flex items-center gap-1 text-xs text-slate-500"
+                  title="Zu erledigen bis"
+                >
+                  <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                  <input
+                    type="date"
+                    value={t.dueDate ?? ''}
+                    onChange={(e) => updateTodo(t.id, { dueDate: e.target.value || undefined })}
+                    className="w-32 border-none bg-transparent p-0 text-xs text-inherit focus:outline-none"
+                  />
+                </label>
                 <button onClick={() => removeTodo(t.id)}>
                   <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
                 </button>
