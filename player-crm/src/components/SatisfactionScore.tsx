@@ -20,8 +20,8 @@ export default function SatisfactionScore({
   const status = critical ? 'red' : 'green'
 
   return (
-    <div>
-      <div className="flex items-end gap-1">
+    <div className="flex items-center gap-3">
+      <div className="flex h-8 max-w-xs flex-1 items-end gap-0.5">
         {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
           <button
             key={n}
@@ -35,16 +35,16 @@ export default function SatisfactionScore({
                   : 'bg-green-500'
                 : 'bg-slate-200'
             }`}
-            style={{ height: `${16 + n * 3}px` }}
+            style={{ height: `${8 + n * 2.4}px` }}
             title={`${n}`}
           />
         ))}
       </div>
       <div
-        className={`mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${colorClasses[status]}`}
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${colorClasses[status]}`}
       >
-        {value} / 10
-        {critical && <span className="text-xs font-normal">· kritisch</span>}
+        {value}/10
+        {critical && <span className="font-normal">· kritisch</span>}
       </div>
     </div>
   )

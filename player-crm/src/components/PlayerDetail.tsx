@@ -656,18 +656,20 @@ export default function PlayerDetail({
             </span>
           )}
         </div>
-        <SatisfactionScore value={draftSatisfaction} onChange={setDraftSatisfaction} />
-        <button
-          onClick={() => setSatisfactionValue(currentMonthKey, draftSatisfaction)}
-          className="mt-3 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          Jetzt eintragen (für {currentMonthLabel})
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <SatisfactionScore value={draftSatisfaction} onChange={setDraftSatisfaction} />
+          <button
+            onClick={() => setSatisfactionValue(currentMonthKey, draftSatisfaction)}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Jetzt eintragen ({currentMonthLabel})
+          </button>
+        </div>
 
-        {currentMonthEntry && currentMonthEntry.value < 5 && (
-          <div className="mt-3">
-            <Field label="Grund (Wert unter 5)">
+        {currentMonthEntry && currentMonthEntry.value <= 5 && (
+          <div className="mt-2 max-w-sm">
+            <Field label="Grund (Wert 5 oder darunter)">
               <input
                 className={`${inputClass} border-red-200 focus:border-red-400`}
                 placeholder="Warum ist die Zufriedenheit niedrig?"
@@ -678,53 +680,52 @@ export default function PlayerDetail({
           </div>
         )}
 
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <span className="mb-2 block text-xs font-medium text-slate-500">
-            Verlauf (nur Anzeige – Eintragen ist nur für den aktuellen Monat möglich)
-          </span>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="text-slate-400">
-                  <th className="py-1 pr-2 font-medium">Monat</th>
-                  <th className="py-1 pr-2 font-medium">Wert</th>
-                  <th className="py-1 font-medium">Grund</th>
-                </tr>
-              </thead>
-              <tbody>
-                {last12Months.map(({ key, label }) => {
-                  const entry = player.satisfactionHistory.find((h) => h.month === key)
-                  const critical = entry ? entry.value <= 5 : false
-                  return (
-                    <tr key={key} className="border-t border-slate-100">
-                      <td className="py-1.5 pr-2 text-slate-600">{label}</td>
-                      <td className="py-1.5 pr-2">
-                        {entry ? (
-                          <span
-                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
-                              critical
-                                ? 'border-red-300 bg-red-50 text-red-600'
-                                : 'border-green-300 bg-green-50 text-green-700'
-                            }`}
-                          >
-                            {entry.value}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">–</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 text-slate-600">
-                        {entry && entry.value < 5 ? entry.reason || '–' : ''}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 md:grid-cols-2">
+          <div>
+            <span className="mb-2 block text-xs font-medium text-slate-500">
+              Verlauf (nur Anzeige – Eintragen nur für den aktuellen Monat)
+            </span>
+            <div className="max-h-48 overflow-y-auto overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-slate-400">
+                    <th className="py-1 pr-2 font-medium">Monat</th>
+                    <th className="py-1 pr-2 font-medium">Wert</th>
+                    <th className="py-1 font-medium">Grund</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {last12Months.map(({ key, label }) => {
+                    const entry = player.satisfactionHistory.find((h) => h.month === key)
+                    const critical = entry ? entry.value <= 5 : false
+                    return (
+                      <tr key={key} className="border-t border-slate-100">
+                        <td className="py-1 pr-2 text-slate-600">{label}</td>
+                        <td className="py-1 pr-2">
+                          {entry ? (
+                            <span
+                              className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
+                                critical
+                                  ? 'border-red-300 bg-red-50 text-red-600'
+                                  : 'border-green-300 bg-green-50 text-green-700'
+                              }`}
+                            >
+                              {entry.value}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">–</span>
+                          )}
+                        </td>
+                        <td className="py-1 text-slate-600">
+                          {entry && entry.value <= 5 ? entry.reason || '–' : ''}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-4 border-t border-slate-100 pt-4">
           <SatisfactionChart history={player.satisfactionHistory} />
         </div>
       </section>
