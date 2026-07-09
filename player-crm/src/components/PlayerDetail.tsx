@@ -160,6 +160,7 @@ export default function PlayerDetail({
       label: d.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
     }
   })
+  const currentMonthEntry = player.satisfactionHistory.find((h) => h.month === currentMonthKey)
 
   function addTodo() {
     if (!newTodo.trim()) return
@@ -664,9 +665,22 @@ export default function PlayerDetail({
           Jetzt eintragen (für {currentMonthLabel})
         </button>
 
+        {currentMonthEntry && currentMonthEntry.value < 5 && (
+          <div className="mt-3">
+            <Field label="Grund (Wert unter 5)">
+              <input
+                className={`${inputClass} border-red-200 focus:border-red-400`}
+                placeholder="Warum ist die Zufriedenheit niedrig?"
+                value={currentMonthEntry.reason ?? ''}
+                onChange={(e) => setSatisfactionReason(currentMonthKey, e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
+
         <div className="mt-4 border-t border-slate-100 pt-4">
           <span className="mb-2 block text-xs font-medium text-slate-500">
-            Verlauf – auch rückwirkend eintragbar, ab Wert 5 gilt ein Monat als kritisch
+            Verlauf (nur Anzeige – Eintragen ist nur für den aktuellen Monat möglich)
           </span>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -685,42 +699,22 @@ export default function PlayerDetail({
                     <tr key={key} className="border-t border-slate-100">
                       <td className="py-1.5 pr-2 text-slate-600">{label}</td>
                       <td className="py-1.5 pr-2">
-                        <select
-                          value={entry?.value ?? ''}
-                          onChange={(e) =>
-                            setSatisfactionValue(
-                              key,
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          className={`rounded-full border px-2 py-1 text-xs font-medium ${
-                            !entry
-                              ? 'border-slate-200 bg-white text-slate-400'
-                              : critical
-                              ? 'border-red-300 bg-red-50 text-red-600'
-                              : 'border-green-300 bg-green-50 text-green-700'
-                          }`}
-                        >
-                          <option value="">–</option>
-                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
+                        {entry ? (
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
+                              critical
+                                ? 'border-red-300 bg-red-50 text-red-600'
+                                : 'border-green-300 bg-green-50 text-green-700'
+                            }`}
+                          >
+                            {entry.value}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">–</span>
+                        )}
                       </td>
-                      <td className="py-1.5">
-                        <input
-                          className={`w-full rounded-md border px-2 py-1 text-xs focus:outline-none ${
-                            critical
-                              ? 'border-red-200 focus:border-red-400'
-                              : 'border-slate-200 focus:border-brand-500'
-                          }`}
-                          placeholder={entry ? 'Grund (optional)' : '–'}
-                          disabled={!entry}
-                          value={entry?.reason ?? ''}
-                          onChange={(e) => setSatisfactionReason(key, e.target.value)}
-                        />
+                      <td className="py-1.5 text-slate-600">
+                        {entry && entry.value < 5 ? entry.reason || '–' : ''}
                       </td>
                     </tr>
                   )
