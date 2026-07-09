@@ -1,6 +1,6 @@
 'use client'
 
-import { format, parseISO } from 'date-fns'
+import { format, parse } from 'date-fns'
 import { de } from 'date-fns/locale'
 import {
   CartesianGrid,
@@ -15,22 +15,22 @@ import {
 export default function SatisfactionChart({
   history,
 }: {
-  history: { date: string; value: number }[]
+  history: { month: string; value: number }[]
 }) {
   if (history.length < 2) {
     return (
       <p className="py-6 text-center text-sm text-slate-400">
-        Noch nicht genug Daten für ein Diagramm – ab dem zweiten Eintrag wird hier der Verlauf
+        Noch nicht genug Daten für ein Diagramm – ab dem zweiten Monat wird hier der Verlauf
         angezeigt.
       </p>
     )
   }
 
   const data = [...history]
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => a.month.localeCompare(b.month))
     .map((h) => ({
-      date: h.date,
-      label: format(parseISO(h.date), 'd. MMM', { locale: de }),
+      month: h.month,
+      label: format(parse(h.month, 'yyyy-MM', new Date()), 'MMM yy', { locale: de }),
       value: h.value,
     }))
 

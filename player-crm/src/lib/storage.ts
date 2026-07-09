@@ -78,6 +78,19 @@ function migrateTax(raw: any) {
   }
 }
 
+function migrateSatisfactionHistory(raw: any[] | undefined) {
+  if (!raw) return []
+  // old shape kept one entry per day ("date"); collapse to one per month,
+  // keeping the latest value recorded in that month.
+  const byMonth = new Map<string, number>()
+  for (const entry of raw) {
+    const month = entry.month ?? (entry.date ? String(entry.date).slice(0, 7) : null)
+    if (!month) continue
+    byMonth.set(month, entry.value)
+  }
+  return Array.from(byMonth.entries()).map(([month, value]) => ({ month, value }))
+}
+
 // Backfills fields added after a player may have already been saved to
 // localStorage, so older records don't crash newer UI code.
 function migrate(raw: any): Player {
@@ -94,7 +107,7 @@ function migrate(raw: any): Player {
     conversationNotes: raw.conversationNotes ?? '',
     photoUrl: raw.photoUrl ?? '',
     lastPersonalVisit: raw.lastPersonalVisit ?? '',
-    satisfactionHistory: raw.satisfactionHistory ?? [],
+    satisfactionHistory: migrateSatisfactionHistory(raw.satisfactionHistory),
   }
 }
 

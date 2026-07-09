@@ -16,7 +16,7 @@ import SatisfactionChart from './SatisfactionChart'
 import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
-import { Bell, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
+import { Bell, CheckCircle2, Loader2, Plus, ScanSearch, Trash2, Upload, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -110,11 +110,22 @@ export default function PlayerDetail({
 
   const brandLogoUrl = player.outfitter.brand ? getBrandLogoUrl(player.outfitter.brand) : null
 
-  function updateSatisfaction(value: number) {
-    const today = new Date().toISOString().slice(0, 10)
-    const history = player.satisfactionHistory.filter((h) => h.date !== today)
-    update({ satisfaction: value, satisfactionHistory: [...history, { date: today, value }] })
+  function monthKeyFor(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
   }
+
+  function updateSatisfactionForMonth(monthKey: string, value: number | null) {
+    const history = player.satisfactionHistory.filter((h) => h.month !== monthKey)
+    const nextHistory =
+      value === null ? history : [...history, { month: monthKey, value }]
+    const patch: Partial<Player> = { satisfactionHistory: nextHistory }
+    if (monthKey === currentMonthKey && value !== null) {
+      patch.satisfaction = value
+    }
+    update(patch)
+  }
+
+  const [draftSatisfaction, setDraftSatisfaction] = useState(player.satisfaction)
 
   const checkInDone = satisfactionCheckInDoneThisMonth(player)
   const daysUntilCheckIn = daysUntilNextSatisfactionCheckIn()
@@ -123,6 +134,20 @@ export default function PlayerDetail({
   const nextCheckInLabel = nextCheckInDate.toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
+  })
+
+  const currentMonthKey = monthKeyFor(new Date())
+  const currentMonthLabel = new Date().toLocaleDateString('de-DE', {
+    month: 'long',
+    year: 'numeric',
+  })
+  const last12Months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - (11 - i), 1)
+    return {
+      key: monthKeyFor(d),
+      label: d.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
+    }
   })
 
   function addTodo() {
@@ -619,7 +644,50 @@ export default function PlayerDetail({
             </span>
           )}
         </div>
-        <SatisfactionScore value={player.satisfaction} onChange={updateSatisfaction} />
+        <SatisfactionScore value={draftSatisfaction} onChange={setDraftSatisfaction} />
+        <button
+          onClick={() => updateSatisfactionForMonth(currentMonthKey, draftSatisfaction)}
+          className="mt-3 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          Jetzt eintragen (für {currentMonthLabel})
+        </button>
+
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <span className="mb-2 block text-xs font-medium text-slate-500">
+            Verlauf – Monat anklicken, um rückwirkend einen Wert einzutragen
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {last12Months.map(({ key, label }) => {
+              const entry = player.satisfactionHistory.find((h) => h.month === key)
+              return (
+                <select
+                  key={key}
+                  value={entry?.value ?? ''}
+                  onChange={(e) =>
+                    updateSatisfactionForMonth(
+                      key,
+                      e.target.value === '' ? null : Number(e.target.value)
+                    )
+                  }
+                  className={`rounded-full border px-2.5 py-1.5 text-xs font-medium ${
+                    entry
+                      ? 'border-brand-300 bg-brand-50 text-brand-700'
+                      : 'border-slate-200 bg-white text-slate-400'
+                  }`}
+                >
+                  <option value="">{label}: –</option>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {label}: {n}
+                    </option>
+                  ))}
+                </select>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="mt-4 border-t border-slate-100 pt-4">
           <SatisfactionChart history={player.satisfactionHistory} />
         </div>

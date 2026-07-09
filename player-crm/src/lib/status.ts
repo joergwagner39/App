@@ -43,12 +43,13 @@ export function lastPersonalVisitStatus(player: Player): 'green' | 'red' {
   return days <= 30 ? 'green' : 'red'
 }
 
-export function satisfactionCheckInDoneThisMonth(player: Player): boolean {
+function currentMonthKey(): string {
   const now = new Date()
-  return player.satisfactionHistory.some((h) => {
-    const d = parseISO(h.date)
-    return isValid(d) && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  })
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function satisfactionCheckInDoneThisMonth(player: Player): boolean {
+  return player.satisfactionHistory.some((h) => h.month === currentMonthKey())
 }
 
 // Days remaining until the 1st of the next month, when the next

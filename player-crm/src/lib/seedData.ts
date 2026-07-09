@@ -3,7 +3,7 @@ import { Player } from './types'
 function monthsAgo(n: number): string {
   const d = new Date()
   d.setMonth(d.getMonth() - n, 1)
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export function seedPlayers(): Player[] {
@@ -51,10 +51,10 @@ export function seedPlayers(): Player[] {
       },
       satisfaction: 8,
       satisfactionHistory: [
-        { date: monthsAgo(3), value: 6 },
-        { date: monthsAgo(2), value: 7 },
-        { date: monthsAgo(1), value: 6 },
-        { date: now.slice(0, 10), value: 8 },
+        { month: monthsAgo(3), value: 6 },
+        { month: monthsAgo(2), value: 7 },
+        { month: monthsAgo(1), value: 6 },
+        { month: monthsAgo(0), value: 8 },
       ],
       lastContact: now.slice(0, 10),
       lastPersonalVisit: now.slice(0, 10),
