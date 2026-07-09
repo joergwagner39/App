@@ -2,20 +2,35 @@
 
 import { format, parse } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { isCriticalSatisfaction } from '@/lib/status'
 import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
+function CriticalDot(props: any) {
+  const { cx, cy, value } = props
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={4}
+      fill={isCriticalSatisfaction(value) ? '#ef4444' : '#8dc63f'}
+      stroke="none"
+    />
+  )
+}
+
 export default function SatisfactionChart({
   history,
 }: {
-  history: { month: string; value: number }[]
+  history: { month: string; value: number; reason?: string }[]
 }) {
   if (history.length < 2) {
     return (
@@ -32,6 +47,7 @@ export default function SatisfactionChart({
       month: h.month,
       label: format(parse(h.month, 'yyyy-MM', new Date()), 'MMM yy', { locale: de }),
       value: h.value,
+      reason: h.reason,
     }))
 
   return (
@@ -41,8 +57,12 @@ export default function SatisfactionChart({
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748b' }} />
           <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+          <ReferenceLine y={5} stroke="#ef4444" strokeDasharray="4 4" strokeOpacity={0.6} />
           <Tooltip
-            formatter={(value: number) => [`${value} / 10`, 'Zufriedenheit']}
+            formatter={(value: number, _name, props: any) => [
+              `${value} / 10${props.payload.reason ? ` – ${props.payload.reason}` : ''}`,
+              'Zufriedenheit',
+            ]}
             labelStyle={{ color: '#0d1622' }}
           />
           <Line
@@ -50,7 +70,7 @@ export default function SatisfactionChart({
             dataKey="value"
             stroke="#8dc63f"
             strokeWidth={2}
-            dot={{ r: 3, fill: '#8dc63f' }}
+            dot={<CriticalDot />}
           />
         </LineChart>
       </ResponsiveContainer>

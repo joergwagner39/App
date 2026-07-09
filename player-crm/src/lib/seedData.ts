@@ -51,6 +51,7 @@ export function seedPlayers(): Player[] {
       },
       satisfaction: 8,
       satisfactionHistory: [
+        { month: monthsAgo(4), value: 5, reason: 'Wenig Einsatzzeit, unzufrieden mit Trainer (Beispiel)' },
         { month: monthsAgo(3), value: 6 },
         { month: monthsAgo(2), value: 7 },
         { month: monthsAgo(1), value: 6 },

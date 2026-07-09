@@ -21,10 +21,13 @@ export function taxStatus(player: Player): 'green' | 'red' {
   return player.tax.years.every((y) => y.done) ? 'green' : 'red'
 }
 
-export function satisfactionStatus(player: Player): 'green' | 'yellow' | 'red' {
-  if (player.satisfaction >= 7) return 'green'
-  if (player.satisfaction >= 4) return 'yellow'
-  return 'red'
+// Zufriedenheit bis 5 gilt als kritisch.
+export function satisfactionStatus(player: Player): 'green' | 'red' {
+  return player.satisfaction <= 5 ? 'red' : 'green'
+}
+
+export function isCriticalSatisfaction(value: number): boolean {
+  return value <= 5
 }
 
 export function lastContactStatus(player: Player): 'green' | 'red' {

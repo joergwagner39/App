@@ -114,15 +114,26 @@ export default function PlayerDetail({
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
   }
 
-  function updateSatisfactionForMonth(monthKey: string, value: number | null) {
+  function setSatisfactionValue(monthKey: string, value: number | null) {
+    const existing = player.satisfactionHistory.find((h) => h.month === monthKey)
     const history = player.satisfactionHistory.filter((h) => h.month !== monthKey)
     const nextHistory =
-      value === null ? history : [...history, { month: monthKey, value }]
+      value === null
+        ? history
+        : [...history, { month: monthKey, value, reason: existing?.reason }]
     const patch: Partial<Player> = { satisfactionHistory: nextHistory }
     if (monthKey === currentMonthKey && value !== null) {
       patch.satisfaction = value
     }
     update(patch)
+  }
+
+  function setSatisfactionReason(monthKey: string, reason: string) {
+    update({
+      satisfactionHistory: player.satisfactionHistory.map((h) =>
+        h.month === monthKey ? { ...h, reason } : h
+      ),
+    })
   }
 
   const [draftSatisfaction, setDraftSatisfaction] = useState(player.satisfaction)
@@ -646,7 +657,7 @@ export default function PlayerDetail({
         </div>
         <SatisfactionScore value={draftSatisfaction} onChange={setDraftSatisfaction} />
         <button
-          onClick={() => updateSatisfactionForMonth(currentMonthKey, draftSatisfaction)}
+          onClick={() => setSatisfactionValue(currentMonthKey, draftSatisfaction)}
           className="mt-3 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
         >
           <CheckCircle2 className="h-4 w-4" />
@@ -655,36 +666,67 @@ export default function PlayerDetail({
 
         <div className="mt-4 border-t border-slate-100 pt-4">
           <span className="mb-2 block text-xs font-medium text-slate-500">
-            Verlauf – Monat anklicken, um rückwirkend einen Wert einzutragen
+            Verlauf – auch rückwirkend eintragbar, ab Wert 5 gilt ein Monat als kritisch
           </span>
-          <div className="flex flex-wrap gap-2">
-            {last12Months.map(({ key, label }) => {
-              const entry = player.satisfactionHistory.find((h) => h.month === key)
-              return (
-                <select
-                  key={key}
-                  value={entry?.value ?? ''}
-                  onChange={(e) =>
-                    updateSatisfactionForMonth(
-                      key,
-                      e.target.value === '' ? null : Number(e.target.value)
-                    )
-                  }
-                  className={`rounded-full border px-2.5 py-1.5 text-xs font-medium ${
-                    entry
-                      ? 'border-brand-300 bg-brand-50 text-brand-700'
-                      : 'border-slate-200 bg-white text-slate-400'
-                  }`}
-                >
-                  <option value="">{label}: –</option>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {label}: {n}
-                    </option>
-                  ))}
-                </select>
-              )
-            })}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="text-slate-400">
+                  <th className="py-1 pr-2 font-medium">Monat</th>
+                  <th className="py-1 pr-2 font-medium">Wert</th>
+                  <th className="py-1 font-medium">Grund</th>
+                </tr>
+              </thead>
+              <tbody>
+                {last12Months.map(({ key, label }) => {
+                  const entry = player.satisfactionHistory.find((h) => h.month === key)
+                  const critical = entry ? entry.value <= 5 : false
+                  return (
+                    <tr key={key} className="border-t border-slate-100">
+                      <td className="py-1.5 pr-2 text-slate-600">{label}</td>
+                      <td className="py-1.5 pr-2">
+                        <select
+                          value={entry?.value ?? ''}
+                          onChange={(e) =>
+                            setSatisfactionValue(
+                              key,
+                              e.target.value === '' ? null : Number(e.target.value)
+                            )
+                          }
+                          className={`rounded-full border px-2 py-1 text-xs font-medium ${
+                            !entry
+                              ? 'border-slate-200 bg-white text-slate-400'
+                              : critical
+                              ? 'border-red-300 bg-red-50 text-red-600'
+                              : 'border-green-300 bg-green-50 text-green-700'
+                          }`}
+                        >
+                          <option value="">–</option>
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-1.5">
+                        <input
+                          className={`w-full rounded-md border px-2 py-1 text-xs focus:outline-none ${
+                            critical
+                              ? 'border-red-200 focus:border-red-400'
+                              : 'border-slate-200 focus:border-brand-500'
+                          }`}
+                          placeholder={entry ? 'Grund (optional)' : '–'}
+                          disabled={!entry}
+                          value={entry?.reason ?? ''}
+                          onChange={(e) => setSatisfactionReason(key, e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -58,7 +58,7 @@ export interface Player {
   }
 
   satisfaction: number // 1-10
-  satisfactionHistory: { month: string; value: number }[] // "YYYY-MM" -> value
+  satisfactionHistory: { month: string; value: number; reason?: string }[] // "YYYY-MM" -> value
 
   lastContact?: string // ISO date
   lastPersonalVisit?: string // ISO date

@@ -81,14 +81,14 @@ function migrateTax(raw: any) {
 function migrateSatisfactionHistory(raw: any[] | undefined) {
   if (!raw) return []
   // old shape kept one entry per day ("date"); collapse to one per month,
-  // keeping the latest value recorded in that month.
-  const byMonth = new Map<string, number>()
+  // keeping the latest value/reason recorded in that month.
+  const byMonth = new Map<string, { value: number; reason?: string }>()
   for (const entry of raw) {
     const month = entry.month ?? (entry.date ? String(entry.date).slice(0, 7) : null)
     if (!month) continue
-    byMonth.set(month, entry.value)
+    byMonth.set(month, { value: entry.value, reason: entry.reason })
   }
-  return Array.from(byMonth.entries()).map(([month, value]) => ({ month, value }))
+  return Array.from(byMonth.entries()).map(([month, v]) => ({ month, ...v }))
 }
 
 // Backfills fields added after a player may have already been saved to
