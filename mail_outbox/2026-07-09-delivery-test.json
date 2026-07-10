@@ -1,5 +1,0 @@
-{
-  "to": ["joergwagner39@gmail.com"],
-  "subject": "Test: Zustellbarkeit Automations-Mails",
-  "body": "Das ist ein Test, um zu pruefen ob der automatisierte SMTP-Versand grundsaetzlich funktioniert. Wenn du diese Mail siehst, hat der Versand geklappt - das Problem liegt dann vermutlich am Spamfilter von rogon.tv, nicht am Versand selbst."
-}
