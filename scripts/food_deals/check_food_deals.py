@@ -57,6 +57,8 @@ PRODUCTS = [
     "vly Erbsen-Drink High Protein",
     "VEMONDO High Protein Sojadrink",
     "Président Meersalzbutter",
+    "Beauty of Joseon Relief Sun Rice Probiotics",
+    "Beauty of Joseon Relief Sun Aqua Soothing",
 ]
 
 # Generic "healthy / longevity superfood" search terms.
