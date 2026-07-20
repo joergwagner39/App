@@ -31,6 +31,13 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+function formatDateDE(isoDate: string): string {
+  const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return isoDate
+  const [, year, month, day] = match
+  return `${day}.${month}.${year}`
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -285,13 +292,21 @@ export default function PlayerDetail({
               <StatusBadge color={taxStatus(player)} label="Steuer" />
               <StatusBadge
                 color={lastContactStatus(player)}
-                label="Letzter Kontakt"
+                label={
+                  player.lastContact
+                    ? `Letzter Kontakt: ${formatDateDE(player.lastContact)}`
+                    : 'Letzter Kontakt'
+                }
                 title="Klicken, um heute als letzten Kontakt zu setzen"
                 onClick={() => update({ lastContact: new Date().toISOString().slice(0, 10) })}
               />
               <StatusBadge
                 color={lastPersonalVisitStatus(player)}
-                label="Letzter Besuch"
+                label={
+                  player.lastPersonalVisit
+                    ? `Letzter Besuch: ${formatDateDE(player.lastPersonalVisit)}`
+                    : 'Letzter Besuch'
+                }
                 title="Klicken, um heute als letzten persönlichen Besuch zu setzen"
                 onClick={() =>
                   update({ lastPersonalVisit: new Date().toISOString().slice(0, 10) })
