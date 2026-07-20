@@ -10,15 +10,21 @@ export function idCardStatus(player: Player): 'green' | 'red' {
   return isPast(date) ? 'red' : 'green'
 }
 
+// Rot nur, wenn wirklich nichts ausgewählt wurde. "Keine Versicherung" ist
+// eine bewusste Auswahl (z.B. Jugendspieler) und zählt als grün.
 export function insuranceStatus(player: Player): 'green' | 'red' {
-  const { private: p, liability, sickPay, disability } = player.insurance
-  return p && liability && sickPay && disability ? 'green' : 'red'
+  const { none, private: p, liability, sickPay, disability } = player.insurance
+  return none || p || liability || sickPay || disability ? 'green' : 'red'
 }
 
+// Grün, wenn "noch nicht benötigt" gewählt ist, oder wenn für das
+// zuletzt erfasste Jahr die Steuer als erledigt markiert ist – unabhängig
+// davon, ob sie über uns läuft.
 export function taxStatus(player: Player): 'green' | 'red' {
-  if (!player.tax.managedByUs) return 'red'
+  if (player.tax.notNeeded) return 'green'
   if (player.tax.years.length === 0) return 'red'
-  return player.tax.years.every((y) => y.done) ? 'green' : 'red'
+  const latestYear = [...player.tax.years].sort((a, b) => b.year - a.year)[0]
+  return latestYear.done ? 'green' : 'red'
 }
 
 // Zufriedenheit bis 5 gilt als kritisch.

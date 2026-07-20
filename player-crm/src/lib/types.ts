@@ -44,6 +44,7 @@ export interface Player {
   }
 
   insurance: {
+    none: boolean // Keine Versicherung (bewusst, z.B. Jugendspieler)
     private: boolean
     liability: boolean // Haftpflichtversicherung
     sickPay: boolean // Krankentagegeldversicherung
@@ -54,10 +55,12 @@ export interface Player {
     brokerContact?: string // Kontaktdaten des Maklers
     note?: string
     files: UploadedFile[]
+    reviewYears: { year: number; done: boolean }[] // jährliche Überprüfung, am besten im Sommer
   }
 
   tax: {
     managedByUs: boolean
+    notNeeded: boolean // Steuererklärung noch nicht benötigt (z.B. Jugendspieler)
     taxAdvisor?: string // Steuerberater
     taxAdvisorEmail?: string
     years: { year: number; done: boolean }[]
@@ -104,6 +107,7 @@ export function createEmptyPlayer(): Player {
     staff: { playerRelations: '', ceo: '', scout: '' },
     idCard: {},
     insurance: {
+      none: false,
       private: false,
       liability: false,
       sickPay: false,
@@ -114,9 +118,11 @@ export function createEmptyPlayer(): Player {
       brokerContact: '',
       note: '',
       files: [],
+      reviewYears: [],
     },
     tax: {
       managedByUs: false,
+      notNeeded: false,
       taxAdvisor: '',
       taxAdvisorEmail: '',
       years: [],

@@ -32,6 +32,7 @@ export function seedPlayers(): Player[] {
       },
       idCard: {},
       insurance: {
+        none: false,
         private: true,
         liability: true,
         sickPay: true,
@@ -42,9 +43,11 @@ export function seedPlayers(): Player[] {
         brokerContact: 'makler@beispiel.de',
         note: 'Sportversicherung über den Verein',
         files: [],
+        reviewYears: [{ year: 2025, done: true }],
       },
       tax: {
         managedByUs: true,
+        notNeeded: false,
         taxAdvisor: '',
         taxAdvisorEmail: '',
         years: [
@@ -110,6 +113,7 @@ export function seedPlayers(): Player[] {
       },
       idCard: {},
       insurance: {
+        none: false,
         private: false,
         liability: true,
         sickPay: false,
@@ -120,9 +124,11 @@ export function seedPlayers(): Player[] {
         brokerContact: '',
         note: '',
         files: [],
+        reviewYears: [],
       },
       tax: {
         managedByUs: false,
+        notNeeded: false,
         taxAdvisor: 'Kanzlei Beispiel & Partner',
         taxAdvisorEmail: 'kontakt@kanzlei-beispiel.de',
         years: [],

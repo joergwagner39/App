@@ -128,6 +128,10 @@ export default function PlayerDetail({
     update({ lastPersonalVisit: date, personalVisitHistory: history })
   }
 
+  function scrollToSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   function updateInsurance(patch: Partial<Player['insurance']>) {
     update({ insurance: { ...player.insurance, ...patch } })
   }
@@ -254,7 +258,7 @@ export default function PlayerDetail({
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-8">
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
             {player.photoUrl && !photoError ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -285,7 +289,7 @@ export default function PlayerDetail({
                 onChange={(e) => update({ lastName: e.target.value })}
               />
             </div>
-            <div className="flex items-center gap-2 px-2">
+            <div className="mt-2 flex items-center gap-2 px-2">
               <input
                 className="w-64 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-brand-500 focus:px-2 focus:outline-none"
                 value={player.photoUrl ?? ''}
@@ -316,20 +320,38 @@ export default function PlayerDetail({
               </p>
             )}
             <div className="mt-1 flex flex-wrap gap-2 px-2">
-              <StatusBadge color={idCardStatus(player)} label="Ausweis" />
-              <StatusBadge color={insuranceStatus(player)} label="Versicherung" />
-              <StatusBadge color={taxStatus(player)} label="Steuer" />
+              <StatusBadge
+                color={idCardStatus(player)}
+                label="Ausweis"
+                onClick={() => scrollToSection('section-ausweis')}
+              />
+              <StatusBadge
+                color={insuranceStatus(player)}
+                label="Versicherung"
+                onClick={() => scrollToSection('section-versicherung')}
+              />
+              <StatusBadge
+                color={taxStatus(player)}
+                label="Steuer"
+                onClick={() => scrollToSection('section-steuer')}
+              />
               <StatusBadge
                 color={lastContactStatus(player)}
                 label={recencyLabel('Letzter Kontakt', player.lastContact, CONTACT_THRESHOLD_DAYS)}
-                title={`Grün, wenn der letzte Kontakt max. ${CONTACT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Kontakt einzutragen.`}
-                onClick={() => addContact(new Date().toISOString().slice(0, 10))}
+                title={`Grün, wenn der letzte Kontakt max. ${CONTACT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Kontakt einzutragen und zum Bereich zu springen.`}
+                onClick={() => {
+                  addContact(new Date().toISOString().slice(0, 10))
+                  scrollToSection('section-kontakt')
+                }}
               />
               <StatusBadge
                 color={lastPersonalVisitStatus(player)}
                 label={recencyLabel('Letzter Besuch', player.lastPersonalVisit, VISIT_THRESHOLD_DAYS)}
-                title={`Grün, wenn der letzte persönliche Besuch max. ${VISIT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Besuch einzutragen.`}
-                onClick={() => addPersonalVisit(new Date().toISOString().slice(0, 10))}
+                title={`Grün, wenn der letzte persönliche Besuch max. ${VISIT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Besuch einzutragen und zum Bereich zu springen.`}
+                onClick={() => {
+                  addPersonalVisit(new Date().toISOString().slice(0, 10))
+                  scrollToSection('section-besuch')
+                }}
               />
             </div>
           </div>
@@ -448,7 +470,7 @@ export default function PlayerDetail({
       </section>
 
       {/* Ausweis */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section id="section-ausweis" className="rounded-xl border border-slate-200 bg-white p-4 scroll-mt-4">
         <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Ausweis</h2>
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex h-32 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50">
@@ -507,9 +529,18 @@ export default function PlayerDetail({
 
       {/* Versicherung, Steuer, Zufriedenheit & Kontakt */}
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div id="section-versicherung" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Versicherung</h2>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => updateInsurance({ none: !player.insurance.none })}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                player.insurance.none ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+              title="Bewusste Auswahl, z.B. bei Jugendspielern"
+            >
+              Keine Versicherung
+            </button>
             {(
               [
                 ['private', 'Private Versicherung'],
@@ -578,6 +609,47 @@ export default function PlayerDetail({
           </div>
 
           <div className="mt-3">
+            <span className="mb-1 block text-xs font-medium text-slate-500">
+              Jährliche Überprüfung (am besten im Sommer)
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {[...player.insurance.reviewYears]
+                .sort((a, b) => a.year - b.year)
+                .map((y) => (
+                  <button
+                    key={y.year}
+                    onClick={() =>
+                      updateInsurance({
+                        reviewYears: player.insurance.reviewYears.map((x) =>
+                          x.year === y.year ? { ...x, done: !x.done } : x
+                        ),
+                      })
+                    }
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                      y.done ? 'bg-green-500 text-white' : 'bg-red-100 text-red-600'
+                    }`}
+                  >
+                    {y.year} {y.done ? 'überprüft' : '– noch nicht überprüft'}
+                  </button>
+                ))}
+              <button
+                onClick={() => {
+                  const usedYears = player.insurance.reviewYears.map((y) => y.year)
+                  const currentYear = new Date().getFullYear()
+                  let nextYear = currentYear
+                  while (usedYears.includes(nextYear)) nextYear -= 1
+                  updateInsurance({
+                    reviewYears: [...player.insurance.reviewYears, { year: nextYear, done: false }],
+                  })
+                }}
+                className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+              >
+                + Jahr hinzufügen
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3">
             <Field label="Notiz">
               <input
                 className={inputClass}
@@ -597,13 +669,13 @@ export default function PlayerDetail({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div id="section-steuer" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Steuer</h2>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => updateTax({ managedByUs: true })}
+              onClick={() => updateTax({ managedByUs: true, notNeeded: false })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                player.tax.managedByUs
+                player.tax.managedByUs && !player.tax.notNeeded
                   ? 'bg-brand-600 text-white'
                   : 'bg-slate-200 text-slate-600'
               }`}
@@ -611,76 +683,89 @@ export default function PlayerDetail({
               Läuft über uns
             </button>
             <button
-              onClick={() => updateTax({ managedByUs: false })}
+              onClick={() => updateTax({ managedByUs: false, notNeeded: false })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                !player.tax.managedByUs
+                !player.tax.managedByUs && !player.tax.notNeeded
                   ? 'bg-brand-600 text-white'
                   : 'bg-slate-200 text-slate-600'
               }`}
             >
               Läuft nicht über uns
             </button>
+            <button
+              onClick={() => updateTax({ notNeeded: !player.tax.notNeeded })}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                player.tax.notNeeded ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+              title="Bewusste Auswahl, z.B. bei Jugendspielern"
+            >
+              Steuererklärung noch nicht benötigt
+            </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Steuerberater">
-              <input
-                className={inputClass}
-                placeholder="Name / Kanzlei"
-                value={player.tax.taxAdvisor ?? ''}
-                onChange={(e) => updateTax({ taxAdvisor: e.target.value })}
-              />
-            </Field>
-            <Field label="E-Mail Steuerberater">
-              <input
-                type="email"
-                className={inputClass}
-                placeholder="name@kanzlei.de"
-                value={player.tax.taxAdvisorEmail ?? ''}
-                onChange={(e) => updateTax({ taxAdvisorEmail: e.target.value })}
-              />
-            </Field>
-          </div>
-
-          {player.tax.managedByUs && (
-            <div className="mt-3">
-              <span className="mb-1 block text-xs font-medium text-slate-500">Jahre</span>
-              <div className="flex flex-wrap gap-2">
-                {[...player.tax.years]
-                  .sort((a, b) => a.year - b.year)
-                  .map((y) => (
-                    <button
-                      key={y.year}
-                      onClick={() =>
-                        updateTax({
-                          years: player.tax.years.map((x) =>
-                            x.year === y.year ? { ...x, done: !x.done } : x
-                          ),
-                        })
-                      }
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                        y.done ? 'bg-green-500 text-white' : 'bg-red-100 text-red-600'
-                      }`}
-                    >
-                      {y.year} {y.done ? '✓' : '– offen'}
-                    </button>
-                  ))}
-                <button
-                  onClick={() => {
-                    const usedYears = player.tax.years.map((y) => y.year)
-                    const currentYear = new Date().getFullYear()
-                    let nextYear = currentYear
-                    while (usedYears.includes(nextYear)) nextYear -= 1
-                    updateTax({
-                      years: [...player.tax.years, { year: nextYear, done: false }],
-                    })
-                  }}
-                  className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
-                >
-                  + Jahr hinzufügen
-                </button>
+          {!player.tax.notNeeded && (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <Field label="Steuerberater">
+                  <input
+                    className={inputClass}
+                    placeholder="Name / Kanzlei"
+                    value={player.tax.taxAdvisor ?? ''}
+                    onChange={(e) => updateTax({ taxAdvisor: e.target.value })}
+                  />
+                </Field>
+                <Field label="E-Mail Steuerberater">
+                  <input
+                    type="email"
+                    className={inputClass}
+                    placeholder="name@kanzlei.de"
+                    value={player.tax.taxAdvisorEmail ?? ''}
+                    onChange={(e) => updateTax({ taxAdvisorEmail: e.target.value })}
+                  />
+                </Field>
               </div>
-            </div>
+
+              <div className="mt-3">
+                <span className="mb-1 block text-xs font-medium text-slate-500">
+                  Jahre (nur das zuletzt erfasste Jahr muss erledigt sein, damit "Steuer" grün ist)
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[...player.tax.years]
+                    .sort((a, b) => a.year - b.year)
+                    .map((y) => (
+                      <button
+                        key={y.year}
+                        onClick={() =>
+                          updateTax({
+                            years: player.tax.years.map((x) =>
+                              x.year === y.year ? { ...x, done: !x.done } : x
+                            ),
+                          })
+                        }
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          y.done ? 'bg-green-500 text-white' : 'bg-red-100 text-red-600'
+                        }`}
+                      >
+                        {y.year} {y.done ? '✓' : '– offen'}
+                      </button>
+                    ))}
+                  <button
+                    onClick={() => {
+                      const usedYears = player.tax.years.map((y) => y.year)
+                      const currentYear = new Date().getFullYear()
+                      let nextYear = currentYear
+                      while (usedYears.includes(nextYear)) nextYear -= 1
+                      updateTax({
+                        years: [...player.tax.years, { year: nextYear, done: false }],
+                      })
+                    }}
+                    className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+                  >
+                    + Jahr hinzufügen
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           <div className="mt-3">
@@ -703,7 +788,7 @@ export default function PlayerDetail({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div id="section-kontakt" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
           <p className="mb-1 text-xs text-slate-400">
             Grün, solange der letzte Kontakt max. {CONTACT_THRESHOLD_DAYS} Tage her ist.
@@ -745,7 +830,7 @@ export default function PlayerDetail({
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div id="section-besuch" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter persönlicher Besuch</h2>
           <p className="mb-1 text-xs text-slate-400">
             Grün, solange der letzte Besuch max. {VISIT_THRESHOLD_DAYS} Tage her ist.

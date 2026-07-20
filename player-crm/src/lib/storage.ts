@@ -5,6 +5,7 @@ const STORAGE_KEY = 'player-crm.players.v1'
 function migrateInsurance(raw: any) {
   if (!raw) {
     return {
+      none: false,
       private: false,
       liability: false,
       sickPay: false,
@@ -15,11 +16,13 @@ function migrateInsurance(raw: any) {
       brokerContact: '',
       note: '',
       files: [],
+      reviewYears: [],
     }
   }
   if ('valid' in raw) {
     // old shape: a single valid flag
     return {
+      none: false,
       private: !!raw.valid,
       liability: !!raw.valid,
       sickPay: !!raw.valid,
@@ -30,9 +33,11 @@ function migrateInsurance(raw: any) {
       brokerContact: '',
       note: raw.note ?? '',
       files: [],
+      reviewYears: [],
     }
   }
   return {
+    none: raw.none ?? false,
     private: raw.private ?? false,
     liability: raw.liability ?? false,
     sickPay: raw.sickPay ?? false,
@@ -43,6 +48,7 @@ function migrateInsurance(raw: any) {
     brokerContact: raw.brokerContact ?? '',
     note: raw.note ?? '',
     files: raw.files ?? [],
+    reviewYears: raw.reviewYears ?? [],
   }
 }
 
@@ -50,6 +56,7 @@ function migrateTax(raw: any) {
   if (!raw) {
     return {
       managedByUs: false,
+      notNeeded: false,
       taxAdvisor: '',
       taxAdvisorEmail: '',
       years: [],
@@ -61,6 +68,7 @@ function migrateTax(raw: any) {
     // old shape: a single valid flag
     return {
       managedByUs: !!raw.valid,
+      notNeeded: false,
       taxAdvisor: '',
       taxAdvisorEmail: '',
       years: [],
@@ -70,6 +78,7 @@ function migrateTax(raw: any) {
   }
   return {
     managedByUs: raw.managedByUs ?? false,
+    notNeeded: raw.notNeeded ?? false,
     taxAdvisor: raw.taxAdvisor ?? '',
     taxAdvisorEmail: raw.taxAdvisorEmail ?? '',
     years: raw.years ?? [],
