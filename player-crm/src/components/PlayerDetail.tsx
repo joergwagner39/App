@@ -2,7 +2,10 @@
 
 import { Player, Todo } from '@/lib/types'
 import {
+  CONTACT_THRESHOLD_DAYS,
+  VISIT_THRESHOLD_DAYS,
   daysUntilNextSatisfactionCheckIn,
+  describeRecency,
   idCardStatus,
   insuranceStatus,
   lastContactStatus,
@@ -36,6 +39,16 @@ function formatDateDE(isoDate: string): string {
   if (!match) return isoDate
   const [, year, month, day] = match
   return `${day}.${month}.${year}`
+}
+
+function recencyLabel(prefix: string, isoDate: string | undefined, thresholdDays: number): string {
+  const info = describeRecency(isoDate, thresholdDays)
+  if (!isoDate || !info) return prefix
+  const dateText = formatDateDE(isoDate)
+  if (info.daysRemaining >= 0) {
+    return `✓ ${prefix}: ${dateText} · noch ${info.daysRemaining} Tag${info.daysRemaining === 1 ? '' : 'e'} grün`
+  }
+  return `${prefix}: ${dateText} · seit ${info.daysAgo} Tagen (Grenze: ${thresholdDays} Tage)`
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -308,22 +321,14 @@ export default function PlayerDetail({
               <StatusBadge color={taxStatus(player)} label="Steuer" />
               <StatusBadge
                 color={lastContactStatus(player)}
-                label={
-                  player.lastContact
-                    ? `Letzter Kontakt: ${formatDateDE(player.lastContact)}`
-                    : 'Letzter Kontakt'
-                }
-                title="Klicken, um heute als letzten Kontakt zu setzen"
+                label={recencyLabel('Letzter Kontakt', player.lastContact, CONTACT_THRESHOLD_DAYS)}
+                title={`Grün, wenn der letzte Kontakt max. ${CONTACT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Kontakt einzutragen.`}
                 onClick={() => addContact(new Date().toISOString().slice(0, 10))}
               />
               <StatusBadge
                 color={lastPersonalVisitStatus(player)}
-                label={
-                  player.lastPersonalVisit
-                    ? `Letzter Besuch: ${formatDateDE(player.lastPersonalVisit)}`
-                    : 'Letzter Besuch'
-                }
-                title="Klicken, um heute als letzten persönlichen Besuch zu setzen"
+                label={recencyLabel('Letzter Besuch', player.lastPersonalVisit, VISIT_THRESHOLD_DAYS)}
+                title={`Grün, wenn der letzte persönliche Besuch max. ${VISIT_THRESHOLD_DAYS} Tage her ist. Klicken, um heute als Besuch einzutragen.`}
                 onClick={() => addPersonalVisit(new Date().toISOString().slice(0, 10))}
               />
             </div>
@@ -699,7 +704,10 @@ export default function PlayerDetail({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
+          <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Badge oben ist grün, solange der letzte Kontakt max. {CONTACT_THRESHOLD_DAYS} Tage her ist.
+          </p>
           <Field label="Datum (Anruf/Nachricht/E-Mail)">
             <input
               type="date"
@@ -731,7 +739,10 @@ export default function PlayerDetail({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter persönlicher Besuch</h2>
+          <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter persönlicher Besuch</h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Badge oben ist grün, solange der letzte Besuch max. {VISIT_THRESHOLD_DAYS} Tage her ist.
+          </p>
           <Field label="Datum (vor Ort/Termin)">
             <input
               type="date"

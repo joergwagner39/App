@@ -30,12 +30,15 @@ export function isCriticalSatisfaction(value: number): boolean {
   return value <= 5
 }
 
+export const CONTACT_THRESHOLD_DAYS = 14
+export const VISIT_THRESHOLD_DAYS = 30
+
 export function lastContactStatus(player: Player): 'green' | 'red' {
   if (!player.lastContact) return 'red'
   const date = parseISO(player.lastContact)
   if (!isValid(date)) return 'red'
   const days = differenceInCalendarDays(new Date(), date)
-  return days <= 14 ? 'green' : 'red'
+  return days <= CONTACT_THRESHOLD_DAYS ? 'green' : 'red'
 }
 
 export function lastPersonalVisitStatus(player: Player): 'green' | 'red' {
@@ -43,7 +46,20 @@ export function lastPersonalVisitStatus(player: Player): 'green' | 'red' {
   const date = parseISO(player.lastPersonalVisit)
   if (!isValid(date)) return 'red'
   const days = differenceInCalendarDays(new Date(), date)
-  return days <= 30 ? 'green' : 'red'
+  return days <= VISIT_THRESHOLD_DAYS ? 'green' : 'red'
+}
+
+// Human-readable recency info: how many days since the last date, and how
+// many days remain before it turns red (negative once already overdue).
+export function describeRecency(
+  isoDate: string | undefined,
+  thresholdDays: number
+): { daysAgo: number; daysRemaining: number } | null {
+  if (!isoDate) return null
+  const date = parseISO(isoDate)
+  if (!isValid(date)) return null
+  const daysAgo = differenceInCalendarDays(new Date(), date)
+  return { daysAgo, daysRemaining: thresholdDays - daysAgo }
 }
 
 function currentMonthKey(): string {
