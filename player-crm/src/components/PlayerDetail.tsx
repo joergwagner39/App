@@ -325,20 +325,21 @@ export default function PlayerDetail({
             <div className="mt-1 flex flex-wrap gap-2 px-2">
               <StatusBadge
                 color={idCardStatus(player)}
-                label="Ausweis"
-                title={idCardReason(player) ?? 'Ausweis gültig'}
+                label={idCardReason(player) ? `Ausweis: ${idCardReason(player)}` : 'Ausweis'}
                 onClick={() => scrollToSection('section-ausweis')}
               />
               <StatusBadge
                 color={insuranceStatus(player)}
-                label="Versicherung"
-                title={insuranceReason(player) ?? 'Auswahl getroffen'}
+                label={
+                  insuranceReason(player)
+                    ? `Versicherung: ${insuranceReason(player)}`
+                    : 'Versicherung'
+                }
                 onClick={() => scrollToSection('section-versicherung')}
               />
               <StatusBadge
                 color={taxStatus(player)}
-                label="Steuer"
-                title={taxReason(player) ?? 'Steuer erledigt'}
+                label={taxReason(player) ? `Steuer: ${taxReason(player)}` : 'Steuer'}
                 onClick={() => scrollToSection('section-steuer')}
               />
               <StatusBadge
