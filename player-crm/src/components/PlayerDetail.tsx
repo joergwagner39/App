@@ -6,11 +6,14 @@ import {
   VISIT_THRESHOLD_DAYS,
   daysUntilNextSatisfactionCheckIn,
   describeRecency,
+  idCardReason,
   idCardStatus,
+  insuranceReason,
   insuranceStatus,
   lastContactStatus,
   lastPersonalVisitStatus,
   satisfactionCheckInDoneThisMonth,
+  taxReason,
   taxStatus,
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
@@ -323,16 +326,19 @@ export default function PlayerDetail({
               <StatusBadge
                 color={idCardStatus(player)}
                 label="Ausweis"
+                title={idCardReason(player) ?? 'Ausweis gültig'}
                 onClick={() => scrollToSection('section-ausweis')}
               />
               <StatusBadge
                 color={insuranceStatus(player)}
                 label="Versicherung"
+                title={insuranceReason(player) ?? 'Auswahl getroffen'}
                 onClick={() => scrollToSection('section-versicherung')}
               />
               <StatusBadge
                 color={taxStatus(player)}
                 label="Steuer"
+                title={taxReason(player) ?? 'Steuer erledigt'}
                 onClick={() => scrollToSection('section-steuer')}
               />
               <StatusBadge
@@ -659,6 +665,12 @@ export default function PlayerDetail({
             </Field>
           </div>
 
+          {insuranceReason(player) && (
+            <p className="mt-3 text-xs font-medium text-red-600">
+              Bitte Auswahl treffen – aktuell wurde nichts ausgewählt.
+            </p>
+          )}
+
           <div className="mt-3">
             <span className="mb-1 block text-xs font-medium text-slate-500">Unterlagen</span>
             <FileList
@@ -778,6 +790,14 @@ export default function PlayerDetail({
               />
             </Field>
           </div>
+
+          {taxReason(player) && (
+            <p className="mt-3 text-xs font-medium text-red-600">
+              {player.tax.years.length === 0
+                ? 'Bitte Auswahl treffen – aktuell wurde nichts ausgewählt.'
+                : taxReason(player)}
+            </p>
+          )}
 
           <div className="mt-3">
             <span className="mb-1 block text-xs font-medium text-slate-500">Unterlagen</span>
