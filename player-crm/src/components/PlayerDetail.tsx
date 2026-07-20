@@ -727,7 +727,8 @@ export default function PlayerDetail({
 
               <div className="mt-3">
                 <span className="mb-1 block text-xs font-medium text-slate-500">
-                  Jahre (nur das zuletzt erfasste Jahr muss erledigt sein, damit "Steuer" grün ist)
+                  Jährliche Überprüfung (am besten im Sommer) – nur das zuletzt erfasste Jahr muss
+                  erledigt sein, damit "Steuer" grün ist
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {[...player.tax.years]
