@@ -705,8 +705,15 @@ export default function PlayerDetail({
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter Kontakt</h2>
-          <p className="mb-3 text-xs text-slate-400">
-            Badge oben ist grün, solange der letzte Kontakt max. {CONTACT_THRESHOLD_DAYS} Tage her ist.
+          <p className="mb-1 text-xs text-slate-400">
+            Grün, solange der letzte Kontakt max. {CONTACT_THRESHOLD_DAYS} Tage her ist.
+          </p>
+          <p
+            className={`mb-3 text-xs font-medium ${
+              lastContactStatus(player) === 'green' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {recencyLabel('Status', player.lastContact, CONTACT_THRESHOLD_DAYS)}
           </p>
           <Field label="Datum (Anruf/Nachricht/E-Mail)">
             <input
@@ -740,8 +747,15 @@ export default function PlayerDetail({
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-1 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">Letzter persönlicher Besuch</h2>
-          <p className="mb-3 text-xs text-slate-400">
-            Badge oben ist grün, solange der letzte Besuch max. {VISIT_THRESHOLD_DAYS} Tage her ist.
+          <p className="mb-1 text-xs text-slate-400">
+            Grün, solange der letzte Besuch max. {VISIT_THRESHOLD_DAYS} Tage her ist.
+          </p>
+          <p
+            className={`mb-3 text-xs font-medium ${
+              lastPersonalVisitStatus(player) === 'green' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {recencyLabel('Status', player.lastPersonalVisit, VISIT_THRESHOLD_DAYS)}
           </p>
           <Field label="Datum (vor Ort/Termin)">
             <input
