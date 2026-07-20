@@ -69,7 +69,9 @@ export interface Player {
   satisfactionHistory: { month: string; value: number; reason?: string }[] // "YYYY-MM" -> value
 
   lastContact?: string // ISO date
+  contactHistory: string[] // ISO dates, most recent last
   lastPersonalVisit?: string // ISO date
+  personalVisitHistory: string[] // ISO dates, most recent last
 
   todos: Todo[]
 
@@ -124,7 +126,9 @@ export function createEmptyPlayer(): Player {
     satisfaction: 5,
     satisfactionHistory: [],
     lastContact: '',
+    contactHistory: [],
     lastPersonalVisit: '',
+    personalVisitHistory: [],
     todos: [],
     family: '',
     notes: '',

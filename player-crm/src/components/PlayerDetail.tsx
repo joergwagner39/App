@@ -99,6 +99,22 @@ export default function PlayerDetail({
     update({ staff: { ...player.staff, ...patch } })
   }
 
+  function addContact(date: string) {
+    if (!date) return
+    const history = player.contactHistory.includes(date)
+      ? player.contactHistory
+      : [...player.contactHistory, date]
+    update({ lastContact: date, contactHistory: history })
+  }
+
+  function addPersonalVisit(date: string) {
+    if (!date) return
+    const history = player.personalVisitHistory.includes(date)
+      ? player.personalVisitHistory
+      : [...player.personalVisitHistory, date]
+    update({ lastPersonalVisit: date, personalVisitHistory: history })
+  }
+
   function updateInsurance(patch: Partial<Player['insurance']>) {
     update({ insurance: { ...player.insurance, ...patch } })
   }
@@ -298,7 +314,7 @@ export default function PlayerDetail({
                     : 'Letzter Kontakt'
                 }
                 title="Klicken, um heute als letzten Kontakt zu setzen"
-                onClick={() => update({ lastContact: new Date().toISOString().slice(0, 10) })}
+                onClick={() => addContact(new Date().toISOString().slice(0, 10))}
               />
               <StatusBadge
                 color={lastPersonalVisitStatus(player)}
@@ -308,9 +324,7 @@ export default function PlayerDetail({
                     : 'Letzter Besuch'
                 }
                 title="Klicken, um heute als letzten persönlichen Besuch zu setzen"
-                onClick={() =>
-                  update({ lastPersonalVisit: new Date().toISOString().slice(0, 10) })
-                }
+                onClick={() => addPersonalVisit(new Date().toISOString().slice(0, 10))}
               />
             </div>
           </div>
@@ -691,15 +705,29 @@ export default function PlayerDetail({
               type="date"
               className={inputClass}
               value={player.lastContact ?? ''}
-              onChange={(e) => update({ lastContact: e.target.value })}
+              onChange={(e) => addContact(e.target.value)}
             />
           </Field>
           <button
-            onClick={() => update({ lastContact: new Date().toISOString().slice(0, 10) })}
-            className="mt-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
+            onClick={() => addContact(new Date().toISOString().slice(0, 10))}
+            className="mt-2 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
           >
-            Heute als Kontakt setzen
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Jetzt als Kontakt eintragen
           </button>
+          {player.contactHistory.length > 0 && (
+            <div className="mt-3 max-h-32 overflow-y-auto border-t border-slate-100 pt-2">
+              <span className="mb-1 block text-xs font-medium text-slate-500">Verlauf</span>
+              <ul className="space-y-1 text-xs text-slate-500">
+                {[...player.contactHistory]
+                  .sort()
+                  .reverse()
+                  .map((d) => (
+                    <li key={d}>{formatDateDE(d)}</li>
+                  ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -709,15 +737,29 @@ export default function PlayerDetail({
               type="date"
               className={inputClass}
               value={player.lastPersonalVisit ?? ''}
-              onChange={(e) => update({ lastPersonalVisit: e.target.value })}
+              onChange={(e) => addPersonalVisit(e.target.value)}
             />
           </Field>
           <button
-            onClick={() => update({ lastPersonalVisit: new Date().toISOString().slice(0, 10) })}
-            className="mt-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
+            onClick={() => addPersonalVisit(new Date().toISOString().slice(0, 10))}
+            className="mt-2 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
           >
-            Heute als Besuch setzen
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Jetzt als Besuch eintragen
           </button>
+          {player.personalVisitHistory.length > 0 && (
+            <div className="mt-3 max-h-32 overflow-y-auto border-t border-slate-100 pt-2">
+              <span className="mb-1 block text-xs font-medium text-slate-500">Verlauf</span>
+              <ul className="space-y-1 text-xs text-slate-500">
+                {[...player.personalVisitHistory]
+                  .sort()
+                  .reverse()
+                  .map((d) => (
+                    <li key={d}>{formatDateDE(d)}</li>
+                  ))}
+              </ul>
+            </div>
+          )}
         </div>
       </section>
 

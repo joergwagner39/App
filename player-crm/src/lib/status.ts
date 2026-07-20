@@ -35,7 +35,7 @@ export function lastContactStatus(player: Player): 'green' | 'red' {
   const date = parseISO(player.lastContact)
   if (!isValid(date)) return 'red'
   const days = differenceInCalendarDays(new Date(), date)
-  return days <= 7 ? 'green' : 'red'
+  return days <= 14 ? 'green' : 'red'
 }
 
 export function lastPersonalVisitStatus(player: Player): 'green' | 'red' {

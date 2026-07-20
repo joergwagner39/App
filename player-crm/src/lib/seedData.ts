@@ -63,7 +63,9 @@ export function seedPlayers(): Player[] {
         { month: monthsAgo(0), value: 8 },
       ],
       lastContact: now.slice(0, 10),
+      contactHistory: [now.slice(0, 10)],
       lastPersonalVisit: now.slice(0, 10),
+      personalVisitHistory: [now.slice(0, 10)],
       todos: [
         {
           id: crypto.randomUUID(),
@@ -130,7 +132,9 @@ export function seedPlayers(): Player[] {
       satisfaction: 4,
       satisfactionHistory: [{ month: monthsAgo(0), value: 4, reason: 'Unzufrieden mit Spielzeit (Beispiel)' }],
       lastContact: '',
+      contactHistory: [],
       lastPersonalVisit: '',
+      personalVisitHistory: [],
       todos: [
         {
           id: crypto.randomUUID(),
