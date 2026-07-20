@@ -6,13 +6,16 @@ import {
   VISIT_THRESHOLD_DAYS,
   daysUntilNextSatisfactionCheckIn,
   describeRecency,
+  dueReminderCount,
   idCardReason,
   idCardStatus,
   insuranceReason,
   insuranceStatus,
   lastContactStatus,
   lastPersonalVisitStatus,
+  openTodoCount,
   satisfactionCheckInDoneThisMonth,
+  satisfactionStatus,
   taxReason,
   taxStatus,
 } from '@/lib/status'
@@ -359,6 +362,20 @@ export default function PlayerDetail({
                   addPersonalVisit(new Date().toISOString().slice(0, 10))
                   scrollToSection('section-besuch')
                 }}
+              />
+              <StatusBadge
+                color={satisfactionStatus(player)}
+                label={`Zufriedenheit: ${player.satisfaction}/10`}
+                onClick={() => scrollToSection('section-zufriedenheit')}
+              />
+              <StatusBadge
+                color={dueReminderCount(player) > 0 ? 'red' : 'green'}
+                label={
+                  openTodoCount(player) > 0
+                    ? `To-Dos: ${openTodoCount(player)} offen`
+                    : 'To-Dos: keine offen'
+                }
+                onClick={() => scrollToSection('section-todos')}
               />
             </div>
           </div>
@@ -895,7 +912,7 @@ export default function PlayerDetail({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section id="section-zufriedenheit" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
             Zufriedenheit
@@ -987,7 +1004,7 @@ export default function PlayerDetail({
       </section>
 
       {/* To-Dos */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section id="section-todos" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="mb-3 flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-wide text-navy-600">
           To-Dos & Erinnerungen
         </h2>
