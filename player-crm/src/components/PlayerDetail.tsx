@@ -283,8 +283,20 @@ export default function PlayerDetail({
               <StatusBadge color={idCardStatus(player)} label="Ausweis" />
               <StatusBadge color={insuranceStatus(player)} label="Versicherung" />
               <StatusBadge color={taxStatus(player)} label="Steuer" />
-              <StatusBadge color={lastContactStatus(player)} label="Letzter Kontakt" />
-              <StatusBadge color={lastPersonalVisitStatus(player)} label="Letzter Besuch" />
+              <StatusBadge
+                color={lastContactStatus(player)}
+                label="Letzter Kontakt"
+                title="Klicken, um heute als letzten Kontakt zu setzen"
+                onClick={() => update({ lastContact: new Date().toISOString().slice(0, 10) })}
+              />
+              <StatusBadge
+                color={lastPersonalVisitStatus(player)}
+                label="Letzter Besuch"
+                title="Klicken, um heute als letzten persönlichen Besuch zu setzen"
+                onClick={() =>
+                  update({ lastPersonalVisit: new Date().toISOString().slice(0, 10) })
+                }
+              />
             </div>
           </div>
         </div>

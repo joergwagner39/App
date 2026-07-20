@@ -15,16 +15,35 @@ const dotStyles: Record<Color, string> = {
 export default function StatusBadge({
   color,
   label,
+  onClick,
+  title,
 }: {
   color: Color
   label: string
+  onClick?: () => void
+  title?: string
 }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${styles[color]}`}
-    >
+  const className = `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${styles[color]}${
+    onClick ? ' cursor-pointer hover:brightness-95' : ''
+  }`
+  const content = (
+    <>
       <span className={`h-2 w-2 rounded-full ${dotStyles[color]}`} />
       {label}
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className} title={title}>
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <span className={className} title={title}>
+      {content}
     </span>
   )
 }
