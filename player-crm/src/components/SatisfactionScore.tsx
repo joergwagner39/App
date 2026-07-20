@@ -21,29 +21,43 @@ export default function SatisfactionScore({
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-8 max-w-xs flex-1 items-end gap-0.5">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            type="button"
-            disabled={readOnly}
-            onClick={() => onChange?.(n)}
-            className={`flex-1 rounded-t-sm transition-all ${
-              n <= value
-                ? isCriticalSatisfaction(n)
-                  ? 'bg-red-500'
-                  : 'bg-green-500'
-                : 'bg-slate-200'
-            }`}
-            style={{ height: `${8 + n * 2.4}px` }}
-            title={`${n}`}
-          />
-        ))}
+      <div className="flex max-w-sm flex-1 items-end gap-1">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+          const selected = n === value
+          return (
+            <button
+              key={n}
+              type="button"
+              disabled={readOnly}
+              onClick={() => onChange?.(n)}
+              title={`${n}`}
+              className="flex flex-1 flex-col items-center gap-1"
+            >
+              <div
+                className={`h-12 w-full rounded-t-sm transition-all ${
+                  n <= value
+                    ? isCriticalSatisfaction(n)
+                      ? 'bg-red-500'
+                      : 'bg-green-500'
+                    : 'bg-slate-200'
+                } ${selected ? 'ring-2 ring-offset-1 ring-navy-600' : ''}`}
+                style={{ height: `${16 + n * 3.6}px` }}
+              />
+              <span
+                className={`text-[10px] leading-none ${
+                  selected ? 'font-bold text-navy-700' : 'text-slate-400'
+                }`}
+              >
+                {n}
+              </span>
+            </button>
+          )
+        })}
       </div>
       <div
         className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${colorClasses[status]}`}
       >
-        {value}/10
+        Ausgewählt: {value}/10
         {critical && <span className="font-normal">· kritisch</span>}
       </div>
     </div>

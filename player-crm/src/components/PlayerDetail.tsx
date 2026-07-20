@@ -203,6 +203,10 @@ export default function PlayerDetail({
 
   const [draftSatisfaction, setDraftSatisfaction] = useState(player.satisfaction)
 
+  useEffect(() => {
+    setDraftSatisfaction(player.satisfaction)
+  }, [player.id])
+
   const checkInDone = satisfactionCheckInDoneThisMonth(player)
   const daysUntilCheckIn = daysUntilNextSatisfactionCheckIn()
   const nextCheckInDate = new Date()
