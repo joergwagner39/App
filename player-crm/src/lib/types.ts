@@ -23,6 +23,8 @@ export interface Player {
   height?: string // e.g. "1,84 m"
   clothingSize?: string // e.g. "L"
   photoUrl?: string
+  contractUntil?: string // ISO date – Vertrag bis
+  injuries: string // bisherige Verletzungen (Freitext)
 
   address: {
     street: string
@@ -33,7 +35,7 @@ export interface Player {
 
   staff: {
     playerRelations?: string // zuständiger Mitarbeiter Player Relations
-    ceo?: string // Geschäftsführer
+    ceo?: string // Geschäftsführer / Partner
     scout?: string // Talentberater
   }
 
@@ -103,6 +105,8 @@ export function createEmptyPlayer(): Player {
     height: '',
     clothingSize: '',
     photoUrl: '',
+    contractUntil: '',
+    injuries: '',
     address: { street: '', zip: '', city: '', country: '' },
     staff: { playerRelations: '', ceo: '', scout: '' },
     idCard: {},

@@ -437,6 +437,25 @@ export default function PlayerDetail({
               onChange={(e) => update({ clothingSize: e.target.value })}
             />
           </Field>
+          <Field label="Vertrag bis">
+            <input
+              type="date"
+              className={inputClass}
+              value={player.contractUntil ?? ''}
+              onChange={(e) => update({ contractUntil: e.target.value })}
+            />
+          </Field>
+        </div>
+
+        <div className="mt-4">
+          <Field label="Bisherige Verletzungen">
+            <textarea
+              className={`${inputClass} h-20 resize-none`}
+              placeholder="z.B. Kreuzbandriss 2023 (6 Monate), Sprunggelenk 2024…"
+              value={player.injuries}
+              onChange={(e) => update({ injuries: e.target.value })}
+            />
+          </Field>
         </div>
 
         <h3 className="mb-2 mt-4 text-sm font-medium text-slate-500">Adresse</h3>
@@ -480,7 +499,7 @@ export default function PlayerDetail({
               onChange={(e) => updateStaff({ playerRelations: e.target.value })}
             />
           </Field>
-          <Field label="Geschäftsführer">
+          <Field label="Geschäftsführer / Partner">
             <input
               className={inputClass}
               value={player.staff.ceo ?? ''}

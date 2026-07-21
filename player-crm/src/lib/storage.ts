@@ -116,6 +116,8 @@ function migrate(raw: any): Player {
     notes: raw.notes ?? '',
     conversationNotes: raw.conversationNotes ?? '',
     photoUrl: raw.photoUrl ?? '',
+    contractUntil: raw.contractUntil ?? '',
+    injuries: raw.injuries ?? '',
     contactHistory: raw.contactHistory ?? [],
     lastPersonalVisit: raw.lastPersonalVisit ?? '',
     personalVisitHistory: raw.personalVisitHistory ?? [],

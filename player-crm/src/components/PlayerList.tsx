@@ -12,8 +12,12 @@ import {
 } from '@/lib/status'
 import StatusBadge from './StatusBadge'
 import Avatar from './Avatar'
-import { Plus, Search, Shirt } from 'lucide-react'
+import { Filter, Plus, Search, Shirt } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+function distinctValues(values: (string | undefined)[]): string[] {
+  return Array.from(new Set(values.filter((v): v is string => !!v && v.trim() !== ''))).sort()
+}
 
 export default function PlayerList({
   players,
@@ -27,18 +31,40 @@ export default function PlayerList({
   onCreate: () => void
 }) {
   const [query, setQuery] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [clubFilter, setClubFilter] = useState('')
+  const [prFilter, setPrFilter] = useState('')
+  const [ceoFilter, setCeoFilter] = useState('')
+  const [scoutFilter, setScoutFilter] = useState('')
+
+  const clubs = useMemo(() => distinctValues(players.map((p) => p.club)), [players])
+  const prStaff = useMemo(
+    () => distinctValues(players.map((p) => p.staff.playerRelations)),
+    [players]
+  )
+  const ceos = useMemo(() => distinctValues(players.map((p) => p.staff.ceo)), [players])
+  const scouts = useMemo(() => distinctValues(players.map((p) => p.staff.scout)), [players])
+
+  const activeFilterCount = [clubFilter, prFilter, ceoFilter, scoutFilter].filter(Boolean).length
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return players
-    return players.filter((p) =>
-      `${p.firstName} ${p.lastName} ${p.club}`.toLowerCase().includes(q)
-    )
-  }, [players, query])
+    return players.filter((p) => {
+      if (q && !`${p.firstName} ${p.lastName} ${p.club}`.toLowerCase().includes(q)) return false
+      if (clubFilter && p.club !== clubFilter) return false
+      if (prFilter && p.staff.playerRelations !== prFilter) return false
+      if (ceoFilter && p.staff.ceo !== ceoFilter) return false
+      if (scoutFilter && p.staff.scout !== scoutFilter) return false
+      return true
+    })
+  }, [players, query, clubFilter, prFilter, ceoFilter, scoutFilter])
+
+  const filterSelectClass =
+    'w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none'
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 p-4">
+      <div className="flex items-center gap-2 p-4 pb-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
@@ -49,6 +75,20 @@ export default function PlayerList({
           />
         </div>
         <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`relative flex items-center gap-1 rounded-lg border px-2.5 py-2 text-sm ${
+            showFilters || activeFilterCount > 0
+              ? 'border-brand-500 bg-brand-50 text-brand-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-brand-300'
+          }`}
+          title="Filter"
+        >
+          <Filter className="h-4 w-4" />
+          {activeFilterCount > 0 && (
+            <span className="text-xs font-semibold">{activeFilterCount}</span>
+          )}
+        </button>
+        <button
           onClick={onCreate}
           className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
         >
@@ -56,6 +96,90 @@ export default function PlayerList({
           Neu
         </button>
       </div>
+
+      {showFilters && (
+        <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+          <label className="block">
+            <span className="mb-0.5 block text-[10px] font-medium text-slate-400">Verein</span>
+            <select
+              value={clubFilter}
+              onChange={(e) => setClubFilter(e.target.value)}
+              className={filterSelectClass}
+            >
+              <option value="">Alle</option>
+              {clubs.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-0.5 block text-[10px] font-medium text-slate-400">
+              Player Relations
+            </span>
+            <select
+              value={prFilter}
+              onChange={(e) => setPrFilter(e.target.value)}
+              className={filterSelectClass}
+            >
+              <option value="">Alle</option>
+              {prStaff.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-0.5 block text-[10px] font-medium text-slate-400">
+              Geschäftsführer / Partner
+            </span>
+            <select
+              value={ceoFilter}
+              onChange={(e) => setCeoFilter(e.target.value)}
+              className={filterSelectClass}
+            >
+              <option value="">Alle</option>
+              {ceos.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-0.5 block text-[10px] font-medium text-slate-400">
+              Talentberater
+            </span>
+            <select
+              value={scoutFilter}
+              onChange={(e) => setScoutFilter(e.target.value)}
+              className={filterSelectClass}
+            >
+              <option value="">Alle</option>
+              {scouts.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={() => {
+                setClubFilter('')
+                setPrFilter('')
+                setCeoFilter('')
+                setScoutFilter('')
+              }}
+              className="col-span-2 rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+            >
+              Filter zurücksetzen
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {filtered.length === 0 && (

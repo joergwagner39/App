@@ -19,6 +19,8 @@ export function seedPlayers(): Player[] {
       height: '1,80 m',
       clothingSize: 'M',
       photoUrl: '',
+      contractUntil: '2027-06-30',
+      injuries: 'Beispiel: Muskelfaserriss 2024 (4 Wochen Pause)',
       address: {
         street: 'Musterweg 12 (Beispiel)',
         zip: '52152',
@@ -100,6 +102,8 @@ export function seedPlayers(): Player[] {
       height: '1,72 m',
       clothingSize: 'S',
       photoUrl: '',
+      contractUntil: '',
+      injuries: '',
       address: {
         street: 'Beispielallee 5',
         zip: '10115',
