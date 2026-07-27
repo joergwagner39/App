@@ -5,8 +5,9 @@ import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import {
   Heart, Moon, Activity, Zap, Battery, Thermometer,
-  RefreshCw, AlertCircle, TrendingUp, Timer, Flame, Footprints, Settings
+  RefreshCw, AlertCircle, TrendingUp, Timer, Flame, Footprints, Settings, BookHeart
 } from 'lucide-react'
+import Link from 'next/link'
 
 import type { DashboardData, GarminActivityData, GarminDailyData } from '@/types'
 import { calculateTrainingRecommendation } from '@/lib/trainingRecommendation'
@@ -204,6 +205,14 @@ export default function Dashboard() {
                   Garmin {!hasGarmin && <span className="text-gray-600">— keine FIT-Daten</span>}
                 </div>
               </div>
+              <Link
+                href="/journal"
+                title="Abendrückblick"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-emerald-300 transition-colors text-sm"
+              >
+                <BookHeart className="w-4 h-4" />
+                <span className="hidden sm:inline">Abendrückblick</span>
+              </Link>
               <button onClick={() => loadData()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
