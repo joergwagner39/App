@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Trophy, Heart, Lightbulb, Sunrise, PenLine, Plus, ChevronDown } from 'lucide-react'
+import { Sparkles, Heart, Sunrise, PenLine, Plus, ChevronDown } from 'lucide-react'
 
 import type { JournalEntry } from '@/lib/journal'
 import MoodScale from './MoodScale'
@@ -55,10 +55,9 @@ export default function JournalEditor({ entry, onChange }: JournalEditorProps) {
   )
   const shownLines = Math.min(3, Math.max(visibleLines, filledGratitude))
 
-  const optionalFilled = [entry.wins, entry.lifeIsBeautiful, entry.learned].filter((v) =>
-    v.trim(),
-  ).length
-  const [showOptional, setShowOptional] = useState(optionalFilled > 0)
+  // "Gut geklappt" und "Gelernt" stehen jetzt als Frage über den Gedanken zum Tag –
+  // hier bleibt nur, was wirklich ein eigenes Feld verdient.
+  const [showOptional, setShowOptional] = useState(() => entry.lifeIsBeautiful.trim().length > 0)
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -101,12 +100,12 @@ export default function JournalEditor({ entry, onChange }: JournalEditorProps) {
       <Section
         icon={<PenLine size={22} />}
         title="Gedanken zum Tag"
-        hint="Ohne Vorgabe – was dir durch den Kopf geht, so lang oder kurz wie es kommt."
+        hint="Was hat gut geklappt? Was hast du heute gelernt?"
       >
         <textarea
           value={entry.notes}
           onChange={(e) => update({ notes: e.target.value })}
-          placeholder="Heute war …"
+          placeholder="Gut geklappt hat …"
           rows={5}
           className={fieldClass}
         />
@@ -148,49 +147,21 @@ export default function JournalEditor({ entry, onChange }: JournalEditorProps) {
           />
           <span className="min-w-0">
             <span className="block font-medium text-gray-200">Wenn du heute mehr Zeit hast</span>
-            <span className="block text-sm text-gray-500">
-              {optionalFilled > 0
-                ? `${optionalFilled} von 3 ausgefüllt`
-                : 'z. B. Was hat heute gut geklappt? Was hast du gelernt?'}
-            </span>
+            <span className="block text-sm text-gray-500">Das Leben ist schön, weil …</span>
           </span>
         </button>
 
         {showOptional && (
           <div className="mt-3 space-y-4 sm:space-y-5">
             <Section
-              icon={<Trophy size={22} />}
-              title="Was hat heute gut geklappt?"
-              hint="Auch das Kleine zählt: ein gutes Gespräch, eine erledigte Sache, Nein gesagt."
+              icon={<Sparkles size={22} />}
+              title="Das Leben ist schön, weil …"
+              hint="Der große Satz – nicht jeden Abend, aber wenn er kommt, gehört er aufgeschrieben."
             >
-              <textarea
-                value={entry.wins}
-                onChange={(e) => update({ wins: e.target.value })}
-                placeholder="Heute ist mir gelungen …"
-                rows={3}
-                className={fieldClass}
-              />
-            </Section>
-
-            <Section icon={<Sparkles size={22} />} title="Das Leben ist schön, weil …">
               <textarea
                 value={entry.lifeIsBeautiful}
                 onChange={(e) => update({ lifeIsBeautiful: e.target.value })}
                 placeholder="… weil"
-                rows={3}
-                className={fieldClass}
-              />
-            </Section>
-
-            <Section
-              icon={<Lightbulb size={22} />}
-              title="Was hast du heute gelernt?"
-              hint="Über dich, über andere, über die Welt. Auch aus dem, was schiefging."
-            >
-              <textarea
-                value={entry.learned}
-                onChange={(e) => update({ learned: e.target.value })}
-                placeholder="Mir ist aufgefallen …"
                 rows={3}
                 className={fieldClass}
               />
