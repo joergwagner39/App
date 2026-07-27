@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Dein persönliches Health & Training Dashboard',
   appleWebApp: {
     capable: true,
-    title: "Schön war heute",
+    title: "Heute war schön",
     statusBarStyle: 'black-translucent',
   },
 }

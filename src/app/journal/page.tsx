@@ -132,7 +132,7 @@ export default function JournalPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `schoen-war-heute-${todayKey()}.json`
+    a.download = `heute-war-schoen-${todayKey()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }, [entries])
@@ -211,7 +211,7 @@ export default function JournalPage() {
             </p>
             <h1 className="mt-1 flex items-center gap-3 text-2xl font-semibold text-gray-100 sm:text-3xl">
               <BookHeart className="text-emerald-400" size={28} />
-              Schön war heute
+              Heute war schön
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               Ein paar ruhige Minuten für den Tag – und eine Kurve, die zeigt, wohin es geht.
