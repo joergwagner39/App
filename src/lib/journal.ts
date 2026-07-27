@@ -80,7 +80,7 @@ export function isEntryEmpty(entry: JournalEntry): boolean {
 }
 
 /** Migriert unbekannte/ältere Datensätze auf die aktuelle Form. */
-function normalize(raw: unknown): JournalEntry | null {
+export function normalize(raw: unknown): JournalEntry | null {
   if (!raw || typeof raw !== 'object') return null
   const e = raw as Partial<JournalEntry>
   if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return null

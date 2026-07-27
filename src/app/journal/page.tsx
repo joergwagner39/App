@@ -17,6 +17,10 @@ import {
   isEntryEmpty, loadEntries, moodColor, moodSeries, parseImport, saveEntries,
   todayKey, upsertEntry, type JournalEntry,
 } from '@/lib/journal'
+import {
+  deleteRemote, fetchRemote, flushPending, getToken, merge, pushEntries,
+  rememberPending, setToken, type SyncState,
+} from '@/lib/journalSync'
 
 type Tab = 'heute' | 'verlauf' | 'eintraege'
 type Range = 14 | 30 | 90 | null
@@ -64,6 +68,9 @@ export default function JournalPage() {
   const [range, setRange] = useState<Range>(30)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [importError, setImportError] = useState<string | null>(null)
+  const [syncState, setSyncState] = useState<SyncState>('off')
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [token, setTokenState] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -75,8 +82,42 @@ export default function JournalPage() {
     const today = todayKey()
     setActiveDate(today)
     setDraft(stored.find((e) => e.date === today) ?? emptyEntry(today))
+    setTokenState(getToken())
     setLoaded(true)
   }, [])
+
+  /** Holt den Serverstand und führt ihn mit dem lokalen zusammen. */
+  const syncNow = useCallback(async (activeToken: string) => {
+    if (!activeToken) {
+      setSyncState('off')
+      return
+    }
+    setSyncState('syncing')
+    setSyncError(null)
+    try {
+      const remote = await fetchRemote(activeToken)
+      const local = loadEntries()
+      const { merged, toPush } = merge(local, remote)
+      saveEntries(merged)
+      setEntries(merged)
+      setDraft((current) => merged.find((e) => e.date === current.date) ?? current)
+      await pushEntries(activeToken, toPush)
+      await flushPending(activeToken, merged)
+      setSyncState('ok')
+    } catch (err) {
+      setSyncState('error')
+      setSyncError(err instanceof Error ? err.message : 'Abgleich fehlgeschlagen')
+    }
+  }, [])
+
+  // Beim Start abgleichen und immer, wenn das Gerät wieder online geht
+  useEffect(() => {
+    if (!loaded || !token) return
+    void syncNow(token)
+    const onOnline = () => void syncNow(token)
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [loaded, token, syncNow])
 
   const openDate = useCallback(
     (date: string, list?: JournalEntry[]) => {
@@ -90,23 +131,39 @@ export default function JournalPage() {
   )
 
   // Autosave: 800ms nachdem die Tastatur ruhig ist
-  const handleDraftChange = useCallback((next: JournalEntry) => {
-    setDraft(next)
-    setSaveState('saving')
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      setEntries((prev) => {
-        const merged = isEntryEmpty(next)
-          ? prev.filter((e) => e.date !== next.date)
-          : upsertEntry(prev, next)
-        saveEntries(merged)
-        return merged
-      })
-      setSaveState('saved')
-      if (savedTimer.current) clearTimeout(savedTimer.current)
-      savedTimer.current = setTimeout(() => setSaveState('idle'), 2500)
-    }, 800)
-  }, [])
+  const handleDraftChange = useCallback(
+    (next: JournalEntry) => {
+      setDraft(next)
+      setSaveState('saving')
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => {
+        const stamped = { ...next, updatedAt: new Date().toISOString() }
+        const removed = isEntryEmpty(stamped)
+        setEntries((prev) => {
+          const merged = removed
+            ? prev.filter((e) => e.date !== stamped.date)
+            : upsertEntry(prev, stamped)
+          saveEntries(merged)
+          return merged
+        })
+        setSaveState('saved')
+        if (savedTimer.current) clearTimeout(savedTimer.current)
+        savedTimer.current = setTimeout(() => setSaveState('idle'), 2500)
+
+        // Der Server bekommt es danach – schlägt das fehl, wird es gemerkt
+        if (token) {
+          const request = removed
+            ? deleteRemote(token, stamped.date)
+            : pushEntries(token, [stamped])
+          request.catch(() => {
+            if (!removed) rememberPending(stamped.date)
+            setSyncState('error')
+          })
+        }
+      }, 800)
+    },
+    [token],
+  )
 
   useEffect(() => {
     return () => {
@@ -123,8 +180,9 @@ export default function JournalPage() {
         return next
       })
       if (date === activeDate) setDraft(emptyEntry(date))
+      if (token) deleteRemote(token, date).catch(() => setSyncState('error'))
     },
-    [activeDate],
+    [activeDate, token],
   )
 
   const handleExport = useCallback(() => {
@@ -407,6 +465,55 @@ export default function JournalPage() {
       {tab === 'eintraege' && (
         <div className="space-y-5">
           <JournalTimeline entries={pastEntries} onEdit={(d) => openDate(d)} onDelete={handleDelete} />
+
+          <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-gray-100">Auf allen Geräten</h2>
+              <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    syncState === 'ok'
+                      ? 'bg-emerald-400'
+                      : syncState === 'syncing'
+                        ? 'bg-amber-400'
+                        : syncState === 'error'
+                          ? 'bg-red-400'
+                          : 'bg-gray-600'
+                  }`}
+                />
+                {syncState === 'ok' && 'abgeglichen'}
+                {syncState === 'syncing' && 'gleicht ab …'}
+                {syncState === 'error' && 'Abgleich gestört'}
+                {syncState === 'off' && 'nur dieses Gerät'}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Mit dem Kennwort aus den Servereinstellungen liegen deine Einträge auch in der
+              Datenbank – dann siehst du auf dem iPad, was du am Laptop geschrieben hast.
+              Ohne Kennwort bleibt alles wie bisher nur in diesem Browser.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <input
+                type="password"
+                value={token}
+                onChange={(e) => setTokenState(e.target.value)}
+                placeholder="Kennwort für den Abgleich"
+                autoComplete="off"
+                className="min-w-0 flex-1 rounded-xl border border-gray-800 bg-gray-900/60 px-4 py-3 text-base text-gray-100 outline-none transition focus:border-emerald-500/60"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setToken(token)
+                  void syncNow(token)
+                }}
+                className="rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-200 transition hover:border-emerald-500/60"
+              >
+                {token ? 'Verbinden & abgleichen' : 'Trennen'}
+              </button>
+            </div>
+            {syncError && <p className="mt-3 text-sm text-red-400">{syncError}</p>}
+          </section>
 
           <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-100">Daten sichern</h2>
