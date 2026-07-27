@@ -1,6 +1,6 @@
 # „Heute war schön" auf dem iPad einrichten
 
-Die App liegt unter `/journal`. Damit sie sich auf dem iPad wie eine richtige
+Die App ist die Startseite des Projekts. Damit sie sich auf dem iPad wie eine richtige
 App verhält und die Einträge auf allen Geräten gleich sind, sind drei Schritte
 nötig: veröffentlichen, Datenbank verbinden, zum Home-Bildschirm hinzufügen.
 
@@ -12,7 +12,7 @@ nötig: veröffentlichen, Datenbank verbinden, zum Home-Bildschirm hinzufügen.
 
 Next.js wird automatisch erkannt, es sind keine Build-Einstellungen nötig.
 Nach ein bis zwei Minuten gibt es eine Adresse wie
-`https://dein-projekt.vercel.app` – das Tagebuch liegt unter `/journal`.
+`https://dein-projekt.vercel.app` – das ist direkt das Tagebuch.
 
 ## 2. Datenbank und Kennwort einrichten
 
@@ -38,14 +38,14 @@ Danach einmal **Redeploy** auslösen, damit die Variablen greifen.
 > Ohne `JOURNAL_TOKEN` antwortet `/api/journal` grundsätzlich nicht – lieber
 > kein Abgleich als ein Tagebuch, das jeder lesen kann, der die Adresse kennt.
 
-**In der App eintragen:** `/journal` öffnen → Reiter **Einträge** → unter
+**In der App eintragen:** Die Seite öffnen → Reiter **Einträge** → unter
 „Auf allen Geräten" das Kennwort eingeben → **Verbinden & abgleichen**. Das
 Kennwort bleibt im jeweiligen Browser gespeichert; auf jedem neuen Gerät
 einmal eingeben.
 
 ## 3. Zum Home-Bildschirm hinzufügen
 
-Auf dem iPad in Safari `https://dein-projekt.vercel.app/journal` öffnen →
+Auf dem iPad in Safari `https://dein-projekt.vercel.app` öffnen →
 Teilen-Symbol → **Zum Home-Bildschirm**. Ergebnis: eigenes Icon, eigener
 Name, Start im Vollbild ohne Safari-Leiste.
 

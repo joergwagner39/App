@@ -3,8 +3,8 @@ import './globals.css'
 import ServiceWorkerRegistration from '@/components/journal/ServiceWorkerRegistration'
 
 export const metadata: Metadata = {
-  title: 'Health Dashboard – Oura & Garmin',
-  description: 'Dein persönliches Health & Training Dashboard',
+  title: 'Heute war schön',
+  description: 'Dein Dankbarkeits-Tagebuch für abends, mit Stimmungsverlauf',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,

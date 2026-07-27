@@ -1,8 +1,8 @@
 {
-  "name": "Heute war schön",
-  "short_name": "Heute war schön",
-  "description": "Dankbarkeits-Tagebuch für abends, mit Stimmungsverlauf",
-  "start_url": "/journal",
+  "name": "Heute war sch\u00f6n",
+  "short_name": "Heute war sch\u00f6n",
+  "description": "Dankbarkeits-Tagebuch f\u00fcr abends, mit Stimmungsverlauf",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -10,8 +10,23 @@
   "theme_color": "#0a0f1e",
   "lang": "de",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

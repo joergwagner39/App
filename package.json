@@ -1,5 +1,5 @@
 {
-  "name": "oura-garmin-dashboard",
+  "name": "heute-war-schoen",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -15,8 +15,6 @@
     "@types/react-dom": "^18.0.0",
     "autoprefixer": "^10.4.0",
     "date-fns": "^3.0.0",
-    "fit-file-parser": "^3.0.2",
-    "garmin-connect": "^1.6.2",
     "lucide-react": "^0.344.0",
     "next": "14.2.5",
     "postcss": "^8.4.0",

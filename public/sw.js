@@ -1,7 +1,7 @@
 /* Service Worker: macht die App auf dem iPad auch ohne Netz startklar. */
 
 const CACHE = 'heute-war-schoen-v1'
-const SHELL = ['/journal', '/manifest.webmanifest', '/icons/icon-192.png']
+const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((cache) => cache.put(request, copy))
           return response
         })
-        .catch(() => caches.match(request).then((hit) => hit || caches.match('/journal'))),
+        .catch(() => caches.match(request).then((hit) => hit || caches.match('/'))),
     )
     return
   }

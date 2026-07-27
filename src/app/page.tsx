@@ -1,748 +1,549 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { format } from 'date-fns'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { format, parseISO, addDays, subDays, subYears, subMonths } from 'date-fns'
 import { de } from 'date-fns/locale'
 import {
-  Heart, Moon, Activity, Zap, Battery, Thermometer,
-  RefreshCw, AlertCircle, TrendingUp, Timer, Flame, Footprints, Settings, BookHeart
+  BookHeart, LineChart as LineChartIcon, CalendarDays, Check, Loader2,
+  Download, Upload, Flame, Sparkles, ArrowLeft, ArrowRight,
 } from 'lucide-react'
-import Link from 'next/link'
 
-import type { DashboardData, GarminActivityData, GarminDailyData } from '@/types'
-import { calculateTrainingRecommendation } from '@/lib/trainingRecommendation'
-import TrainingCard from '@/components/TrainingCard'
-import MetricCard from '@/components/MetricCard'
-import TrendChart from '@/components/TrendChart'
-import SleepBreakdown from '@/components/SleepBreakdown'
-import ComparisonWidget from '@/components/ComparisonWidget'
-import FitUpload from '@/components/FitUpload'
-import OuraSetup from '@/components/OuraSetup'
-import GarminSetup from '@/components/GarminSetup'
-import SleepDebt from '@/components/SleepDebt'
-import HomeScores from '@/components/HomeScores'
-import SleepRecommendation from '@/components/SleepRecommendation'
-import { calcWellnessScore, calcFitnessScore } from '@/lib/scores'
+import JournalEditor from '@/components/journal/JournalEditor'
+import JournalTimeline from '@/components/journal/JournalTimeline'
+import MoodTrendChart from '@/components/journal/MoodTrendChart'
+import {
+  MOOD_EMOJI, averageMood, currentStreak, emptyEntry, gratitudeHighlights,
+  isEntryEmpty, loadEntries, moodColor, moodSeries, parseImport, saveEntries,
+  todayKey, upsertEntry, type JournalEntry,
+} from '@/lib/journal'
+import {
+  deleteRemote, fetchRemote, flushPending, getToken, merge, pushEntries,
+  rememberPending, setToken, type SyncState,
+} from '@/lib/journalSync'
 
-const OURA_TOKEN_KEY = 'oura_token'
-const GARMIN_EMAIL_KEY = 'garmin_email'
-const GARMIN_PASSWORD_KEY = 'garmin_password'
+type Tab = 'heute' | 'verlauf' | 'eintraege'
+type Range = 14 | 30 | 90 | null
 
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  return `${h}h ${m}m`
+const RANGES: { value: Range; label: string }[] = [
+  { value: 14, label: '14 Tage' },
+  { value: 30, label: '30 Tage' },
+  { value: 90, label: '90 Tage' },
+  { value: null, label: 'Alles' },
+]
+
+function StatCard({
+  icon,
+  label,
+  value,
+  sub,
+  color,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  sub?: string
+  color?: string
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-5">
+      <div className="flex items-center gap-2 text-gray-500">
+        {icon}
+        <span className="text-xs uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="mt-2 text-2xl font-semibold sm:text-3xl" style={color ? { color } : undefined}>
+        {value}
+      </p>
+      {sub && <p className="mt-1 text-xs text-gray-500">{sub}</p>}
+    </div>
+  )
 }
 
-function formatPace(secondsPerMeter: number): string {
-  const secondsPer1000m = secondsPerMeter * 1000
-  const min = Math.floor(secondsPer1000m / 60)
-  const sec = Math.round(secondsPer1000m % 60)
-  return `${min}:${sec.toString().padStart(2, '0')}/km`
-}
+export default function JournalPage() {
+  const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [activeDate, setActiveDate] = useState<string>(todayKey())
+  const [draft, setDraft] = useState<JournalEntry>(() => emptyEntry(todayKey()))
+  const [tab, setTab] = useState<Tab>('heute')
+  const [range, setRange] = useState<Range>(30)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [importError, setImportError] = useState<string | null>(null)
+  const [syncState, setSyncState] = useState<SyncState>('off')
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [token, setTokenState] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-type Tab = 'home' | 'oura' | 'garmin' | 'kombiniert' | 'setup'
-
-export default function Dashboard() {
-  const [data, setData] = useState<(DashboardData & { isMockData?: boolean }) | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('home')
-  const [ouraToken, setOuraToken] = useState<string>('')
-  const [garminEmail, setGarminEmail] = useState<string>('')
-  const [garminPassword, setGarminPassword] = useState<string>('')
-  const [garminDisplayName, setGarminDisplayName] = useState<string>('')
-  const [garminOverride, setGarminOverride] = useState<{ activities: GarminActivityData[]; daily: GarminDailyData[] } | null>(null)
-
+  // Beim ersten Rendern aus dem localStorage laden
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const token = localStorage.getItem(OURA_TOKEN_KEY)
-    const email = localStorage.getItem(GARMIN_EMAIL_KEY)
-    const pw = localStorage.getItem(GARMIN_PASSWORD_KEY)
-    if (token) setOuraToken(token)
-    if (email) setGarminEmail(email)
-    if (pw) setGarminPassword(pw)
+    const stored = loadEntries()
+    setEntries(stored)
+    const today = todayKey()
+    setActiveDate(today)
+    setDraft(stored.find((e) => e.date === today) ?? emptyEntry(today))
+    setTokenState(getToken())
+    setLoaded(true)
   }, [])
 
-  const loadData = useCallback(async (opts?: { token?: string; email?: string; pw?: string }) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const t = opts?.token ?? ouraToken
-      const e = opts?.email ?? garminEmail
-      const p = opts?.pw ?? garminPassword
-      const params = new URLSearchParams()
-      if (t) params.set('oura_token', t)
-      if (e) params.set('garmin_email', e)
-      if (p) params.set('garmin_password', p)
-      const url = `/api/dashboard${params.toString() ? '?' + params.toString() : ''}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('API-Fehler')
-      const json = await res.json()
-      setData(json)
-    } catch (e) {
-      setError('Daten konnten nicht geladen werden')
-      console.error(e)
-    } finally {
-      setLoading(false)
+  /** Holt den Serverstand und führt ihn mit dem lokalen zusammen. */
+  const syncNow = useCallback(async (activeToken: string) => {
+    if (!activeToken) {
+      setSyncState('off')
+      return
     }
-  }, [ouraToken, garminEmail, garminPassword])
+    setSyncState('syncing')
+    setSyncError(null)
+    try {
+      const remote = await fetchRemote(activeToken)
+      const local = loadEntries()
+      const { merged, toPush } = merge(local, remote)
+      saveEntries(merged)
+      setEntries(merged)
+      setDraft((current) => merged.find((e) => e.date === current.date) ?? current)
+      await pushEntries(activeToken, toPush)
+      await flushPending(activeToken, merged)
+      setSyncState('ok')
+    } catch (err) {
+      setSyncState('error')
+      setSyncError(err instanceof Error ? err.message : 'Abgleich fehlgeschlagen')
+    }
+  }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  // Beim Start abgleichen und immer, wenn das Gerät wieder online geht
+  useEffect(() => {
+    if (!loaded || !token) return
+    void syncNow(token)
+    const onOnline = () => void syncNow(token)
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [loaded, token, syncNow])
 
-  function handleTokenSaved(token: string) {
-    setOuraToken(token)
-    localStorage.setItem(OURA_TOKEN_KEY, token)
-    loadData({ token })
-    setActiveTab('home')
-  }
-
-  function handleGarminSaved(email: string, password: string, displayName: string) {
-    setGarminEmail(email)
-    setGarminPassword(password)
-    setGarminDisplayName(displayName)
-    setGarminOverride(null) // clear FIT override, use live data
-    localStorage.setItem(GARMIN_EMAIL_KEY, email)
-    localStorage.setItem(GARMIN_PASSWORD_KEY, password)
-    loadData({ email, pw: password })
-    setActiveTab('home')
-  }
-
-  function handleFitData(activities: GarminActivityData[], daily: GarminDailyData[]) {
-    setGarminOverride({ activities, daily })
-    setActiveTab('home')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-3" />
-          <p className="text-gray-400">Daten werden geladen…</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
-          <p className="text-red-400">{error}</p>
-          <button onClick={() => loadData()} className="mt-4 text-sm text-gray-400 hover:text-white underline">
-            Erneut versuchen
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  const effectiveGarmin = garminOverride ?? data.garmin
-
-  const todaySleep = data.oura.sleep[data.oura.sleep.length - 1]
-  const todayReadiness = data.oura.readiness[data.oura.readiness.length - 1]
-  const todayActivity = data.oura.activity[data.oura.activity.length - 1]
-  const todayGarmin = effectiveGarmin.daily[effectiveGarmin.daily.length - 1]
-  const recentActivities = effectiveGarmin.activities.slice(-10)
-  const lastActivity = recentActivities[recentActivities.length - 1]
-
-  const recommendation = calculateTrainingRecommendation(
-    todaySleep, todayReadiness, todayGarmin, recentActivities
+  const openDate = useCallback(
+    (date: string, list?: JournalEntry[]) => {
+      const source = list ?? entries
+      setActiveDate(date)
+      setDraft(source.find((e) => e.date === date) ?? emptyEntry(date))
+      setTab('heute')
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+    [entries],
   )
 
-  const wellnessScore = calcWellnessScore(todaySleep, todayReadiness, todayGarmin)
-  const fitnessScore = calcFitnessScore(recentActivities, data.oura.sleep, effectiveGarmin.daily)
+  // Autosave: 800ms nachdem die Tastatur ruhig ist
+  const handleDraftChange = useCallback(
+    (next: JournalEntry) => {
+      setDraft(next)
+      setSaveState('saving')
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => {
+        const stamped = { ...next, updatedAt: new Date().toISOString() }
+        const removed = isEntryEmpty(stamped)
+        setEntries((prev) => {
+          const merged = removed
+            ? prev.filter((e) => e.date !== stamped.date)
+            : upsertEntry(prev, stamped)
+          saveEntries(merged)
+          return merged
+        })
+        setSaveState('saved')
+        if (savedTimer.current) clearTimeout(savedTimer.current)
+        savedTimer.current = setTimeout(() => setSaveState('idle'), 2500)
 
-  const trendData = data.oura.sleep.map((s, i) => {
-    const readiness = data.oura.readiness[i]
-    const garmin = effectiveGarmin.daily[i]
-    return {
-      date: s.date,
-      oura_sleep: s.score,
-      oura_readiness: readiness?.score,
-      oura_hrv: s.average_hrv,
-      garmin_rhr: garmin?.restingHeartRate,
-      garmin_battery: garmin?.bodyBatteryHighestValue,
-      garmin_stress: garmin?.averageStressLevel,
-      steps: garmin?.steps ? Math.round(garmin.steps / 100) : undefined,
+        // Der Server bekommt es danach – schlägt das fehl, wird es gemerkt
+        if (token) {
+          const request = removed
+            ? deleteRemote(token, stamped.date)
+            : pushEntries(token, [stamped])
+          request.catch(() => {
+            if (!removed) rememberPending(stamped.date)
+            setSyncState('error')
+          })
+        }
+      }, 800)
+    },
+    [token],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (savedTimer.current) clearTimeout(savedTimer.current)
     }
-  })
+  }, [])
 
-  const hasGarmin = garminOverride !== null || garminEmail.length > 0
-  const hasOura = ouraToken.length > 0
+  const handleDelete = useCallback(
+    (date: string) => {
+      setEntries((prev) => {
+        const next = prev.filter((e) => e.date !== date)
+        saveEntries(next)
+        return next
+      })
+      if (date === activeDate) setDraft(emptyEntry(date))
+      if (token) deleteRemote(token, date).catch(() => setSyncState('error'))
+    },
+    [activeDate, token],
+  )
 
-  const tabs: { id: Tab; label: string; icon?: typeof Settings }[] = [
-    { id: 'home', label: 'Start' },
-    { id: 'oura', label: 'Oura Ring' },
-    { id: 'garmin', label: 'Garmin' },
-    { id: 'kombiniert', label: 'Kombiniert' },
-    { id: 'setup', label: '', icon: Settings },
+  const handleExport = useCallback(() => {
+    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `heute-war-schoen-${todayKey()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [entries])
+
+  const handleImport = useCallback(async (file: File) => {
+    setImportError(null)
+    try {
+      const imported = parseImport(await file.text())
+      setEntries((prev) => {
+        // Importierte Einträge gewinnen bei gleichem Datum
+        let merged = prev
+        for (const entry of imported) merged = upsertEntry(merged, entry)
+        saveEntries(merged)
+        return merged
+      })
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen')
+    }
+  }, [])
+
+  const series = useMemo(() => moodSeries(entries, range), [entries, range])
+  const rangeEntries = useMemo(() => {
+    if (range === null) return entries
+    const cutoff = subDays(new Date(), range - 1)
+    return entries.filter((e) => parseISO(e.date) >= cutoff)
+  }, [entries, range])
+  const avg = useMemo(() => averageMood(rangeEntries), [rangeEntries])
+  const avgAll = useMemo(() => averageMood(entries), [entries])
+  const streak = useMemo(() => currentStreak(entries), [entries])
+  const highlights = useMemo(() => gratitudeHighlights(entries), [entries])
+  const best = useMemo(
+    () => [...rangeEntries].sort((a, b) => b.mood - a.mood || b.date.localeCompare(a.date))[0],
+    [rangeEntries],
+  )
+
+  // Rückblick: gleicher Tag vor einem Monat bzw. vor einem Jahr
+  const flashbacks = useMemo(() => {
+    const targets = [
+      { label: 'Vor einem Monat', date: format(subMonths(new Date(), 1), 'yyyy-MM-dd') },
+      { label: 'Vor einem Jahr', date: format(subYears(new Date(), 1), 'yyyy-MM-dd') },
+    ]
+    return targets
+      .map((t) => ({ ...t, entry: entries.find((e) => e.date === t.date) }))
+      .filter((t): t is { label: string; date: string; entry: JournalEntry } => Boolean(t.entry))
+  }, [entries])
+
+  const pastEntries = useMemo(
+    () => [...entries].sort((a, b) => b.date.localeCompare(a.date)),
+    [entries],
+  )
+
+  const isToday = activeDate === todayKey()
+  const activeLabel = format(parseISO(activeDate), 'EEEE, dd. MMMM yyyy', { locale: de })
+
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'heute', label: isToday ? 'Heute Abend' : 'Eintrag', icon: <BookHeart size={17} /> },
+    { id: 'verlauf', label: 'Stimmungsverlauf', icon: <LineChartIcon size={17} /> },
+    { id: 'eintraege', label: `Einträge (${entries.length})`, icon: <CalendarDays size={17} /> },
   ]
 
-  return (
-    <div className="min-h-screen bg-[#0a0f1e]">
-      <header className="sticky top-0 z-10 border-b border-gray-800 bg-[#0a0f1e]/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold text-white">Health Dashboard</h1>
-              <p className="text-xs text-gray-400">
-                {format(new Date(), "EEEE, dd. MMMM yyyy", { locale: de })}
-                {data.isMockData && !ouraToken && (
-                  <span className="ml-2 text-amber-400 font-medium">· Demo-Daten</span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span className={`w-2 h-2 rounded-full ${hasOura ? 'bg-purple-400' : 'bg-gray-600'}`} />
-                  Oura {!hasOura && <span className="text-gray-600">— nicht verbunden</span>}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span className={`w-2 h-2 rounded-full ${hasGarmin ? 'bg-blue-400' : 'bg-gray-600'}`} />
-                  Garmin {!hasGarmin && <span className="text-gray-600">— keine FIT-Daten</span>}
-                </div>
-              </div>
-              <Link
-                href="/journal"
-                title="Heute war schön – Abendrückblick"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-emerald-300 transition-colors text-sm"
-              >
-                <BookHeart className="w-4 h-4" />
-                <span className="hidden sm:inline">Heute war schön</span>
-              </Link>
-              <button onClick={() => loadData()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+  if (!loaded) {
+    return (
+      <main className="flex min-h-screen items-center justify-center text-gray-500">
+        <Loader2 className="animate-spin" size={22} />
+      </main>
+    )
+  }
 
-          <div className="flex gap-1 mt-3">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    activeTab === tab.id
-                      ? 'bg-gray-700 text-white'
-                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
-                  }`}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {tab.label}
-                </button>
-              )
-            })}
-          </div>
+  return (
+    <main className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-24 pt-8 sm:px-6">
+      <header className="mb-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+            Notizen bei Lampenlicht
+          </p>
+          <h1 className="mt-1 flex items-center gap-3 text-2xl font-semibold text-gray-100 sm:text-3xl">
+            <BookHeart className="text-emerald-400" size={28} />
+            Heute war schön
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Ein paar ruhige Minuten für den Tag – und eine Kurve, die zeigt, wohin es geht.
+          </p>
         </div>
+
+        <nav className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                tab === t.id
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+              }`}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
+        </nav>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-
-        {/* ── HOME TAB ── */}
-        {activeTab === 'home' && (
-          <>
-            {/* 1. Scores */}
-            <HomeScores wellness={wellnessScore} fitness={fitnessScore} />
-
-            {/* 2. Training recommendation */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Training heute
-              </h2>
-              <TrainingCard recommendation={recommendation} />
+      {tab === 'heute' && (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openDate(format(subDays(parseISO(activeDate), 1), 'yyyy-MM-dd'))}
+                aria-label="Vorheriger Tag"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-800 hover:text-gray-100"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="min-w-[13rem] text-center">
+                <p className="font-medium text-gray-100">{activeLabel}</p>
+                {!isToday && (
+                  <button
+                    type="button"
+                    onClick={() => openDate(todayKey())}
+                    className="text-xs text-emerald-400 hover:underline"
+                  >
+                    zurück zu heute
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = format(addDays(parseISO(activeDate), 1), 'yyyy-MM-dd')
+                  if (next <= todayKey()) openDate(next)
+                }}
+                disabled={isToday}
+                aria-label="Nächster Tag"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-800 hover:text-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ArrowRight size={18} />
+              </button>
             </div>
 
-            {/* 3. Sleep recommendation */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Schlafempfehlung
-              </h2>
-              <SleepRecommendation sleepData={data.oura.sleep} targetHours={8} />
-            </div>
+            <span className="flex items-center gap-2 text-xs text-gray-500">
+              {saveState === 'saving' && (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> speichert …
+                </>
+              )}
+              {saveState === 'saved' && (
+                <>
+                  <Check size={14} className="text-emerald-400" /> gespeichert
+                </>
+              )}
+              {saveState === 'idle' && 'Automatisch gespeichert – nur auf diesem Gerät'}
+            </span>
+          </div>
 
-            {/* 4. Key numbers — compact */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Heute auf einen Blick
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Readiness" value={todayReadiness?.score ?? '–'} icon={Zap} source="oura" />
-                <MetricCard label="HRV" value={todaySleep?.average_hrv?.toFixed(0) ?? '–'} unit="ms" icon={Heart} source="oura" />
-                <MetricCard label="Body Battery" value={todayGarmin?.bodyBatteryHighestValue ?? '–'} unit="%" icon={Battery} source="garmin" />
-                <MetricCard label="Stress" value={todayGarmin?.averageStressLevel?.toFixed(0) ?? '–'} unit="/100" icon={Thermometer} source="garmin" />
-              </div>
-            </div>
-
-            {/* 5. Garmin vs Oura — collapsed at bottom */}
-            <details className="group">
-              <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none py-2">
-                <span className="border border-gray-700 rounded px-2 py-0.5 group-open:bg-gray-800">
-                  Oura vs. Garmin Vergleich
-                </span>
-                <span className="text-gray-600">— weniger wichtig</span>
-              </summary>
-              <div className="mt-3 bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-                <ComparisonWidget
-                  title="Vergleich heute"
-                  rows={[
-                    { label: 'Ruhepuls', ouraValue: todaySleep?.lowest_heart_rate ?? '–', garminValue: todayGarmin?.restingHeartRate ?? '–', unit: 'bpm', better: (todaySleep?.lowest_heart_rate ?? 99) < (todayGarmin?.restingHeartRate ?? 99) ? 'oura' : 'garmin' },
-                    { label: 'HRV', ouraValue: todaySleep?.average_hrv?.toFixed(0) ?? '–', garminValue: '–', unit: 'ms', better: 'oura' },
-                    { label: 'Schritte', ouraValue: todayActivity?.steps?.toLocaleString('de-DE') ?? '–', garminValue: todayGarmin?.steps?.toLocaleString('de-DE') ?? '–', better: 'equal' },
-                    { label: 'Kalorien', ouraValue: todayActivity?.active_calories ?? '–', garminValue: todayGarmin?.activeKilocalories ?? '–', unit: 'kcal', better: 'equal' },
-                  ]}
-                />
-              </div>
-            </details>
-          </>
-        )}
-
-        {/* ── OURA TAB ── */}
-        {activeTab === 'oura' && (
-          <>
-            {!hasOura && (
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-sm text-purple-300">
-                Noch nicht verbunden —{' '}
-                <button onClick={() => setActiveTab('setup')} className="underline font-medium">
-                  Oura Token im Setup einrichten
-                </button>
-              </div>
-            )}
-
-            {/* Heute */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Heute</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Readiness" value={todayReadiness?.score ?? '–'} icon={Zap} source="oura" subtitle="Bereitschaft" />
-                <MetricCard label="Schlaf Score" value={todaySleep?.score ?? '–'} icon={Moon} source="oura" subtitle={todaySleep ? formatDuration(todaySleep.total_sleep_duration) : undefined} />
-                <MetricCard label="HRV" value={todaySleep?.average_hrv?.toFixed(0) ?? '–'} unit="ms" icon={Heart} source="oura" />
-                <MetricCard label="Ruhepuls" value={todaySleep?.lowest_heart_rate ?? '–'} unit="bpm" icon={Heart} source="oura" />
-              </div>
-            </div>
-
-            {/* Schlaf letzte Nacht */}
-            {todaySleep && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-white">Letzte Nacht</h2>
-                  <span className="text-xs text-gray-400">{format(new Date(todaySleep.date), 'dd. MMM yyyy', { locale: de })}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-4 mb-5">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-400">{todaySleep.score}</div>
-                    <div className="text-xs text-gray-400">Schlaf Score</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">{todaySleep.efficiency.toFixed(0)}%</div>
-                    <div className="text-xs text-gray-400">Effizienz</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">{todaySleep.average_hrv?.toFixed(0)}</div>
-                    <div className="text-xs text-gray-400">HRV (ms)</div>
-                  </div>
-                </div>
-                <SleepBreakdown
-                  totalSleep={todaySleep.total_sleep_duration}
-                  deepSleep={todaySleep.deep_sleep_duration}
-                  remSleep={todaySleep.rem_sleep_duration}
-                  lightSleep={todaySleep.light_sleep_duration}
-                />
-              </div>
-            )}
-
-            {/* Weitere Metriken */}
-            {todaySleep && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Einschlafzeit" value={todaySleep.latency} unit="Min." icon={Timer} source="oura" />
-                <MetricCard label="Niedrigster Puls" value={todaySleep.lowest_heart_rate} unit="bpm" icon={Heart} source="oura" />
-                <MetricCard label="Atemfrequenz" value={todaySleep.breath_average?.toFixed(1)} unit="/min" icon={Activity} source="oura" />
-                <MetricCard label="Körpertemp. Δ" value={todayReadiness?.temperature_deviation ?? '–'} unit="°C" icon={Thermometer} source="oura" />
-              </div>
-            )}
-
-            {/* Schlafschuld */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Schlafentwicklung & Defizit</h2>
-              <SleepDebt sleepData={data.oura.sleep} targetHours={8} />
-            </div>
-
-            {/* Trends */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-                <TrendChart title="Schlaf Score & Readiness (30 Tage)" data={trendData} lines={[
-                  { key: 'oura_sleep', label: 'Schlaf Score', color: '#a855f7' },
-                  { key: 'oura_readiness', label: 'Readiness', color: '#6366f1', dashed: true },
-                ]} height={200} />
-              </div>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-                <TrendChart title="HRV & Ruhepuls (30 Tage)" data={trendData} lines={[
-                  { key: 'oura_hrv', label: 'HRV (ms)', color: '#10b981' },
-                  { key: 'garmin_rhr', label: 'Ruhepuls', color: '#f59e0b', dashed: true },
-                ]} height={200} />
-              </div>
-            </div>
-
-            {/* 30-Tage Insights */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-300 mb-4">Ø letzte 30 Tage</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-purple-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-purple-400">
-                    {(data.oura.readiness.reduce((s, r) => s + r.score, 0) / data.oura.readiness.length).toFixed(0)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø Readiness</div>
-                </div>
-                <div className="text-center p-3 bg-indigo-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-indigo-400">
-                    {(data.oura.sleep.reduce((s, r) => s + r.score, 0) / data.oura.sleep.length).toFixed(0)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø Schlaf Score</div>
-                </div>
-                <div className="text-center p-3 bg-emerald-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-emerald-400">
-                    {(data.oura.sleep.reduce((s, r) => s + r.average_hrv, 0) / data.oura.sleep.length).toFixed(0)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø HRV (ms)</div>
-                </div>
-                <div className="text-center p-3 bg-pink-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-pink-400">
-                    {formatDuration(data.oura.sleep.reduce((s, r) => s + r.total_sleep_duration, 0) / data.oura.sleep.length)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø Schlafdauer</div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── GARMIN TAB ── */}
-        {activeTab === 'garmin' && (
-          <>
-            {/* Login form always visible at top if not connected */}
-            {!garminEmail && (
-              <GarminSetup
-                onCredentialsSaved={handleGarminSaved}
-                currentEmail={garminEmail}
-                isConnected={false}
-              />
-            )}
-
-            {/* Already connected — show small reconnect option */}
-            {garminEmail && (
-              <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2.5">
-                <span className="text-xs text-blue-300">Verbunden als <strong>{garminEmail}</strong></span>
+          {flashbacks.length > 0 && (
+            <div className="space-y-2">
+              {flashbacks.map((f) => (
                 <button
-                  onClick={() => {
-                    setGarminEmail('')
-                    setGarminPassword('')
-                    localStorage.removeItem(GARMIN_EMAIL_KEY)
-                    localStorage.removeItem(GARMIN_PASSWORD_KEY)
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-300 underline"
+                  key={f.date}
+                  type="button"
+                  onClick={() => openDate(f.date)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/30 px-4 py-3 text-left transition hover:border-emerald-500/40"
                 >
-                  Abmelden
-                </button>
-              </div>
-            )}
-
-            {!hasGarmin && garminEmail && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
-                Garmin-Login fehlgeschlagen (Garmin blockiert Server-Logins) —{' '}
-                <button onClick={() => setActiveTab('setup')} className="underline font-medium">
-                  FIT-Dateien manuell hochladen
-                </button>
-              </div>
-            )}
-
-            {!hasGarmin && !garminEmail && (
-              <div className="text-center py-4">
-                <p className="text-xs text-gray-500">oder</p>
-                <button onClick={() => setActiveTab('setup')} className="mt-2 text-xs text-blue-400 underline">
-                  FIT-Dateien manuell hochladen
-                </button>
-              </div>
-            )}
-
-            {/* Heute */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Heute</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Body Battery" value={todayGarmin?.bodyBatteryHighestValue ?? '–'} unit="%" icon={Battery} source="garmin" subtitle="Max heute" />
-                <MetricCard label="Stresslevel" value={todayGarmin?.averageStressLevel?.toFixed(0) ?? '–'} unit="/100" icon={Thermometer} source="garmin" />
-                <MetricCard label="Ruhepuls" value={todayGarmin?.restingHeartRate ?? '–'} unit="bpm" icon={Heart} source="garmin" />
-                <MetricCard label="Schritte" value={todayGarmin?.steps?.toLocaleString('de-DE') ?? todayActivity?.steps?.toLocaleString('de-DE') ?? '–'} icon={Footprints} source="garmin" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <MetricCard label="Aktive Kalorien" value={todayGarmin?.activeKilocalories ?? '–'} unit="kcal" icon={Flame} source="garmin" />
-              <MetricCard label="Stockwerke" value={todayGarmin?.floorsClimbed ?? '–'} icon={TrendingUp} source="garmin" />
-            </div>
-
-            {/* Aktivitäten */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Aktivitäten ({effectiveGarmin.activities.length})
-              </h2>
-              <div className="space-y-2">
-                {effectiveGarmin.activities.slice().reverse().slice(0, 10).map((act, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-gray-900/50 border border-gray-800 rounded-xl p-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                      <Activity className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white capitalize">{act.activityType?.replace('_', ' ')}</span>
-                        <span className="text-xs text-gray-500">{act.date}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-xs text-gray-400 mt-0.5">
-                        {act.duration > 0 && <span>{formatDuration(act.duration)}</span>}
-                        {act.distance > 0 && <span>{(act.distance / 1000).toFixed(2)} km</span>}
-                        {act.averageHR > 0 && <span>{act.averageHR} bpm Ø</span>}
-                        {act.calories > 0 && <span>{act.calories} kcal</span>}
-                        {act.elevationGain && act.elevationGain > 0 && <span>↑{act.elevationGain.toFixed(0)}m</span>}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {act.trainingEffect && (
-                        <div>
-                          <div className="text-sm font-bold text-blue-400">{act.trainingEffect.toFixed(1)}</div>
-                          <div className="text-xs text-gray-500">Training</div>
-                        </div>
-                      )}
-                      {act.vo2max && <div className="text-xs text-gray-400 mt-1">VO2max {act.vo2max.toFixed(0)}</div>}
-                    </div>
-                  </div>
-                ))}
-                {effectiveGarmin.activities.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-8">
-                    Keine Aktivitäten — FIT-Dateien im Setup-Tab hochladen
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Letztes Training Details */}
-            {lastActivity && (
-              <>
-                <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Letztes Training</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <MetricCard label="Trainingswirkung" value={lastActivity.trainingEffect?.toFixed(1) ?? '–'} unit="/5" icon={TrendingUp} source="garmin" />
-                  <MetricCard label="VO2max" value={lastActivity.vo2max?.toFixed(0) ?? '–'} unit="ml/kg/min" icon={Activity} source="garmin" />
-                  <MetricCard label="Max. Puls" value={lastActivity.maxHR ?? '–'} unit="bpm" icon={Heart} source="garmin" />
-                  {lastActivity.averagePace && <MetricCard label="Ø Tempo" value={formatPace(lastActivity.averagePace)} icon={Timer} source="garmin" />}
-                  {lastActivity.elevationGain && <MetricCard label="Höhenmeter" value={lastActivity.elevationGain.toFixed(0)} unit="m" icon={TrendingUp} source="garmin" />}
-                  <MetricCard label="Kalorien" value={lastActivity.calories} unit="kcal" icon={Flame} source="garmin" />
-                </div>
-              </>
-            )}
-
-            {/* Garmin Trends */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-                <TrendChart title="Body Battery & Stress (30 Tage)" data={trendData} lines={[
-                  { key: 'garmin_battery', label: 'Body Battery', color: '#3b82f6' },
-                  { key: 'garmin_stress', label: 'Stress', color: '#f59e0b', dashed: true },
-                ]} height={200} />
-              </div>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-                <TrendChart title="Ruhepuls & Schritte (30 Tage)" data={trendData} lines={[
-                  { key: 'garmin_rhr', label: 'Ruhepuls', color: '#22d3ee' },
-                  { key: 'steps', label: 'Schritte (×100)', color: '#10b981', dashed: true },
-                ]} height={200} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── KOMBINIERT TAB ── */}
-        {activeTab === 'kombiniert' && (
-          <>
-            {/* Training Empfehlung */}
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Trainingsempfehlung heute
-              </h2>
-              <TrainingCard recommendation={recommendation} />
-            </div>
-
-            {/* Vergleich Oura vs Garmin */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <ComparisonWidget
-                title="Oura vs. Garmin — Vergleich heute"
-                rows={[
-                  {
-                    label: 'Ruhepuls',
-                    ouraValue: todaySleep?.lowest_heart_rate ?? '–',
-                    garminValue: todayGarmin?.restingHeartRate ?? '–',
-                    unit: 'bpm',
-                    better: (todaySleep?.lowest_heart_rate ?? 99) < (todayGarmin?.restingHeartRate ?? 99) ? 'oura' : 'garmin',
-                  },
-                  {
-                    label: 'HRV',
-                    ouraValue: todaySleep?.average_hrv?.toFixed(0) ?? '–',
-                    garminValue: '–',
-                    unit: 'ms',
-                    better: 'oura',
-                  },
-                  {
-                    label: 'Schritte',
-                    ouraValue: todayActivity?.steps?.toLocaleString('de-DE') ?? '–',
-                    garminValue: todayGarmin?.steps?.toLocaleString('de-DE') ?? '–',
-                    better: 'equal',
-                  },
-                  {
-                    label: 'Akt. Kalorien',
-                    ouraValue: todayActivity?.active_calories ?? '–',
-                    garminValue: todayGarmin?.activeKilocalories ?? '–',
-                    unit: 'kcal',
-                    better: 'equal',
-                  },
-                ]}
-              />
-            </div>
-
-            {/* Kombinierte Trends */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <TrendChart
-                title="Oura Readiness vs. Garmin Body Battery (30 Tage)"
-                data={trendData}
-                lines={[
-                  { key: 'oura_readiness', label: 'Oura Readiness', color: '#a855f7' },
-                  { key: 'garmin_battery', label: 'Body Battery', color: '#3b82f6' },
-                ]}
-                height={220}
-              />
-            </div>
-
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <TrendChart
-                title="Schlaf Score vs. Stress — Zusammenhang (30 Tage)"
-                data={trendData}
-                lines={[
-                  { key: 'oura_sleep', label: 'Schlaf Score', color: '#a855f7' },
-                  { key: 'garmin_stress', label: 'Garmin Stress', color: '#ef4444', dashed: true },
-                ]}
-                height={220}
-              />
-            </div>
-
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <TrendChart
-                title="HRV vs. Ruhepuls — Erholungsindikator"
-                data={trendData}
-                lines={[
-                  { key: 'oura_hrv', label: 'Oura HRV', color: '#10b981' },
-                  { key: 'garmin_rhr', label: 'Garmin Ruhepuls', color: '#f59e0b', dashed: true },
-                ]}
-                height={220}
-              />
-            </div>
-
-            {/* Kombinierte Insights */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-300 mb-4">Gesamtüberblick — letzte 30 Tage</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-purple-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-purple-400">
-                    {(data.oura.readiness.reduce((s, r) => s + r.score, 0) / data.oura.readiness.length).toFixed(0)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø Readiness</div>
-                  <div className="text-[10px] text-purple-500 mt-0.5">Oura</div>
-                </div>
-                <div className="text-center p-3 bg-blue-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-blue-400">
-                    {effectiveGarmin.daily.length > 0
-                      ? (effectiveGarmin.daily.reduce((s, d) => s + (d.bodyBatteryHighestValue ?? 0), 0) / effectiveGarmin.daily.length).toFixed(0)
-                      : '–'}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø Body Battery</div>
-                  <div className="text-[10px] text-blue-500 mt-0.5">Garmin</div>
-                </div>
-                <div className="text-center p-3 bg-emerald-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-emerald-400">
-                    {(data.oura.sleep.reduce((s, r) => s + r.average_hrv, 0) / data.oura.sleep.length).toFixed(0)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Ø HRV (ms)</div>
-                  <div className="text-[10px] text-purple-500 mt-0.5">Oura</div>
-                </div>
-                <div className="text-center p-3 bg-cyan-500/10 rounded-xl">
-                  <div className="text-2xl font-bold text-cyan-400">
-                    {effectiveGarmin.activities.length}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Aktivitäten</div>
-                  <div className="text-[10px] text-blue-500 mt-0.5">Garmin</div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── SETUP TAB ── */}
-        {activeTab === 'setup' && (
-          <>
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Geräte verbinden</h2>
-              <p className="text-sm text-gray-400 mb-5">Alles bleibt lokal in deinem Browser.</p>
-            </div>
-
-            <OuraSetup onTokenSaved={handleTokenSaved} currentToken={ouraToken} />
-
-            <GarminSetup
-              onCredentialsSaved={handleGarminSaved}
-              currentEmail={garminEmail}
-              isConnected={garminEmail.length > 0}
-            />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-700" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-[#0a0f1e] px-3 text-xs text-gray-500">oder Garmin manuell</span>
-              </div>
-            </div>
-
-            <FitUpload onDataLoaded={handleFitData} />
-
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Verbindungsstatus</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Oura Ring</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${hasOura ? 'bg-purple-500/20 text-purple-300' : 'bg-gray-700 text-gray-500'}`}>
-                    {hasOura ? 'Verbunden' : 'Nicht verbunden'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Garmin Connect</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${garminEmail ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-700 text-gray-500'}`}>
-                    {garminEmail ? (garminDisplayName || garminEmail) : 'Nicht verbunden'}
-                  </span>
-                </div>
-                {garminOverride && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Garmin (FIT-Dateien)</span>
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
-                      {garminOverride.activities.length} Aktivitäten
+                  <Sparkles size={18} className="shrink-0 text-amber-400" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs uppercase tracking-wide text-gray-500">
+                      {f.label} · {MOOD_EMOJI[f.entry.mood]} {f.entry.mood}/10
                     </span>
-                  </div>
-                )}
-              </div>
+                    <span className="mt-0.5 block truncate text-sm text-gray-300">
+                      {f.entry.gratitude.find((g) => g.trim()) ||
+                        f.entry.notes ||
+                        f.entry.wins ||
+                        'Eintrag ansehen'}
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
-          </>
-        )}
+          )}
 
-        <footer className="text-center text-xs text-gray-600 pb-4">
-          {data.isMockData && !ouraToken
-            ? 'Demo-Daten — verbinde Oura und Garmin im Setup-Tab (⚙)'
-            : `Zuletzt aktualisiert: ${format(new Date(data.lastUpdated), 'HH:mm dd.MM.yyyy')}`}
-        </footer>
-      </main>
-    </div>
+          {/* key: beim Tageswechsel startet der Editor mit frischem Aufklapp-Zustand */}
+          <JournalEditor key={activeDate} entry={draft} onChange={handleDraftChange} />
+        </div>
+      )}
+
+      {tab === 'verlauf' && (
+        <div className="space-y-5">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {RANGES.map((r) => (
+              <button
+                key={r.label}
+                type="button"
+                onClick={() => setRange(r.value)}
+                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm transition ${
+                  range === r.value
+                    ? 'bg-gray-800 text-gray-100'
+                    : 'text-gray-500 hover:bg-gray-900 hover:text-gray-300'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard
+              icon={<LineChartIcon size={14} />}
+              label="Ø Stimmung"
+              value={avg === null ? '–' : avg.toFixed(1)}
+              sub={avgAll === null ? undefined : `insgesamt ${avgAll.toFixed(1)}`}
+              color={avg === null ? undefined : moodColor(avg)}
+            />
+            <StatCard
+              icon={<Flame size={14} />}
+              label="Streak"
+              value={`${streak}`}
+              sub={streak === 1 ? 'Tag am Stück' : 'Tage am Stück'}
+              color={streak > 0 ? '#f59e0b' : undefined}
+            />
+            <StatCard
+              icon={<CalendarDays size={14} />}
+              label="Einträge"
+              value={`${rangeEntries.length}`}
+              sub={`von insgesamt ${entries.length}`}
+            />
+            <StatCard
+              icon={<Sparkles size={14} />}
+              label="Bester Tag"
+              value={best ? `${MOOD_EMOJI[best.mood]} ${best.mood}` : '–'}
+              sub={best ? format(parseISO(best.date), 'dd. MMM yyyy', { locale: de }) : undefined}
+            />
+          </div>
+
+          <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
+            <h2 className="mb-4 text-lg font-semibold text-gray-100">Stimmung im Verlauf</h2>
+            <MoodTrendChart data={series} average={avg} />
+            <p className="mt-3 text-xs text-gray-500">
+              Grün: Tageswert · Lila gestrichelt: gleitender 7-Tage-Schnitt – der zeigt den Trend
+              deutlicher als einzelne Ausreißer.
+            </p>
+          </section>
+
+          {highlights.length > 0 && (
+            <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-100">Wofür du oft dankbar bist</h2>
+              <div className="flex flex-wrap gap-2">
+                {highlights.map((h) => (
+                  <span
+                    key={h.text}
+                    className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-200"
+                  >
+                    {h.text}
+                    {h.count > 1 && <span className="ml-1.5 text-emerald-400/70">×{h.count}</span>}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {tab === 'eintraege' && (
+        <div className="space-y-5">
+          <JournalTimeline entries={pastEntries} onEdit={(d) => openDate(d)} onDelete={handleDelete} />
+
+          <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-gray-100">Auf allen Geräten</h2>
+              <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    syncState === 'ok'
+                      ? 'bg-emerald-400'
+                      : syncState === 'syncing'
+                        ? 'bg-amber-400'
+                        : syncState === 'error'
+                          ? 'bg-red-400'
+                          : 'bg-gray-600'
+                  }`}
+                />
+                {syncState === 'ok' && 'abgeglichen'}
+                {syncState === 'syncing' && 'gleicht ab …'}
+                {syncState === 'error' && 'Abgleich gestört'}
+                {syncState === 'off' && 'nur dieses Gerät'}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Mit dem Kennwort aus den Servereinstellungen liegen deine Einträge auch in der
+              Datenbank – dann siehst du auf dem iPad, was du am Laptop geschrieben hast.
+              Ohne Kennwort bleibt alles wie bisher nur in diesem Browser.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <input
+                type="password"
+                value={token}
+                onChange={(e) => setTokenState(e.target.value)}
+                placeholder="Kennwort für den Abgleich"
+                autoComplete="off"
+                className="min-w-0 flex-1 rounded-xl border border-gray-800 bg-gray-900/60 px-4 py-3 text-base text-gray-100 outline-none transition focus:border-emerald-500/60"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setToken(token)
+                  void syncNow(token)
+                }}
+                className="rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-200 transition hover:border-emerald-500/60"
+              >
+                {token ? 'Verbinden & abgleichen' : 'Trennen'}
+              </button>
+            </div>
+            {syncError && <p className="mt-3 text-sm text-red-400">{syncError}</p>}
+          </section>
+
+          <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-gray-100">Daten sichern</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Alles liegt nur lokal in diesem Browser. Ein Backup ab und zu schadet nicht –
+              die Datei lässt sich auch auf einem anderen Gerät wieder importieren.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={!entries.length}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-200 transition hover:border-emerald-500/60 disabled:opacity-40"
+              >
+                <Download size={16} /> Export (JSON)
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-200 transition hover:border-emerald-500/60"
+              >
+                <Upload size={16} /> Import
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleImport(file)
+                  e.target.value = ''
+                }}
+              />
+            </div>
+            {importError && <p className="mt-3 text-sm text-red-400">{importError}</p>}
+          </section>
+        </div>
+      )}
+    </main>
   )
 }
