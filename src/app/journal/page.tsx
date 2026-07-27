@@ -310,8 +310,8 @@ export default function JournalPage() {
                     </span>
                     <span className="mt-0.5 block truncate text-sm text-gray-300">
                       {f.entry.gratitude.find((g) => g.trim()) ||
+                        f.entry.notes ||
                         f.entry.wins ||
-                        f.entry.lifeIsBeautiful ||
                         'Eintrag ansehen'}
                     </span>
                   </span>
@@ -320,7 +320,8 @@ export default function JournalPage() {
             </div>
           )}
 
-          <JournalEditor entry={draft} onChange={handleDraftChange} />
+          {/* key: beim Tageswechsel startet der Editor mit frischem Aufklapp-Zustand */}
+          <JournalEditor key={activeDate} entry={draft} onChange={handleDraftChange} />
         </div>
       )}
 

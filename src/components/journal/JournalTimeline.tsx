@@ -60,7 +60,7 @@ export default function JournalTimeline({ entries, onEdit, onDelete }: JournalTi
                   {format(parseISO(entry.date), 'EEEE, dd. MMMM yyyy', { locale: de })}
                 </span>
                 <span className="mt-0.5 block truncate text-sm text-gray-500">
-                  {gratitude[0] || entry.wins || entry.lifeIsBeautiful || 'Ohne Text'}
+                  {gratitude[0] || entry.notes || entry.tomorrow || entry.wins || 'Ohne Text'}
                 </span>
               </span>
               <span
@@ -87,11 +87,11 @@ export default function JournalTimeline({ entries, onEdit, onDelete }: JournalTi
                     </ul>
                   </div>
                 )}
+                <Field label="Gedanken zum Tag" value={entry.notes} />
+                <Field label="Freude auf morgen" value={entry.tomorrow} />
                 <Field label="Gut geklappt" value={entry.wins} />
                 <Field label="Das Leben ist schön, weil" value={entry.lifeIsBeautiful} />
                 <Field label="Gelernt" value={entry.learned} />
-                <Field label="Freue mich auf" value={entry.tomorrow} />
-                <Field label="Notiz" value={entry.notes} />
 
                 <div className="flex flex-wrap gap-2 pt-1">
                   <button
