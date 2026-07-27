@@ -207,11 +207,11 @@ export default function Dashboard() {
               </div>
               <Link
                 href="/journal"
-                title="Abendrückblick"
+                title="Schön war heute – Abendrückblick"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-emerald-300 transition-colors text-sm"
               >
                 <BookHeart className="w-4 h-4" />
-                <span className="hidden sm:inline">Abendrückblick</span>
+                <span className="hidden sm:inline">Schön war heute</span>
               </Link>
               <button onClick={() => loadData()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
                 <RefreshCw className="w-4 h-4" />

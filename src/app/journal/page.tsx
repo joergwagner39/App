@@ -132,7 +132,7 @@ export default function JournalPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `dankbarkeits-tagebuch-${todayKey()}.json`
+    a.download = `schoen-war-heute-${todayKey()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }, [entries])
@@ -206,9 +206,12 @@ export default function JournalPage() {
       <header className="mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-3 text-2xl font-semibold text-gray-100 sm:text-3xl">
+            <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+              Notizen bei Lampenlicht
+            </p>
+            <h1 className="mt-1 flex items-center gap-3 text-2xl font-semibold text-gray-100 sm:text-3xl">
               <BookHeart className="text-emerald-400" size={28} />
-              Abendrückblick
+              Schön war heute
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               Ein paar ruhige Minuten für den Tag – und eine Kurve, die zeigt, wohin es geht.
