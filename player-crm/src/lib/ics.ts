@@ -23,12 +23,18 @@ export function downloadTodoAsIcs(todo: Todo, playerName: string) {
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Player Relations CRM//DE',
+    'METHOD:REQUEST',
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${dtstamp}`,
     `DTSTART;VALUE=DATE:${dtstart}`,
     `SUMMARY:${summary}`,
     description ? `DESCRIPTION:${description}` : '',
+    // Mit Empfänger wird der Termin beim Import zur Einladung, die das
+    // Kalenderprogramm (Outlook/Google) per Mail verschickt.
+    todo.reminderEmail
+      ? `ATTENDEE;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${todo.reminderEmail}`
+      : '',
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
     'TRIGGER:PT9H', // reminder at 9:00 on the day
@@ -49,4 +55,23 @@ export function downloadTodoAsIcs(todo: Todo, playerName: string) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+// Öffnet das Mailprogramm mit vorausgefüllter Erinnerung. Ein echter
+// zeitgesteuerter Versand wäre nur mit Server/Mail-Dienst möglich.
+export function openReminderMail(todo: Todo, playerName: string) {
+  const subject = `Erinnerung: ${playerName} – ${todo.text}`
+  const lines = [
+    `Erinnerung zu ${playerName}:`,
+    '',
+    todo.text,
+    todo.details ? `\n${todo.details}` : '',
+    todo.dueDate ? `\nZu erledigen bis: ${todo.dueDate}` : '',
+    todo.reminderDate ? `Erinnerung am: ${todo.reminderDate}` : '',
+  ].filter(Boolean)
+
+  const href = `mailto:${encodeURIComponent(todo.reminderEmail ?? '')}?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(lines.join('\n'))}`
+  window.location.href = href
 }

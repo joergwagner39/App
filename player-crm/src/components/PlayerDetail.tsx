@@ -25,11 +25,12 @@ import SatisfactionChart from './SatisfactionChart'
 import FileList from './FileList'
 import { detectExpiryDate } from '@/lib/ocr'
 import { getBrandLogoUrl } from '@/lib/brandLogos'
-import { downloadTodoAsIcs } from '@/lib/ics'
+import { downloadTodoAsIcs, openReminderMail } from '@/lib/ics'
 import {
   Bell,
   CalendarClock,
   CalendarPlus,
+  Mail,
   CheckCircle2,
   Loader2,
   Plus,
@@ -1169,17 +1170,54 @@ export default function PlayerDetail({
                         onChange={(e) => updateTodo(t.id, { details: e.target.value })}
                       />
                     </Field>
-                    {(t.reminderDate || t.dueDate) && (
+                    <div className="mt-2">
+                      <Field label="Erinnerung an E-Mail">
+                        <input
+                          type="email"
+                          className={inputClass}
+                          placeholder="name@firma.de"
+                          value={t.reminderEmail ?? ''}
+                          onChange={(e) =>
+                            updateTodo(t.id, { reminderEmail: e.target.value || undefined })
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(t.reminderDate || t.dueDate) && (
+                        <button
+                          onClick={() =>
+                            downloadTodoAsIcs(t, `${player.firstName} ${player.lastName}`.trim())
+                          }
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                          title={
+                            t.reminderEmail
+                              ? 'Kalender-Datei mit Empfänger – beim Import verschickt Outlook/Google die Einladung samt Erinnerung.'
+                              : 'Kalender-Datei für den eigenen Kalender.'
+                          }
+                        >
+                          <CalendarPlus className="h-3.5 w-3.5" />
+                          Als Kalender-Termin exportieren (.ics)
+                        </button>
+                      )}
                       <button
                         onClick={() =>
-                          downloadTodoAsIcs(t, `${player.firstName} ${player.lastName}`.trim())
+                          openReminderMail(t, `${player.firstName} ${player.lastName}`.trim())
                         }
-                        className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                        title="Öffnet das Mailprogramm mit vorausgefüllter Erinnerung"
                       >
-                        <CalendarPlus className="h-3.5 w-3.5" />
-                        Als Kalender-Termin exportieren (.ics)
+                        <Mail className="h-3.5 w-3.5" />
+                        Erinnerungs-Mail schreiben
                       </button>
-                    )}
+                    </div>
+
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      Hinweis: Automatisch zeitgesteuerte Mails brauchen einen Server. Trag die
+                      E-Mail ein und exportiere den Termin – Outlook/Google verschickt dann die
+                      Einladung und erinnert am Tag selbst.
+                    </p>
                   </div>
                 )}
               </li>

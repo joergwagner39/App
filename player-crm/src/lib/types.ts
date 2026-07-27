@@ -5,6 +5,7 @@ export interface Todo {
   details?: string
   reminderDate?: string // ISO date – wann erinnert werden soll
   dueDate?: string // ISO date – bis wann es erledigt sein soll
+  reminderEmail?: string // Empfänger der Erinnerung (Kalender-Einladung / Mail)
 }
 
 export interface UploadedFile {
