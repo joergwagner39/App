@@ -5,13 +5,13 @@ import { loginAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: { fehler?: string }
 }) {
-  if (userCount() === 0) redirect('/scouting/einrichten')
-  if (getCurrentUser()) redirect('/scouting')
+  if ((await userCount()) === 0) redirect('/scouting/einrichten')
+  if (await getCurrentUser()) redirect('/scouting')
 
   return (
     <div className="mx-auto mt-16 max-w-md">

@@ -5,8 +5,8 @@ import { setupAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
-export default function SetupPage({ searchParams }: { searchParams: { fehler?: string } }) {
-  if (userCount() > 0) redirect('/scouting/login')
+export default async function SetupPage({ searchParams }: { searchParams: { fehler?: string } }) {
+  if ((await userCount()) > 0) redirect('/scouting/login')
 
   return (
     <div className="mx-auto mt-12 max-w-md">

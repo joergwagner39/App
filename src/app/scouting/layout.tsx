@@ -15,8 +15,8 @@ const NAV = [
   { href: '/scouting/einstellungen', label: 'Einstellungen' },
 ]
 
-export default function ScoutingLayout({ children }: { children: React.ReactNode }) {
-  const user = getCurrentUser()
+export default async function ScoutingLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser()
 
   return (
     <div className="min-h-screen bg-slate-950">

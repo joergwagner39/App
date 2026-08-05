@@ -26,16 +26,18 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export default function SettingsPage({
+export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: { fehler?: string; gespeichert?: string; abgeglichen?: string }
 }) {
-  const user = requireUser()
-  const weights = getWeights(user.id)
+  const user = await requireUser()
   const { provider, fellBack, requested } = activeProvider()
-  const users = user.role === 'admin' ? listUsers() : []
-  const syncLog = listSyncLog(5)
+  const [weights, users, syncLog] = await Promise.all([
+    getWeights(user.id),
+    user.role === 'admin' ? listUsers() : Promise.resolve([]),
+    listSyncLog(5),
+  ])
 
   return (
     <div className="space-y-6">

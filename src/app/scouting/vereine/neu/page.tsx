@@ -5,8 +5,8 @@ import { saveClubAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
 
-export default function NewClubPage({ searchParams }: { searchParams: { fehler?: string } }) {
-  requireUser()
+export default async function NewClubPage({ searchParams }: { searchParams: { fehler?: string } }) {
+  await requireUser()
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-slate-100">Verein anlegen</h1>

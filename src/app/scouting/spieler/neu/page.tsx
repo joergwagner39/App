@@ -6,9 +6,9 @@ import { savePlayerAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
 
-export default function NewPlayerPage({ searchParams }: { searchParams: { fehler?: string } }) {
-  requireUser()
-  const clubs = listClubs()
+export default async function NewPlayerPage({ searchParams }: { searchParams: { fehler?: string } }) {
+  await requireUser()
+  const clubs = await listClubs()
 
   return (
     <div className="space-y-6">

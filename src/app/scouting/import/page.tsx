@@ -20,7 +20,7 @@ export default async function ImportPage({
 }: {
   searchParams: { q?: string; fehler?: string }
 }) {
-  requireUser()
+  await requireUser()
 
   const { provider, fellBack, requested } = activeProvider()
   const query = searchParams.q?.trim() ?? ''
@@ -33,6 +33,16 @@ export default async function ImportPage({
     } catch (err) {
       searchError = (err as Error).message
     }
+  }
+
+  // Vorab nachsehen, welche Treffer schon in der Datenbank stehen — dann muss die
+  // Liste unten nicht je Zeile einzeln nachfragen.
+  const alreadyImported = await Promise.all(
+    results.map(async (r) => ({ ref: r.ref, player: await findPlayerByProviderRef(r.ref) })),
+  )
+  const importedByRef = new Map<string, string>()
+  for (const entry of alreadyImported) {
+    if (entry.player) importedByRef.set(entry.ref, entry.player.id)
   }
 
   return (
@@ -79,7 +89,7 @@ export default async function ImportPage({
           ) : (
             <ul className="space-y-2">
               {results.map((r) => {
-                const existing = findPlayerByProviderRef(r.ref)
+                const existingId = importedByRef.get(r.ref)
                 return (
                   <li
                     key={r.ref}
@@ -103,9 +113,9 @@ export default async function ImportPage({
                       </div>
                     </div>
 
-                    {existing ? (
+                    {existingId ? (
                       <a
-                        href={`/scouting/spieler/${existing.id}`}
+                        href={`/scouting/spieler/${existingId}`}
                         className="text-xs text-sky-400 hover:underline"
                       >
                         bereits importiert — öffnen

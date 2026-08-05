@@ -13,9 +13,9 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export default function ClubsPage({ searchParams }: { searchParams: { fehler?: string } }) {
-  requireUser()
-  const clubs = listClubs()
+export default async function ClubsPage({ searchParams }: { searchParams: { fehler?: string } }) {
+  await requireUser()
+  const clubs = await listClubs()
 
   return (
     <div className="space-y-6">

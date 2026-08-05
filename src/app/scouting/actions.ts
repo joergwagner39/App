@@ -63,7 +63,7 @@ function withError(path: string, message: string): never {
 // --- Anmeldung -------------------------------------------------------------
 
 export async function setupAction(formData: FormData) {
-  if (userCount() > 0) redirect('/scouting/login')
+  if ((await userCount()) > 0) redirect('/scouting/login')
 
   const email = str(formData, 'email')
   const name = str(formData, 'name')
@@ -72,7 +72,7 @@ export async function setupAction(formData: FormData) {
 
   let user
   try {
-    user = createUser(email, name, password, 'admin')
+    user = await createUser(email, name, password, 'admin')
   } catch (err) {
     withError('/scouting/einrichten', (err as Error).message)
   }
@@ -85,7 +85,7 @@ export async function setupAction(formData: FormData) {
     }
   }
 
-  startSession(user.id)
+  await startSession(user.id)
   redirect('/scouting')
 }
 
@@ -93,10 +93,10 @@ export async function loginAction(formData: FormData) {
   const email = str(formData, 'email')
   const password = str(formData, 'password')
 
-  const user = authenticate(email, password)
+  const user = await authenticate(email, password)
   if (!user) withError('/scouting/login', 'E-Mail oder Passwort stimmt nicht.')
 
-  startSession(user.id)
+  await startSession(user.id)
   redirect('/scouting')
 }
 
@@ -106,10 +106,10 @@ export async function logoutAction() {
 }
 
 export async function createUserAction(formData: FormData) {
-  requireAdmin()
+  await requireAdmin()
   const role = str(formData, 'role') === 'admin' ? 'admin' : 'berater'
   try {
-    createUser(str(formData, 'email'), str(formData, 'name'), str(formData, 'password'), role)
+    await createUser(str(formData, 'email'), str(formData, 'name'), str(formData, 'password'), role)
   } catch (err) {
     withError('/scouting/einstellungen', (err as Error).message)
   }
@@ -118,24 +118,24 @@ export async function createUserAction(formData: FormData) {
 }
 
 export async function deleteUserAction(formData: FormData) {
-  const me = requireAdmin()
+  const me = await requireAdmin()
   const id = str(formData, 'id')
   if (id === me.id) withError('/scouting/einstellungen', 'Das eigene Konto lässt sich nicht löschen.')
-  deleteUser(id)
+  await deleteUser(id)
   revalidatePath('/scouting/einstellungen')
 }
 
 // --- Spieler ---------------------------------------------------------------
 
 export async function savePlayerAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const id = strOrNull(formData, 'id')
   const name = str(formData, 'name')
   if (!name) {
     withError(id ? `/scouting/spieler/${id}/bearbeiten` : '/scouting/spieler/neu', 'Bitte einen Namen angeben.')
   }
 
-  const existing = id ? getPlayer(id) : null
+  const existing = id ? await getPlayer(id) : null
   const altPositions = formData
     .getAll('altPositions')
     .map((v) => String(v))
@@ -148,7 +148,7 @@ export async function savePlayerAction(formData: FormData) {
 
   const foot = str(formData, 'foot')
 
-  const saved = upsertPlayer({
+  const saved = await upsertPlayer({
     id: id ?? undefined,
     name,
     position: asPosition(str(formData, 'position')),
@@ -183,8 +183,8 @@ export async function savePlayerAction(formData: FormData) {
 }
 
 export async function deletePlayerAction(formData: FormData) {
-  requireUser()
-  deletePlayer(str(formData, 'id'))
+  await requireUser()
+  await deletePlayer(str(formData, 'id'))
   revalidatePath('/scouting')
   redirect('/scouting')
 }
@@ -192,14 +192,14 @@ export async function deletePlayerAction(formData: FormData) {
 // --- Vereine ---------------------------------------------------------------
 
 export async function saveClubAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const id = strOrNull(formData, 'id')
   const name = str(formData, 'name')
   if (!name) {
     withError(id ? `/scouting/vereine/${id}` : '/scouting/vereine/neu', 'Bitte einen Vereinsnamen angeben.')
   }
 
-  const existing = id ? getClub(id) : null
+  const existing = id ? await getClub(id) : null
 
   const needs: Partial<Record<Position, number>> = {}
   for (const pos of POSITIONS) {
@@ -207,7 +207,7 @@ export async function saveClubAction(formData: FormData) {
     if (raw != null && raw > 0) needs[pos] = Math.max(0, Math.min(100, raw))
   }
 
-  const saved = upsertClub({
+  const saved = await upsertClub({
     id: id ?? undefined,
     name,
     country: str(formData, 'country'),
@@ -233,8 +233,8 @@ export async function saveClubAction(formData: FormData) {
 }
 
 export async function deleteClubAction(formData: FormData) {
-  requireUser()
-  deleteClub(str(formData, 'id'))
+  await requireUser()
+  await deleteClub(str(formData, 'id'))
   revalidatePath('/scouting/vereine')
   redirect('/scouting/vereine')
 }
@@ -242,13 +242,13 @@ export async function deleteClubAction(formData: FormData) {
 // --- Gerüchte, Verletzungen, Einschätzungen --------------------------------
 
 export async function addRumorAction(formData: FormData) {
-  const user = requireUser()
+  const user = await requireUser()
   const playerId = str(formData, 'playerId')
   const clubId = str(formData, 'clubId')
   if (!playerId || !clubId) withError(`/scouting/spieler/${playerId}`, 'Bitte einen Verein auswählen.')
 
   const stage = str(formData, 'stage')
-  addRumor({
+  await addRumor({
     playerId,
     clubId,
     stage: (RUMOR_STAGES as readonly string[]).includes(stage)
@@ -265,15 +265,15 @@ export async function addRumorAction(formData: FormData) {
 }
 
 export async function deleteRumorAction(formData: FormData) {
-  requireUser()
-  deleteRumor(str(formData, 'id'))
+  await requireUser()
+  await deleteRumor(str(formData, 'id'))
   revalidatePath(`/scouting/spieler/${str(formData, 'playerId')}`)
 }
 
 export async function addInjuryAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const playerId = str(formData, 'playerId')
-  addInjury({
+  await addInjury({
     playerId,
     type: str(formData, 'type') || 'unbekannt',
     severity: intOrNull(formData, 'severity') ?? 2,
@@ -286,18 +286,18 @@ export async function addInjuryAction(formData: FormData) {
 }
 
 export async function deleteInjuryAction(formData: FormData) {
-  requireUser()
-  deleteInjury(str(formData, 'id'))
+  await requireUser()
+  await deleteInjury(str(formData, 'id'))
   revalidatePath(`/scouting/spieler/${str(formData, 'playerId')}`)
 }
 
 export async function addAssessmentAction(formData: FormData) {
-  const user = requireUser()
+  const user = await requireUser()
   const playerId = strOrNull(formData, 'playerId')
   const clubId = strOrNull(formData, 'clubId')
   const kind = str(formData, 'kind')
 
-  addAssessment({
+  await addAssessment({
     userId: user.id,
     playerId,
     clubId,
@@ -313,8 +313,8 @@ export async function addAssessmentAction(formData: FormData) {
 }
 
 export async function deleteAssessmentAction(formData: FormData) {
-  requireUser()
-  deleteAssessment(str(formData, 'id'))
+  await requireUser()
+  await deleteAssessment(str(formData, 'id'))
   const playerId = strOrNull(formData, 'playerId')
   const clubId = strOrNull(formData, 'clubId')
   if (playerId) revalidatePath(`/scouting/spieler/${playerId}`)
@@ -324,20 +324,20 @@ export async function deleteAssessmentAction(formData: FormData) {
 // --- Gewichtung ------------------------------------------------------------
 
 export async function saveWeightsAction(formData: FormData) {
-  const user = requireUser()
+  const user = await requireUser()
   const weights: Record<string, number> = {}
   for (const key of CRITERIA) {
     const value = intOrNull(formData, `w_${key}`)
     if (value != null) weights[key] = value
   }
-  saveWeights(user.id, weights)
+  await saveWeights(user.id, weights)
   revalidatePath('/scouting')
   redirect('/scouting/einstellungen?gespeichert=1')
 }
 
 export async function resetWeightsAction() {
-  const user = requireUser()
-  resetWeights(user.id)
+  const user = await requireUser()
+  await resetWeights(user.id)
   revalidatePath('/scouting/einstellungen')
   redirect('/scouting/einstellungen')
 }
@@ -345,7 +345,7 @@ export async function resetWeightsAction() {
 // --- Datenabgleich ---------------------------------------------------------
 
 export async function syncClubsAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const league = strOrNull(formData, 'league')
   try {
     await syncClubs(league ?? undefined)
@@ -357,14 +357,14 @@ export async function syncClubsAction(formData: FormData) {
 }
 
 export async function seedDemoAction() {
-  requireUser()
+  await requireUser()
   await seedDemoData()
   revalidatePath('/scouting')
   redirect('/scouting?demo=1')
 }
 
 export async function syncInjuriesAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const playerId = str(formData, 'playerId')
   try {
     await syncInjuriesForPlayer(playerId)
@@ -375,7 +375,7 @@ export async function syncInjuriesAction(formData: FormData) {
 }
 
 export async function importPlayerAction(formData: FormData) {
-  requireUser()
+  await requireUser()
   const ref = str(formData, 'ref')
   const query = str(formData, 'query')
   const { provider } = activeProvider()
@@ -384,7 +384,7 @@ export async function importPlayerAction(formData: FormData) {
   const found = results.find((p) => p.ref === ref)
   if (!found) withError('/scouting/import', 'Der Spieler wurde beim Anbieter nicht mehr gefunden.')
 
-  const { id } = importProviderPlayer(found)
+  const { id } = await importProviderPlayer(found)
   revalidatePath('/scouting')
   redirect(`/scouting/spieler/${id}`)
 }

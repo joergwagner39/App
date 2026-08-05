@@ -38,22 +38,24 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export default function PlayerDetailPage({
+export default async function PlayerDetailPage({
   params,
   searchParams,
 }: {
   params: { id: string }
   searchParams: { fehler?: string }
 }) {
-  const user = requireUser()
-  const player = getPlayer(params.id)
+  const user = await requireUser()
+  const player = await getPlayer(params.id)
   if (!player) notFound()
 
-  const clubs = listClubs()
-  const rumors = listRumors(player.id)
-  const injuries = listInjuries(player.id)
-  const assessments = listAssessments({ playerId: player.id })
-  const weights = getWeights(user.id)
+  const [clubs, rumors, injuries, assessments, weights] = await Promise.all([
+    listClubs(),
+    listRumors(player.id),
+    listInjuries(player.id),
+    listAssessments({ playerId: player.id }),
+    getWeights(user.id),
+  ])
 
   const results = matchPlayer({
     player,
@@ -65,7 +67,7 @@ export default function PlayerDetailPage({
   })
 
   const clubById = new Map(clubs.map((c) => [c.id, c]))
-  const currentClub = player.currentClubId ? getClub(player.currentClubId) : null
+  const currentClub = player.currentClubId ? await getClub(player.currentClubId) : null
   const today = new Date().toISOString().slice(0, 10)
 
   return (

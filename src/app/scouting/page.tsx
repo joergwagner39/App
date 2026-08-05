@@ -17,16 +17,16 @@ import { seedDemoAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
-export default function PlayersPage({
+export default async function PlayersPage({
   searchParams,
 }: {
   searchParams: { q?: string; fehler?: string; demo?: string }
 }) {
-  requireUser()
+  await requireUser()
 
   const query = searchParams.q ?? ''
-  const players = listPlayers(query)
-  const clubs = listClubs()
+  const players = await listPlayers(query)
+  const clubs = await listClubs()
   const clubName = new Map(clubs.map((c) => [c.id, c.name]))
 
   return (

@@ -2,33 +2,35 @@
  * Durchlauf gegen eine echte SQLite-Datei: Benutzer anlegen, Demo-Daten laden,
  * Matching rechnen. Aufruf: npx tsx scripts/scouting/smoke.ts
  */
-import { createUser, userCount } from '../../src/lib/scouting/auth'
+import { createUser, listUsers, userCount } from '../../src/lib/scouting/auth'
 import { getWeights, listAssessments, listClubs, listInjuries, listPlayers, listRumors } from '../../src/lib/scouting/repo'
 import { seedDemoData } from '../../src/lib/scouting/sync'
 import { matchPlayer } from '../../src/lib/scouting/matching'
 
 async function main() {
-  if (userCount() === 0) {
-    const user = createUser('chef@example.com', 'Chef', 'geheim1234', 'admin')
-    console.log('Benutzer angelegt:', user.email, user.role)
+  if ((await userCount()) === 0) {
+    const created = await createUser('chef@example.com', 'Chef', 'geheim1234', 'admin')
+    console.log('Benutzer angelegt:', created.email, created.role)
   }
-  const user = { id: (await import('../../src/lib/scouting/auth')).listUsers()[0].id }
+  const user = (await listUsers())[0]
 
   const seeded = await seedDemoData()
   console.log(`Demo-Daten: ${seeded.clubs} Vereine, ${seeded.players} Spieler neu angelegt.`)
 
-  const clubs = listClubs()
-  const players = listPlayers()
-  const weights = getWeights(user.id)
+  const [clubs, players, weights] = await Promise.all([
+    listClubs(),
+    listPlayers(),
+    getWeights(user.id),
+  ])
   console.log(`Bestand: ${clubs.length} Vereine, ${players.length} Spieler.\n`)
 
   for (const player of players) {
     const results = matchPlayer({
       player,
       clubs,
-      rumors: listRumors(player.id),
-      injuries: listInjuries(player.id),
-      assessments: listAssessments({ playerId: player.id }),
+      rumors: await listRumors(player.id),
+      injuries: await listInjuries(player.id),
+      assessments: await listAssessments({ playerId: player.id }),
       weights,
     })
     const top = results.slice(0, 3)

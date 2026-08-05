@@ -1,10 +1,10 @@
-import { getDb } from './db'
 import {
   addInjury,
   addSyncLog,
   findClubByProviderRef,
   findPlayerByProviderRef,
   getPlayer,
+  injuryExists,
   listClubs,
   upsertClub,
   upsertPlayer,
@@ -33,9 +33,9 @@ export async function syncClubs(league?: string): Promise<SyncResult> {
   let created = 0
   let updated = 0
   for (const c of clubs) {
-    const existing = findClubByProviderRef(c.ref)
+    const existing = await findClubByProviderRef(c.ref)
     if (existing) {
-      upsertClub({
+      await upsertClub({
         ...existing,
         name: c.name,
         country: c.country || existing.country,
@@ -43,7 +43,7 @@ export async function syncClubs(league?: string): Promise<SyncResult> {
       })
       updated++
     } else {
-      upsertClub({
+      await upsertClub({
         name: c.name,
         country: c.country,
         league: c.league,
@@ -67,18 +67,20 @@ export async function syncClubs(league?: string): Promise<SyncResult> {
   }
 
   const message = `${clubs.length} Vereine vom Anbieter gelesen. Budgets, Bedarf und Spielstil müssen weiterhin manuell gepflegt werden.`
-  addSyncLog({ provider: provider.id, scope: 'clubs', created, updated, message })
+  await addSyncLog({ provider: provider.id, scope: 'clubs', created, updated, message })
   return { provider: provider.id, created, updated, message }
 }
 
 /** Einen Spieler aus dem Provider übernehmen bzw. aktualisieren. */
-export function importProviderPlayer(p: ProviderPlayer): { id: string; isNew: boolean } {
-  const existing = findPlayerByProviderRef(p.ref)
-  const club = p.clubRef ? findClubByProviderRef(p.clubRef) : null
+export async function importProviderPlayer(
+  p: ProviderPlayer,
+): Promise<{ id: string; isNew: boolean }> {
+  const existing = await findPlayerByProviderRef(p.ref)
+  const club = p.clubRef ? await findClubByProviderRef(p.clubRef) : null
 
   if (existing) {
     // Nur Anbieterfelder aktualisieren; alles manuell Gepflegte bleibt unangetastet.
-    const saved = upsertPlayer({
+    const saved = await upsertPlayer({
       ...existing,
       name: p.name || existing.name,
       age: p.age ?? existing.age,
@@ -96,7 +98,7 @@ export function importProviderPlayer(p: ProviderPlayer): { id: string; isNew: bo
     return { id: saved.id, isNew: false }
   }
 
-  const saved = upsertPlayer({
+  const saved = await upsertPlayer({
     name: p.name,
     position: p.position ?? 'ZM',
     altPositions: p.altPositions ?? [],
@@ -130,22 +132,19 @@ export function importProviderPlayer(p: ProviderPlayer): { id: string; isNew: bo
 /** Verletzungen eines Spielers nachziehen, ohne Duplikate anzulegen. */
 export async function syncInjuriesForPlayer(playerId: string): Promise<SyncResult> {
   const { provider } = activeProvider()
-  const player = getPlayer(playerId)
+  const player = await getPlayer(playerId)
   if (!player) throw new Error('Spieler nicht gefunden.')
   if (!player.providerRef) {
     throw new Error('Dieser Spieler stammt nicht vom Anbieter — Verletzungen bitte manuell pflegen.')
   }
 
   const injuries = await provider.listInjuries({ playerRef: player.providerRef })
-  const exists = getDb().prepare(
-    'SELECT id FROM injuries WHERE player_id = ? AND type = ? AND start_date = ?',
-  )
 
   let created = 0
   for (const inj of injuries) {
     const startDate = inj.startDate.slice(0, 10)
-    if (exists.get(playerId, inj.type, startDate)) continue
-    addInjury({
+    if (await injuryExists(playerId, inj.type, startDate)) continue
+    await addInjury({
       playerId,
       type: inj.type,
       severity: inj.severity ?? 2,
@@ -158,7 +157,7 @@ export async function syncInjuriesForPlayer(playerId: string): Promise<SyncResul
   }
 
   const message = `${injuries.length} Einträge gelesen, ${created} neu übernommen.`
-  addSyncLog({ provider: provider.id, scope: `injuries:${playerId}`, created, updated: 0, message })
+  await addSyncLog({ provider: provider.id, scope: `injuries:${playerId}`, created, updated: 0, message })
   return { provider: provider.id, created, updated: 0, message }
 }
 
@@ -321,7 +320,7 @@ export async function seedDemoData(): Promise<{ clubs: number; players: number }
   const clubs = await demoProvider.listClubs({})
   let clubCount = 0
   for (const c of clubs) {
-    if (findClubByProviderRef(c.ref)) continue
+    if (await findClubByProviderRef(c.ref)) continue
     const profile = profiles[c.ref] ?? {
       transferBudgetEur: null,
       salaryBudgetEur: null,
@@ -335,7 +334,7 @@ export async function seedDemoData(): Promise<{ clubs: number; players: number }
       riskTolerance: null,
       needs: {},
     }
-    upsertClub({
+    await upsertClub({
       name: c.name,
       country: c.country,
       league: c.league,
@@ -362,12 +361,12 @@ export async function seedDemoData(): Promise<{ clubs: number; players: number }
   const players = await demoProvider.searchPlayers('')
   let playerCount = 0
   for (const p of players) {
-    if (findPlayerByProviderRef(p.ref)) continue
-    const { id } = importProviderPlayer(p)
+    if (await findPlayerByProviderRef(p.ref)) continue
+    const { id } = await importProviderPlayer(p)
     const attr = attributes[p.ref]
-    const stored = getPlayer(id)
+    const stored = await getPlayer(id)
     if (stored && attr) {
-      upsertPlayer({
+      await upsertPlayer({
         ...stored,
         pace: attr.pace,
         technique: attr.technique,
@@ -390,13 +389,10 @@ export async function seedDemoData(): Promise<{ clubs: number; players: number }
 async function syncInjuriesForPlayerRef(playerId: string, ref: string) {
   const { demoProvider } = await import('./providers/demo')
   const injuries = await demoProvider.listInjuries({ playerRef: ref })
-  const exists = getDb().prepare(
-    'SELECT id FROM injuries WHERE player_id = ? AND type = ? AND start_date = ?',
-  )
   for (const inj of injuries) {
     const startDate = inj.startDate.slice(0, 10)
-    if (exists.get(playerId, inj.type, startDate)) continue
-    addInjury({
+    if (await injuryExists(playerId, inj.type, startDate)) continue
+    await addInjury({
       playerId,
       type: inj.type,
       severity: inj.severity ?? 2,
@@ -408,6 +404,6 @@ async function syncInjuriesForPlayerRef(playerId: string, ref: string) {
   }
 }
 
-export function hasAnyData(): boolean {
-  return listClubs().length > 0
+export async function hasAnyData(): Promise<boolean> {
+  return (await listClubs()).length > 0
 }

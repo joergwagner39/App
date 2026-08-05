@@ -23,18 +23,18 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export default function ClubDetailPage({
+export default async function ClubDetailPage({
   params,
   searchParams,
 }: {
   params: { id: string }
   searchParams: { fehler?: string; gespeichert?: string }
 }) {
-  requireUser()
-  const club = getClub(params.id)
+  await requireUser()
+  const club = await getClub(params.id)
   if (!club) notFound()
 
-  const assessments = listAssessments({ clubId: club.id })
+  const assessments = await listAssessments({ clubId: club.id })
 
   return (
     <div className="space-y-6">

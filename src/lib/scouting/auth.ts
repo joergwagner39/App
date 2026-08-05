@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { cookies } from 'next/headers'
-import { getDb, getMeta, newId, setMeta } from './db'
+import { all, newId, one, run, getMeta, setMeta } from './db'
 import { User } from './types'
 
 const COOKIE = 'scouting_session'
@@ -29,35 +29,36 @@ export function verifyPassword(password: string, stored: string): boolean {
 // Session-Cookie (signiertes Token, kein zusätzlicher Speicher nötig)
 // ---------------------------------------------------------------------------
 
-function sessionSecret(): Buffer {
+async function sessionSecret(): Promise<Buffer> {
   const fromEnv = process.env.SCOUTING_SESSION_SECRET
   if (fromEnv) return Buffer.from(fromEnv, 'utf8')
 
-  // Ohne gesetztes Secret wird einmalig eines erzeugt und in der DB abgelegt,
-  // damit die App auch ohne Konfiguration sofort läuft.
-  let stored = getMeta('session_secret')
+  // Ohne gesetztes Secret wird einmalig eines erzeugt und in der Datenbank
+  // abgelegt, damit die App auch ohne Konfiguration sofort läuft.
+  let stored = await getMeta('session_secret')
   if (!stored) {
     stored = crypto.randomBytes(32).toString('base64url')
-    setMeta('session_secret', stored)
+    await setMeta('session_secret', stored)
   }
   return Buffer.from(stored, 'utf8')
 }
 
-function sign(payload: string): string {
-  return crypto.createHmac('sha256', sessionSecret()).update(payload).digest('base64url')
+async function sign(payload: string): Promise<string> {
+  const secret = await sessionSecret()
+  return crypto.createHmac('sha256', secret).update(payload).digest('base64url')
 }
 
-function createToken(userId: string): string {
+async function createToken(userId: string): Promise<string> {
   const exp = Date.now() + SESSION_DAYS * 24 * 3600 * 1000
   const payload = Buffer.from(JSON.stringify({ uid: userId, exp })).toString('base64url')
-  return `${payload}.${sign(payload)}`
+  return `${payload}.${await sign(payload)}`
 }
 
-function readToken(token: string): string | null {
+async function readToken(token: string): Promise<string | null> {
   const [payload, mac] = token.split('.')
   if (!payload || !mac) return null
 
-  const expected = Buffer.from(sign(payload))
+  const expected = Buffer.from(await sign(payload))
   const actual = Buffer.from(mac)
   if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) return null
 
@@ -70,8 +71,8 @@ function readToken(token: string): string | null {
   }
 }
 
-export function startSession(userId: string): void {
-  cookies().set(COOKIE, createToken(userId), {
+export async function startSession(userId: string): Promise<void> {
+  cookies().set(COOKIE, await createToken(userId), {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -107,29 +108,27 @@ function toUser(row: UserRow): User {
   }
 }
 
-export function userCount(): number {
-  const row = getDb().prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }
-  return row.n
+export async function userCount(): Promise<number> {
+  const row = await one('SELECT COUNT(*) AS n FROM users')
+  return Number(row?.n ?? 0)
 }
 
-export function listUsers(): User[] {
-  const rows = getDb()
-    .prepare('SELECT * FROM users ORDER BY created_at ASC')
-    .all() as UserRow[]
+export async function listUsers(): Promise<User[]> {
+  const rows = (await all('SELECT * FROM users ORDER BY created_at ASC')) as UserRow[]
   return rows.map(toUser)
 }
 
-export function createUser(
+export async function createUser(
   email: string,
   name: string,
   password: string,
   role: 'admin' | 'berater',
-): User {
+): Promise<User> {
   const normalized = email.trim().toLowerCase()
   if (!normalized.includes('@')) throw new Error('Bitte eine gültige E-Mail-Adresse angeben.')
   if (password.length < 8) throw new Error('Das Passwort muss mindestens 8 Zeichen haben.')
 
-  const existing = getDb().prepare('SELECT id FROM users WHERE email = ?').get(normalized)
+  const existing = await one('SELECT id FROM users WHERE email = ?', [normalized])
   if (existing) throw new Error('Für diese E-Mail-Adresse existiert bereits ein Konto.')
 
   const user: UserRow = {
@@ -140,23 +139,22 @@ export function createUser(
     role,
     created_at: new Date().toISOString(),
   }
-  getDb()
-    .prepare(
-      `INSERT INTO users (id, email, name, password_hash, role, created_at)
-       VALUES (@id, @email, @name, @password_hash, @role, @created_at)`,
-    )
-    .run(user)
+  await run(
+    `INSERT INTO users (id, email, name, password_hash, role, created_at)
+     VALUES (@id, @email, @name, @password_hash, @role, @created_at)`,
+    { ...user },
+  )
   return toUser(user)
 }
 
-export function deleteUser(id: string): void {
-  getDb().prepare('DELETE FROM users WHERE id = ?').run(id)
+export async function deleteUser(id: string): Promise<void> {
+  await run('DELETE FROM users WHERE id = ?', [id])
 }
 
-export function authenticate(email: string, password: string): User | null {
-  const row = getDb()
-    .prepare('SELECT * FROM users WHERE email = ?')
-    .get(email.trim().toLowerCase()) as UserRow | undefined
+export async function authenticate(email: string, password: string): Promise<User | null> {
+  const row = (await one('SELECT * FROM users WHERE email = ?', [
+    email.trim().toLowerCase(),
+  ])) as UserRow | null
   if (!row) {
     // Gleiche Laufzeit wie bei existierendem Konto, damit die Antwort nichts verrät.
     crypto.scryptSync(password, 'dummy', 64)
@@ -166,11 +164,11 @@ export function authenticate(email: string, password: string): User | null {
   return toUser(row)
 }
 
-export function getCurrentUser(): User | null {
+export async function getCurrentUser(): Promise<User | null> {
   const token = cookies().get(COOKIE)?.value
   if (!token) return null
-  const uid = readToken(token)
+  const uid = await readToken(token)
   if (!uid) return null
-  const row = getDb().prepare('SELECT * FROM users WHERE id = ?').get(uid) as UserRow | undefined
+  const row = (await one('SELECT * FROM users WHERE id = ?', [uid])) as UserRow | null
   return row ? toUser(row) : null
 }

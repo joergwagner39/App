@@ -10,11 +10,11 @@
     "test": "tsx --test src/lib/scouting/*.test.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "autoprefixer": "^10.4.0",
-    "better-sqlite3": "^13.0.2",
     "date-fns": "^3.0.0",
     "fit-file-parser": "^3.0.2",
     "garmin-connect": "^1.6.2",
@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@types/better-sqlite3": "^9.6.0",
     "tsx": "^4.23.5"
   }
 }

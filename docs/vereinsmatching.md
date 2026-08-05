@@ -16,8 +16,51 @@ wird als Administrator angelegt; auf Wunsch wird ein Demo-Datensatz mitgeliefert
 legt der Administrator unter *Einstellungen* an. Jeder Benutzer hat eine eigene
 Gewichtung und eigene Einschätzungen.
 
-Die Daten liegen in einer SQLite-Datei unter `data/scouting.db` (per
-`SCOUTING_DB_PATH` verlegbar — beim Deployment auf ein persistentes Volume legen).
+Die Daten liegen lokal in einer SQLite-Datei unter `data/scouting.db`, per
+`SCOUTING_DB_PATH` verlegbar.
+
+## Deployment auf Vercel
+
+Die App spricht über libSQL sowohl eine lokale SQLite-Datei als auch eine
+gehostete **Turso**-Datenbank an — eine Datenschicht für beides.
+
+Auf Vercel ist Turso Pflicht. Eine Serverless-Funktion bekommt bei jedem Request
+ein frisches, leeres Dateisystem; eine lokale SQLite-Datei wäre nach dem
+Speichern eines Vereins wieder weg. Fehlt `TURSO_DATABASE_URL` auf Vercel, bricht
+die App beim Start mit einer entsprechenden Meldung ab, statt Daten stillschweigend
+zu verlieren.
+
+**Schritte:**
+
+1. Turso-Konto anlegen und Datenbank erzeugen:
+
+   ```bash
+   curl -sSfL https://get.tur.so/install.sh | bash
+   turso auth signup
+   turso db create vereinsmatching
+   turso db show vereinsmatching --url        # → TURSO_DATABASE_URL
+   turso db tokens create vereinsmatching     # → TURSO_AUTH_TOKEN
+   ```
+
+2. Auf vercel.com das GitHub-Repository importieren und den Branch wählen.
+
+3. Unter *Settings → Environment Variables* eintragen:
+
+   | Variable | Wert |
+   | --- | --- |
+   | `TURSO_DATABASE_URL` | aus Schritt 1 |
+   | `TURSO_AUTH_TOKEN` | aus Schritt 1 |
+   | `SCOUTING_SESSION_SECRET` | eine lange Zufallszeichenkette |
+   | `SCOUTING_DATA_PROVIDER` | `demo`, bis ein API-Key vorliegt |
+
+   `SCOUTING_SESSION_SECRET` sollte im Produktivbetrieb gesetzt sein. Ohne den
+   Wert erzeugt die App zwar selbst einen und legt ihn in der Datenbank ab, aber
+   ein bewusst gesetzter Schlüssel lässt sich rotieren.
+
+4. Deployen. Beim ersten Aufruf von `/scouting` legt die App die Tabellen selbst
+   an und führt zur Ersteinrichtung.
+
+Das kostenlose Kontingent von Turso und Vercel reicht für diesen Umfang.
 
 ## Woher die Daten kommen
 

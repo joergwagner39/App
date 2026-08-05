@@ -1,29 +1,67 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import Database from 'better-sqlite3'
+import { createClient, type Client, type InValue } from '@libsql/client'
 
 /**
- * SQLite-Anbindung. Der Pfad lässt sich über SCOUTING_DB_PATH umbiegen, damit
- * die Datenbank beim Deployment auf einem persistenten Volume liegen kann.
+ * Datenbankanbindung über libSQL.
+ *
+ * Derselbe Client spricht beides: eine lokale SQLite-Datei in der Entwicklung
+ * und eine gehostete Turso-Datenbank in der Produktion. Deshalb gibt es nur eine
+ * Datenschicht statt zweier Implementierungen.
+ *
+ *   Lokal     — nichts setzen, oder SCOUTING_DB_PATH auf eine Datei zeigen lassen
+ *   Turso     — TURSO_DATABASE_URL und TURSO_AUTH_TOKEN setzen
+ *
+ * Auf Vercel ist die lokale Variante keine Option: das Dateisystem einer
+ * Serverless-Funktion ist nach dem Request wieder weg. Ohne TURSO_DATABASE_URL
+ * bricht der Start dort deshalb bewusst mit einer klaren Meldung ab, statt Daten
+ * stillschweigend zu verlieren.
  */
-const DB_PATH =
-  process.env.SCOUTING_DB_PATH ?? path.join(process.cwd(), 'data', 'scouting.db')
 
-let db: Database.Database | null = null
+function resolveConfig(): { url: string; authToken?: string } {
+  const tursoUrl = process.env.TURSO_DATABASE_URL?.trim()
+  if (tursoUrl) {
+    const authToken = process.env.TURSO_AUTH_TOKEN?.trim()
+    if (!authToken && !tursoUrl.startsWith('file:')) {
+      throw new Error(
+        'TURSO_DATABASE_URL ist gesetzt, TURSO_AUTH_TOKEN fehlt. Beide Werte stehen im Turso-Dashboard.',
+      )
+    }
+    return { url: tursoUrl, authToken }
+  }
 
-export function getDb(): Database.Database {
-  if (db) return db
+  if (process.env.VERCEL) {
+    throw new Error(
+      'Auf Vercel wird eine Turso-Datenbank benötigt: TURSO_DATABASE_URL und TURSO_AUTH_TOKEN ' +
+        'in den Projekt-Umgebungsvariablen setzen. Eine lokale SQLite-Datei überlebt dort keinen Request.',
+    )
+  }
 
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true })
-  db = new Database(DB_PATH)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
-  migrate(db)
-  return db
+  const filePath = process.env.SCOUTING_DB_PATH ?? path.join(process.cwd(), 'data', 'scouting.db')
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  return { url: `file:${filePath}` }
 }
 
-function migrate(d: Database.Database) {
-  d.exec(`
+let clientPromise: Promise<Client> | null = null
+
+export function getDb(): Promise<Client> {
+  if (!clientPromise) {
+    clientPromise = (async () => {
+      const client = createClient(resolveConfig())
+      await migrate(client)
+      return client
+    })().catch((err) => {
+      // Ein fehlgeschlagener Aufbau darf nicht dauerhaft zwischengespeichert
+      // werden, sonst bleibt die App auch nach korrigierter Konfiguration tot.
+      clientPromise = null
+      throw err
+    })
+  }
+  return clientPromise
+}
+
+async function migrate(client: Client) {
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS meta (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -154,19 +192,41 @@ function migrate(d: Database.Database) {
   `)
 }
 
-export function getMeta(key: string): string | null {
-  const row = getDb().prepare('SELECT value FROM meta WHERE key = ?').get(key) as
-    | { value: string }
-    | undefined
+// ---------------------------------------------------------------------------
+// Kleine Hilfen, damit die Repository-Schicht knapp bleibt
+// ---------------------------------------------------------------------------
+
+export type Args = Record<string, InValue> | InValue[]
+
+/** Alle Zeilen einer Abfrage als einfache Objekte. */
+export async function all(sql: string, args?: Args): Promise<any[]> {
+  const db = await getDb()
+  const result = await db.execute(args === undefined ? sql : { sql, args })
+  return result.rows as unknown as any[]
+}
+
+/** Erste Zeile oder null. */
+export async function one(sql: string, args?: Args): Promise<any | null> {
+  const rows = await all(sql, args)
+  return rows[0] ?? null
+}
+
+/** Schreibender Aufruf ohne Rückgabe. */
+export async function run(sql: string, args?: Args): Promise<void> {
+  const db = await getDb()
+  await db.execute(args === undefined ? sql : { sql, args })
+}
+
+export async function getMeta(key: string): Promise<string | null> {
+  const row = await one('SELECT value FROM meta WHERE key = ?', [key])
   return row?.value ?? null
 }
 
-export function setMeta(key: string, value: string): void {
-  getDb()
-    .prepare(
-      'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-    )
-    .run(key, value)
+export async function setMeta(key: string, value: string): Promise<void> {
+  await run(
+    'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    [key, value],
+  )
 }
 
 export function newId(prefix: string): string {
