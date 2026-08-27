@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import {
   Heart, Moon, Activity, Zap, Battery, Thermometer,
-  RefreshCw, AlertCircle, TrendingUp, Timer, Flame, Footprints, Settings
+  RefreshCw, AlertCircle, TrendingUp, Timer, Flame, Footprints, Settings, LineChart
 } from 'lucide-react'
 
 import type { DashboardData, GarminActivityData, GarminDailyData } from '@/types'
@@ -204,6 +205,13 @@ export default function Dashboard() {
                   Garmin {!hasGarmin && <span className="text-gray-600">— keine FIT-Daten</span>}
                 </div>
               </div>
+              <Link
+                href="/trading"
+                className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                title="Trading-Bot"
+              >
+                <LineChart className="w-4 h-4" />
+              </Link>
               <button onClick={() => loadData()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
