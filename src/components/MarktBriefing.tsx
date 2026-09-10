@@ -1,4 +1,3 @@
-import DuckMascot from './DuckMascot'
 import { accentClasses, type Briefing } from '@/lib/briefing'
 
 /**
@@ -26,8 +25,8 @@ export default function MarktBriefing({ data }: { data: Briefing }) {
 
       {/* Story-Header */}
       <div className="flex items-center gap-4 px-10 pt-6">
-        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[#e8e6e0] ring-2 ring-black/10">
-          <DuckMascot className="h-14 w-14 translate-y-1" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#111315] text-[26px] font-black text-[#f4f3ef] ring-2 ring-black/10">
+          {data.handle.charAt(0).toUpperCase()}
         </div>
         <span className="text-[26px] font-semibold tracking-tight text-black/70">{data.handle}</span>
         {data.verified && (
@@ -42,16 +41,14 @@ export default function MarktBriefing({ data }: { data: Briefing }) {
       </div>
 
       {/* Titel */}
-      <div className="flex items-center gap-6 px-10 pt-6">
-        <DuckMascot className="h-[170px] w-[136px] shrink-0" />
-        <div className="min-w-0">
-          <p className="text-[24px] font-semibold uppercase tracking-[0.22em] text-teal-700">
-            {data.kicker}
-          </p>
-          <h1 className="mt-2 whitespace-pre-line text-[86px] font-black leading-[0.92] tracking-[-0.03em]">
-            {data.title}
-          </h1>
-        </div>
+      <div className="px-10 pt-10">
+        <p className="text-[24px] font-semibold uppercase tracking-[0.22em] text-teal-700">
+          {data.kicker}
+        </p>
+        <h1 className="mt-3 whitespace-pre-line text-[104px] font-black leading-[0.9] tracking-[-0.035em]">
+          {data.title}
+        </h1>
+        <div className="mt-5 h-[6px] w-[120px] rounded-full bg-teal-600" />
       </div>
 
       {/* News des Tages */}
