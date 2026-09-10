@@ -72,7 +72,9 @@ jobs:
           python scripts/briefing/queue_mail.py \
             --date "${{ steps.check.outputs.date }}" \
             --png "data/briefings/png/${{ steps.check.outputs.date }}.png"
-          python scripts/mail_outbox/send_outbox.py
+          # gezielt nur die Briefing-Mail senden, nicht die ganze Outbox
+          python scripts/mail_outbox/send_outbox.py \
+            "mail_outbox/${{ steps.check.outputs.date }}-markt-briefing.json"
 
       - name: PNG committen
         if: steps.check.outputs.found == 'true'

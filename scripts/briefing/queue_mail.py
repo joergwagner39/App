@@ -5,7 +5,8 @@ Legt fuer ein gerendertes Tages-Briefing eine Mail in mail_outbox/ ab.
     python scripts/briefing/queue_mail.py --date 2026-09-10 \
         --png data/briefings/png/2026-09-10.png
 
-Die Mail traegt das PNG als Anhang; den Versand uebernimmt
+Die Mail zeigt die Karte direkt im HTML-Body (inline via cid) und traegt sie
+zusaetzlich als Anhang; den Versand uebernimmt
 scripts/mail_outbox/send_outbox.py. Empfaenger kommt aus MAIL_TO.
 """
 from __future__ import annotations
@@ -36,6 +37,20 @@ def plain_text(briefing: dict) -> str:
     return "\n".join(lines)
 
 
+def html_body(png_name: str) -> str:
+    """Schlichter Rahmen – die Karte selbst ist das Bild."""
+    return (
+        '<div style="margin:0;padding:24px 0;background:#f4f3ef;'
+        'font-family:system-ui,-apple-system,sans-serif;">'
+        f'<img src="cid:{png_name}" alt="Markt Briefing" '
+        'style="display:block;width:100%;max-width:420px;height:auto;'
+        'margin:0 auto;border-radius:12px;">'
+        '<p style="max-width:420px;margin:16px auto 0;font-size:12px;'
+        'color:#8a8a85;text-align:center;">Keine Anlageberatung.</p>'
+        "</div>"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", default=date_cls.today().isoformat())
@@ -50,11 +65,13 @@ def main() -> int:
     source = REPO_ROOT / "data" / "briefings" / f"{args.date}.json"
     briefing = json.loads(source.read_text(encoding="utf-8"))
 
+    cid = Path(args.png).stem
     payload = {
         "to": recipients,
         "subject": f"Markt Briefing {date_cls.fromisoformat(args.date).strftime('%d.%m.%Y')}",
         "body": plain_text(briefing),
-        "attachments": [args.png],
+        "htmlBody": html_body(cid),
+        "attachments": [{"path": args.png, "inline": True, "cid": cid}],
     }
 
     OUTBOX_DIR.mkdir(parents=True, exist_ok=True)

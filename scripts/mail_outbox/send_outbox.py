@@ -11,12 +11,20 @@ mail_outbox/ instead:
       "to": ["someone@example.com"],
       "subject": "...",
       "body": "plain text body",
-      "attachments": ["data/briefings/png/2026-09-10.png"]   # optional
+      "htmlBody": "<p>optionaler HTML-Teil, darf cid:-Bilder nutzen</p>",
+      "attachments": [
+        {"path": "data/briefings/png/2026-09-10.png", "inline": true, "cid": "karte"}
+      ]
     }
 
-"attachments" ist optional und enthaelt Pfade relativ zum Repo-Root (oder
-absolut). Fehlt der Schluessel, wird wie bisher eine reine Text-Mail
-verschickt.
+"attachments" ist optional. Eintraege sind entweder ein Pfad-String oder
+ein Objekt mit "path" sowie optional "inline"/"cid" — inline-Bilder lassen
+sich im HTML-Teil per <img src="cid:karte"> einbetten. Pfade sind relativ
+zum Repo-Root (oder absolut). Ohne Anhaenge und ohne "htmlBody" wird wie
+bisher eine reine Text-Mail verschickt.
+
+Wird das Skript mit Dateinamen als Argumenten aufgerufen, verschickt es nur
+diese Dateien; ohne Argumente die komplette Outbox.
 
 This script (run by .github/workflows/mail-outbox.yml on every push to
 mail_outbox/**) sends each file via SMTP and deletes it on success. Files
@@ -36,6 +44,7 @@ import os
 import smtplib
 import sys
 from email.mime.application import MIMEApplication
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -44,21 +53,47 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 OUTBOX_DIR = REPO_ROOT / "mail_outbox"
 
 
+def _attachment_part(spec):
+    """spec ist entweder ein Pfad-String oder {"path": ..., "inline": ..., "cid": ...}."""
+    if isinstance(spec, str):
+        spec = {"path": spec}
+    path = Path(spec["path"])
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    data = path.read_bytes()
+
+    if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
+        part = MIMEImage(data, _subtype=path.suffix.lower().lstrip(".").replace("jpg", "jpeg"))
+    else:
+        part = MIMEApplication(data)
+
+    if spec.get("inline"):
+        part.add_header("Content-ID", f"<{spec.get('cid', path.stem)}>")
+        part.add_header("Content-Disposition", "inline", filename=path.name)
+    else:
+        part.add_header("Content-Disposition", "attachment", filename=path.name)
+    return part
+
+
 def build_message(mail_from: str, payload: dict):
     text = MIMEText(payload["body"], "plain", "utf-8")
+    html = payload.get("htmlBody")
     attachments = payload.get("attachments") or []
-    if not attachments:
+
+    if not html and not attachments:
         msg = text
     else:
-        msg = MIMEMultipart()
-        msg.attach(text)
-        for rel in attachments:
-            path = Path(rel)
-            if not path.is_absolute():
-                path = REPO_ROOT / path
-            part = MIMEApplication(path.read_bytes())
-            part.add_header("Content-Disposition", "attachment", filename=path.name)
-            msg.attach(part)
+        msg = MIMEMultipart("related")
+        if html:
+            alt = MIMEMultipart("alternative")
+            alt.attach(text)
+            alt.attach(MIMEText(html, "html", "utf-8"))
+            msg.attach(alt)
+        else:
+            msg.attach(text)
+        for spec in attachments:
+            msg.attach(_attachment_part(spec))
+
     msg["Subject"] = payload["subject"]
     msg["From"] = mail_from
     msg["To"] = ", ".join(payload["to"])
@@ -77,7 +112,13 @@ def main() -> int:
     smtp_pass = os.environ["SMTP_PASS"]
     mail_from = os.environ.get("MAIL_FROM", smtp_user)
 
-    files = sorted(p for p in OUTBOX_DIR.glob("*.json") if p.name != ".gitkeep")
+    if len(sys.argv) > 1:
+        files = []
+        for name in sys.argv[1:]:
+            p = Path(name)
+            files.append(p if p.is_absolute() else REPO_ROOT / p)
+    else:
+        files = sorted(p for p in OUTBOX_DIR.glob("*.json") if p.name != ".gitkeep")
     if not files:
         print("Outbox empty, nothing to send.")
         return 0
