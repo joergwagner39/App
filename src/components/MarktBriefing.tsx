@@ -14,30 +14,12 @@ export default function MarktBriefing({ data }: { data: Briefing }) {
       style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
       className="relative flex flex-col overflow-hidden bg-[#f4f3ef] text-[#111315]"
     >
-      {/* Story-Progressbar */}
-      <div className="flex gap-2 px-10 pt-8">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-1.5 flex-1 rounded-full bg-black/10">
-            {i === 0 && <div className="h-full w-2/3 rounded-full bg-black/50" />}
-          </div>
-        ))}
-      </div>
-
-      {/* Story-Header */}
-      <div className="flex items-center gap-4 px-10 pt-6">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#111315] text-[26px] font-black text-[#f4f3ef] ring-2 ring-black/10">
-          {data.handle.charAt(0).toUpperCase()}
-        </div>
-        <span className="text-[26px] font-semibold tracking-tight text-black/70">{data.handle}</span>
-        {data.verified && (
-          <svg viewBox="0 0 24 24" className="h-6 w-6 text-[#3897f0]" fill="currentColor" aria-hidden="true">
-            <path d="M12 1.5l2.4 2.1 3.2-.4 1.2 3 3 1.2-.4 3.2 2.1 2.4-2.1 2.4.4 3.2-3 1.2-1.2 3-3.2-.4L12 22.5l-2.4-2.1-3.2.4-1.2-3-3-1.2.4-3.2L.5 11l2.1-2.4-.4-3.2 3-1.2 1.2-3 3.2.4L12 1.5zm-1.3 13.8l5.9-5.9-1.6-1.6-4.3 4.3-2-2-1.6 1.6 3.6 3.6z" />
-          </svg>
-        )}
-        {data.age && <span className="text-[24px] text-black/45">{data.age}</span>}
-        <span className="ml-auto text-[20px] font-medium uppercase tracking-[0.12em] text-black/30">
+      {/* Kopfzeile */}
+      <div className="flex items-baseline gap-4 px-10 pt-10">
+        <span className="text-[22px] font-bold uppercase tracking-[0.16em] text-black/35">
           {data.date}
         </span>
+        <div className="h-px flex-1 bg-black/10" />
       </div>
 
       {/* Titel */}

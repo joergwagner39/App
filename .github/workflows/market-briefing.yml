@@ -1,0 +1,93 @@
+name: Daily Market Briefing Card
+
+on:
+  schedule:
+    # 05:45 UTC ≈ 07:45 Europe/Berlin (Sommerzeit) an Handelstagen
+    - cron: "45 5 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Briefing-Datum (YYYY-MM-DD), leer = heute"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Datum bestimmen
+        id: vars
+        run: echo "date=${{ inputs.date || '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Briefing für heute vorhanden?
+        id: check
+        run: |
+          DATE="${{ steps.vars.outputs.date }}"
+          [ -n "$DATE" ] || DATE="$(date -u +%F)"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          if [ -f "data/briefings/$DATE.json" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Kein data/briefings/$DATE.json – nichts zu rendern."
+          fi
+
+      - name: Dependencies installieren
+        if: steps.check.outputs.found == 'true'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: App bauen
+        if: steps.check.outputs.found == 'true'
+        run: npm run build
+
+      - name: Karte rendern
+        if: steps.check.outputs.found == 'true'
+        run: |
+          node scripts/briefing/render.mjs \
+            --date "${{ steps.check.outputs.date }}" \
+            --out "data/briefings/png/${{ steps.check.outputs.date }}.png"
+
+      - name: Mail einreihen und senden
+        if: steps.check.outputs.found == 'true'
+        env:
+          SMTP_USER: ${{ secrets.FOOD_DEALS_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.FOOD_DEALS_SMTP_PASS }}
+          MAIL_TO: ${{ secrets.FOOD_DEALS_MAIL_TO }}
+        run: |
+          python scripts/briefing/queue_mail.py \
+            --date "${{ steps.check.outputs.date }}" \
+            --png "data/briefings/png/${{ steps.check.outputs.date }}.png"
+          python scripts/mail_outbox/send_outbox.py
+
+      - name: PNG committen
+        if: steps.check.outputs.found == 'true'
+        run: |
+          git config user.name "market-briefing-bot"
+          git config user.email "actions@github.com"
+          git add data/briefings/png mail_outbox
+          if ! git diff --cached --quiet; then
+            git commit -m "Markt-Briefing-Karte ${{ steps.check.outputs.date }}"
+            git push
+          fi
+
+      - name: Karte als Artefakt
+        if: steps.check.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: markt-briefing-${{ steps.check.outputs.date }}
+          path: data/briefings/png/${{ steps.check.outputs.date }}.png

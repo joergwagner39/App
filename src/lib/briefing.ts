@@ -24,11 +24,6 @@ export interface BriefingSection {
 }
 
 export interface Briefing {
-  /** Instagram-Handle im Story-Header */
-  handle: string
-  verified?: boolean
-  /** z.B. "3 Std." */
-  age?: string
   kicker: string
   title: string
   /** Anzeigedatum, z.B. "10. SEPTEMBER 2026" */
@@ -61,9 +56,6 @@ export const accentClasses: Record<Accent, { dot: string; label: string; bar: st
 }
 
 export const sampleBriefing: Briefing = {
-  handle: 'dividente_official',
-  verified: true,
-  age: '3 Std.',
   kicker: 'Dein täglicher Überblick',
   title: 'Markt\nBriefing',
   date: '10. September 2026',
@@ -115,5 +107,4 @@ export const sampleBriefing: Briefing = {
       ],
     },
   ],
-  footer: 'trading-ist-liebe.de',
 }

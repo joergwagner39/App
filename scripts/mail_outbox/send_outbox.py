@@ -10,8 +10,13 @@ mail_outbox/ instead:
     {
       "to": ["someone@example.com"],
       "subject": "...",
-      "body": "plain text body"
+      "body": "plain text body",
+      "attachments": ["data/briefings/png/2026-09-10.png"]   # optional
     }
+
+"attachments" ist optional und enthaelt Pfade relativ zum Repo-Root (oder
+absolut). Fehlt der Schluessel, wird wie bisher eine reine Text-Mail
+verschickt.
 
 This script (run by .github/workflows/mail-outbox.yml on every push to
 mail_outbox/**) sends each file via SMTP and deletes it on success. Files
@@ -30,17 +35,38 @@ import json
 import os
 import smtplib
 import sys
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
-OUTBOX_DIR = Path(__file__).resolve().parent.parent.parent / "mail_outbox"
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+OUTBOX_DIR = REPO_ROOT / "mail_outbox"
 
 
-def send_one(smtp: smtplib.SMTP, mail_from: str, payload: dict) -> None:
-    msg = MIMEText(payload["body"], "plain", "utf-8")
+def build_message(mail_from: str, payload: dict):
+    text = MIMEText(payload["body"], "plain", "utf-8")
+    attachments = payload.get("attachments") or []
+    if not attachments:
+        msg = text
+    else:
+        msg = MIMEMultipart()
+        msg.attach(text)
+        for rel in attachments:
+            path = Path(rel)
+            if not path.is_absolute():
+                path = REPO_ROOT / path
+            part = MIMEApplication(path.read_bytes())
+            part.add_header("Content-Disposition", "attachment", filename=path.name)
+            msg.attach(part)
     msg["Subject"] = payload["subject"]
     msg["From"] = mail_from
     msg["To"] = ", ".join(payload["to"])
+    return msg
+
+
+def send_one(smtp: smtplib.SMTP, mail_from: str, payload: dict) -> None:
+    msg = build_message(mail_from, payload)
     smtp.sendmail(mail_from, payload["to"], msg.as_string())
 
 
