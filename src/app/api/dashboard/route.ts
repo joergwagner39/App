@@ -1,14 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { generateMockData } from '@/lib/mockData'
 
-// In production: fetch real data from Oura & Garmin APIs
-// Oura: https://cloud.ouraring.com/v2/usercollection/sleep
-// Garmin: via garmin-connect npm package with credentials
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  // Token can come from env (server) or query param (browser-stored)
-  const ouraToken = process.env.OURA_ACCESS_TOKEN || searchParams.get('oura_token') || ''
+  // Token from OAuth cookie (preferred) or env fallback
+  const ouraToken = request.cookies.get('oura_token')?.value
+    || process.env.OURA_ACCESS_TOKEN
+    || searchParams.get('oura_token')
+    || ''
   const garminEmail = process.env.GARMIN_EMAIL || searchParams.get('garmin_email') || ''
   const garminPassword = process.env.GARMIN_PASSWORD || searchParams.get('garmin_password') || ''
 

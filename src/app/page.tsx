@@ -681,7 +681,7 @@ export default function Dashboard() {
               <p className="text-sm text-gray-400 mb-5">Alles bleibt lokal in deinem Browser.</p>
             </div>
 
-            <OuraSetup onTokenSaved={handleTokenSaved} currentToken={ouraToken} />
+            <OuraSetup onConnected={(connected) => { if (connected) loadData() }} />
 
             <GarminSetup
               onCredentialsSaved={handleGarminSaved}
