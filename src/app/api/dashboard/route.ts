@@ -82,36 +82,44 @@ async function fetchGarminData(garminEmail: string, garminPassword: string) {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
-  // Fetch in parallel — only today to stay within timeout
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [hrData, stepsData, activities] = await Promise.all([
-    garmin.getHeartRate(today).catch(() => null) as Promise<any>,
-    garmin.getSteps(today).catch(() => null) as Promise<any>,
-    garmin.getActivities(0, 50).catch(() => []) as Promise<any[]>,
-  ])
-
-  const stepsToday = Array.isArray(stepsData)
-    ? stepsData.reduce((sum: number, s: { steps?: number }) => sum + (s.steps ?? 0), 0)
-    : 0
-
-  const todayDaily = {
-    date: todayStr,
-    steps: stepsToday,
-    totalKilocalories: 0,
-    activeKilocalories: 0,
-    floorsClimbed: 0,
-    minHeartRate: hrData?.minHeartRate ?? 0,
-    maxHeartRate: hrData?.maxHeartRate ?? 0,
-    restingHeartRate: hrData?.restingHeartRate ?? 0,
-    averageStressLevel: 0,
-    bodyBatteryChargedValue: 0,
-    bodyBatteryDrainedValue: 0,
-    bodyBatteryHighestValue: 0,
-    bodyBatteryLowestValue: 0,
+  // getUserSummary returns steps, HR, stress, body battery — fetch last 7 days + activities in parallel
+  const last7Dates: string[] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    last7Dates.push(d.toISOString().split('T')[0])
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [summaries, activities] = await Promise.all([
+    Promise.all(last7Dates.map(date =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (garmin as any).getUserSummary(date).catch(() => null) as Promise<any>
+    )),
+    garmin.getActivities(0, 30).catch(() => []) as Promise<any[]>,
+  ])
+
+  const daily = summaries
+    .filter(Boolean)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((s: any) => ({
+      date: s.calendarDate ?? todayStr,
+      steps: s.totalSteps ?? 0,
+      totalKilocalories: s.totalKilocalories ?? 0,
+      activeKilocalories: s.activeKilocalories ?? 0,
+      floorsClimbed: s.floorsAscended ?? 0,
+      minHeartRate: s.minHeartRate ?? 0,
+      maxHeartRate: s.maxHeartRate ?? 0,
+      restingHeartRate: s.restingHeartRate ?? 0,
+      averageStressLevel: s.averageStressLevel ?? 0,
+      bodyBatteryChargedValue: s.bodyBatteryChargedValue ?? 0,
+      bodyBatteryDrainedValue: s.bodyBatteryDrainedValue ?? 0,
+      bodyBatteryHighestValue: s.bodyBatteryHighestValue ?? 0,
+      bodyBatteryLowestValue: s.bodyBatteryLowestValue ?? 0,
+    }))
+
   return {
-    daily: [todayDaily],
+    daily,
     activities: Array.isArray(activities) ? activities.map(mapGarminActivity) : [],
   }
 }
@@ -189,16 +197,18 @@ function mapGarminDaily(d: any) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapGarminActivity(d: any) {
+  // garmin-connect npm returns camelCase; fallback to snake_case field names
+  const startTime = d.startTimeLocal ?? d.start_time ?? ''
   return {
-    date: d.startTimeLocal?.split(' ')[0],
-    activityType: d.activityType?.typeKey,
-    distance: d.distance,
-    duration: d.duration,
-    averageHR: d.averageHR,
-    maxHR: d.maxHR,
+    date: startTime.split(' ')[0] ?? startTime.split('T')[0],
+    activityType: d.activityType?.typeKey ?? d.activityType ?? d.type ?? 'unknown',
+    distance: d.distance ?? d.distance_meters,
+    duration: d.duration ?? d.duration_seconds,
+    averageHR: d.averageHR ?? d.avg_hr_bpm,
+    maxHR: d.maxHR ?? d.max_hr_bpm,
     calories: d.calories,
     averagePace: d.averageSpeed,
-    elevationGain: d.elevationGain,
+    elevationGain: d.elevationGain ?? d.elevation_gain_meters,
     vo2max: d.vO2MaxValue,
     trainingEffect: d.aerobicTrainingEffect,
     anaerobicTrainingEffect: d.anaerobicTrainingEffect,
