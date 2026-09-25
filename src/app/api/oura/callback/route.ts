@@ -11,22 +11,25 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oura/callback`
 
   try {
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+    })
+
     const res = await fetch('https://api.ouraring.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-      }),
+      body,
     })
 
     if (!res.ok) {
       const err = await res.text()
-      console.error('Oura token exchange failed:', err)
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?oura_error=token_failed`)
+      console.error('Oura token exchange failed:', res.status, err)
+      const encoded = encodeURIComponent(err.slice(0, 100))
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?oura_error=${encoded}`)
     }
 
     const data = await res.json()
