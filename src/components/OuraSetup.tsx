@@ -12,20 +12,25 @@ export default function OuraSetup({ onConnected }: OuraSetupProps) {
   const [email, setEmail] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/oura/me')
+    fetch('/api/oura/me', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
         if (d.connected) {
           setStatus('connected')
           setEmail(d.email ?? '')
           onConnected(true)
+          // Clean up URL params
+          if (window.location.search.includes('oura_connected')) {
+            window.history.replaceState({}, '', window.location.pathname)
+          }
         } else {
           setStatus('disconnected')
           onConnected(false)
         }
       })
       .catch(() => { setStatus('disconnected'); onConnected(false) })
-  }, [onConnected])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function disconnect() {
     await fetch('/api/oura/me', { method: 'DELETE' })
