@@ -14,15 +14,7 @@ export async function GET(request: NextRequest) {
   if (ouraToken) {
     try {
       const data = await fetchOuraData(ouraToken)
-      if (garminEmail && garminPassword) {
-        try {
-          const garminData = await fetchGarminData(garminEmail, garminPassword)
-          return NextResponse.json({ ...data, garmin: garminData, isMockData: false })
-        } catch {
-          const mock = generateMockData(30)
-          return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false, garminFailed: true })
-        }
-      }
+      // Garmin via email/password is unreliable on Vercel (timeout) — use mock for now
       const mock = generateMockData(30)
       return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
     } catch (e) {
