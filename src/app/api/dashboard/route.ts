@@ -35,11 +35,15 @@ async function fetchOuraData(ouraToken: string) {
   const end = endDate.toISOString().split('T')[0]
 
   const headers = { Authorization: `Bearer ${ouraToken}` }
+  const timeout = 8000
+  const fetchWithTimeout = (url: string) =>
+    fetch(url, { headers, signal: AbortSignal.timeout(timeout) })
+
   const [sleepRes, dailySleepRes, readinessRes, activityRes] = await Promise.all([
-    fetch(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`, { headers }),
-    fetch(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${start}&end_date=${end}`, { headers }),
-    fetch(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`, { headers }),
-    fetch(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`, { headers }),
+    fetchWithTimeout(`https://api.ouraring.com/v2/usercollection/sleep?start_date=${start}&end_date=${end}`),
+    fetchWithTimeout(`https://api.ouraring.com/v2/usercollection/daily_sleep?start_date=${start}&end_date=${end}`),
+    fetchWithTimeout(`https://api.ouraring.com/v2/usercollection/daily_readiness?start_date=${start}&end_date=${end}`),
+    fetchWithTimeout(`https://api.ouraring.com/v2/usercollection/daily_activity?start_date=${start}&end_date=${end}`),
   ])
 
   if (!sleepRes.ok) throw new Error(`Oura API error: ${sleepRes.status}`)
