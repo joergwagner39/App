@@ -1,4 +1,4 @@
-name: Garmin Sync
+name: Padel Coach – Garmin Sync
 
 on:
   schedule:
@@ -9,6 +9,9 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: padel-coach
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

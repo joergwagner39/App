@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CheckIn, Feeling, PadelIntensity } from '@/lib/coach/types'
 
 const FEELINGS: { v: Feeling; emoji: string; label: string }[] = [
@@ -61,15 +61,35 @@ const PADEL_OPTS: { v: PadelIntensity; label: string }[] = [
 export default function CheckInForm({
   initial,
   yesterdayTitle,
+  padelYesterdaySuggestion,
   onSubmit,
 }: {
   initial?: CheckIn
   yesterdayTitle?: string
+  /** Von Garmin erkannte Padel-Aktivität gestern */
+  padelYesterdaySuggestion?: { intensity: PadelIntensity; minutes: number }
   onSubmit: (c: CheckIn) => void
 }) {
   const [c, setC] = useState<Partial<CheckIn>>(
-    initial ?? { knee: 0, soreness: 0, yesterdayDone: yesterdayTitle ? undefined : 'none-planned', padelTomorrow: false },
+    initial ?? {
+      knee: 0,
+      soreness: 0,
+      yesterdayDone: yesterdayTitle ? undefined : 'none-planned',
+      padelTomorrow: false,
+      padelYesterday: padelYesterdaySuggestion?.intensity,
+      padelYesterdayMinutes: padelYesterdaySuggestion?.minutes,
+    },
   )
+  // Garmin-Daten kommen oft erst nach dem ersten Rendern – dann nachträglich vorbelegen
+  useEffect(() => {
+    if (!padelYesterdaySuggestion || initial) return
+    setC((p) =>
+      p.padelYesterday !== undefined
+        ? p
+        : { ...p, padelYesterday: padelYesterdaySuggestion.intensity, padelYesterdayMinutes: padelYesterdaySuggestion.minutes },
+    )
+  }, [padelYesterdaySuggestion?.intensity, padelYesterdaySuggestion?.minutes, initial])
+
   const set = <K extends keyof CheckIn>(k: K, v: CheckIn[K]) => setC((p) => ({ ...p, [k]: v }))
 
   const complete =
@@ -150,6 +170,9 @@ export default function CheckInForm({
       </Q>
 
       <Q n={5} title="Hast du gestern Padel gespielt?">
+        {padelYesterdaySuggestion && !initial && (
+          <p className="text-xs text-sky-300">Garmin hat gestern {padelYesterdaySuggestion.minutes} min Padel erkannt – bitte prüfen.</p>
+        )}
         <Chips value={c.padelYesterday} onChange={(v) => set('padelYesterday', v)} options={PADEL_OPTS} />
         {c.padelYesterday && c.padelYesterday !== 'none' && (
           <Chips

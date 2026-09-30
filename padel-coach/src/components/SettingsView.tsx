@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { Download, Upload, Cloud, CloudOff } from 'lucide-react'
 import type { CoachSettings, CoachState, Signals } from '@/lib/coach/types'
+import type { WearableData } from '@/lib/wearables'
 import { mergeStates, resolveMaxHr } from '@/lib/coach/engine'
 import { getPin, setPin, type SyncStatus } from '@/lib/coach/useCoachState'
 import { Card, SectionTitle } from './ui'
@@ -18,7 +19,7 @@ const EQUIPMENT: { k: keyof CoachSettings['equipment']; label: string }[] = [
 ]
 
 const SYNC_TEXT: Record<SyncStatus, string> = {
-  local: 'Nur auf diesem Gerät gespeichert',
+  local: 'Nur auf diesem Gerät gespeichert (Server-Speicher nicht eingerichtet)',
   syncing: 'Synchronisiere …',
   synced: 'Mit allen Geräten synchronisiert',
   error: 'Sync fehlgeschlagen – Daten bleiben lokal',
@@ -32,6 +33,7 @@ export default function SettingsView({
   sync,
   resync,
   signals,
+  data,
 }: {
   state: CoachState
   update: (fn: (s: CoachState) => CoachState) => void
@@ -39,6 +41,7 @@ export default function SettingsView({
   sync: SyncStatus
   resync: () => void
   signals: Signals
+  data: WearableData | null
 }) {
   const [pin, setPinInput] = useState(getPin())
   const fileRef = useRef<HTMLInputElement>(null)
@@ -135,7 +138,7 @@ export default function SettingsView({
           right={sync === 'synced' ? <Cloud className="w-4 h-4 text-emerald-400" /> : <CloudOff className="w-4 h-4 text-gray-500" />}
         />
         <p className="text-sm text-gray-400 mb-3">
-          Gib auf jedem Gerät dieselbe Coach-PIN ein (in Vercel als <code className="text-gray-300">COACH_PIN</code> hinterlegt). Dann landen Check-ins und Quiz-Antworten überall.
+          Check-ins, Quiz-Antworten und Einstellungen werden über den Server-Speicher zwischen Handy und Laptop abgeglichen. Auf jedem Gerät dieselbe Coach-PIN verwenden.
         </p>
         <div className="flex gap-2">
           <input type="password" className={input} placeholder="Coach-PIN" value={pin} onChange={(e) => setPinInput(e.target.value)} />
@@ -156,15 +159,44 @@ export default function SettingsView({
 
       <Card>
         <SectionTitle title="Datenquellen & Backup" />
-        <ul className="text-sm space-y-1.5 mb-4">
-          <li className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${signals.sources.oura ? 'bg-emerald-400' : 'bg-gray-600'}`} />
-            Oura {signals.sources.oura ? 'verbunden' : '– nicht verbunden (im Dashboard unter Einstellungen verbinden)'}
+        <ul className="text-sm space-y-3 mb-4">
+          <li>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${signals.sources.oura ? 'bg-emerald-400' : 'bg-gray-600'}`} />
+              <span className="text-gray-200">Oura</span>
+              <span className="text-gray-500">{signals.sources.oura ? 'verbunden' : 'nicht verbunden'}</span>
+            </div>
+            {data?.oura.error && <p className="text-xs text-rose-300 mt-1">Fehler: {data.oura.error}</p>}
+            {data && !data.status.ouraConfigured ? (
+              <p className="text-xs text-gray-500 mt-1">OURA_CLIENT_ID / OURA_CLIENT_SECRET in Vercel setzen (siehe README).</p>
+            ) : data && !data.status.kv ? (
+              <p className="text-xs text-gray-500 mt-1">Zuerst den Server-Speicher (Upstash) einrichten.</p>
+            ) : (
+              <a
+                href={`/api/oura/auth?pin=${encodeURIComponent(getPin())}`}
+                className="inline-block mt-2 px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-400/40 text-violet-200 text-xs font-medium"
+              >
+                {signals.sources.oura ? 'Oura neu verbinden' : 'Mit Oura verbinden'}
+              </a>
+            )}
           </li>
-          <li className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${signals.sources.garmin ? 'bg-emerald-400' : 'bg-gray-600'}`} />
-            Garmin {signals.sources.garmin ? 'synchronisiert' : '– noch kein Sync (GitHub Action „Garmin Sync“ einrichten)'}
+          <li>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${signals.sources.garmin ? 'bg-emerald-400' : 'bg-gray-600'}`} />
+              <span className="text-gray-200">Garmin</span>
+              <span className="text-gray-500">
+                {data?.garmin.connected && data.garmin.syncedAt
+                  ? `letzter Sync ${new Date(data.garmin.syncedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}`
+                  : 'noch kein Sync'}
+              </span>
+            </div>
+            {!signals.sources.garmin && <p className="text-xs text-gray-500 mt-1">Wird per GitHub Action „Padel Coach – Garmin Sync“ geladen (siehe README).</p>}
           </li>
+          {data && (
+            <li className="text-xs text-gray-500">
+              Server-Speicher: {data.status.kv ? '✅ eingerichtet' : '❌ fehlt'} · PIN-Schutz: {data.status.pinRequired ? '✅ aktiv' : '⚠️ aus (COACH_PIN setzen!)'}
+            </li>
+          )}
         </ul>
         <div className="flex gap-2">
           <button onClick={exportJson} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-700 text-sm text-gray-200 hover:border-gray-500">

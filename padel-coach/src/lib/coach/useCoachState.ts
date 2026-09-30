@@ -52,10 +52,9 @@ export function useCoachState() {
 
   const push = useCallback(async (s: CoachState) => {
     const pin = getPin()
-    if (!pin) return
     setSync('syncing')
     try {
-      const res = await fetch('/api/coach/state', {
+      const res = await fetch('/api/state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-coach-pin': pin },
         body: JSON.stringify(s),
@@ -75,10 +74,9 @@ export function useCoachState() {
     const local = readLocal()
     setState(local)
     const pin = getPin()
-    if (!pin) return setSync('local')
     setSync('syncing')
     try {
-      const res = await fetch('/api/coach/state', { headers: { 'x-coach-pin': pin }, cache: 'no-store' })
+      const res = await fetch('/api/state', { headers: { 'x-coach-pin': pin }, cache: 'no-store' })
       if (res.status === 401) return setSync('unauthorized')
       if (!res.ok) return setSync(res.status === 501 ? 'local' : 'error')
       const remote = (await res.json()) as CoachState

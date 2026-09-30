@@ -6,7 +6,7 @@ Training Readiness aus Garmin Connect und legt sie als JSON unter dem Key
 /api/dashboard.
 
 Einmalig lokal Tokens erzeugen (fragt ggf. nach dem MFA-Code):
-    GARMIN_EMAIL=... GARMIN_PASSWORD=... python scripts/garmin_sync/sync.py --login
+    GARMIN_EMAIL=... GARMIN_PASSWORD=... python scripts/garmin_sync/sync.py --login   (im Ordner padel-coach)
 Die ausgegebene Zeichenkette als GitHub-Secret GARMIN_TOKENS speichern.
 
 Regulärer Lauf (GitHub Action):

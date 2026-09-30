@@ -1,17 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { CalendarCheck, Swords, Dumbbell, Settings, LayoutDashboard, Cloud, CloudOff, RefreshCw } from 'lucide-react'
-import type { DashboardData } from '@/types'
+import { CalendarCheck, Swords, Dumbbell, Settings, Cloud, CloudOff, RefreshCw, Lock } from 'lucide-react'
+import type { WearableData } from '@/lib/wearables'
 import { buildSignals, isoDate } from '@/lib/coach/engine'
-import { useCoachState } from '@/lib/coach/useCoachState'
-import TodayView from '@/components/coach/TodayView'
-import PadelView from '@/components/coach/PadelView'
-import TrainingView from '@/components/coach/TrainingView'
-import SettingsView from '@/components/coach/SettingsView'
+import { getPin, setPin, useCoachState } from '@/lib/coach/useCoachState'
+import TodayView from '@/components/TodayView'
+import PadelView from '@/components/PadelView'
+import TrainingView from '@/components/TrainingView'
+import SettingsView from '@/components/SettingsView'
 
 type Tab = 'today' | 'padel' | 'training' | 'settings'
 
@@ -22,32 +21,76 @@ const TABS: { id: Tab; label: string; icon: typeof Swords }[] = [
   { id: 'settings', label: 'Setup', icon: Settings },
 ]
 
-type ApiData = DashboardData & { isMockData?: boolean; garminIsMock?: boolean }
+function PinGate({ onDone }: { onDone: () => void }) {
+  const [pin, setValue] = useState('')
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <form
+        className="w-full max-w-xs space-y-4 text-center"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setPin(pin.trim())
+          onDone()
+        }}
+      >
+        <div className="text-5xl">🎾</div>
+        <h1 className="text-xl font-bold text-white">Padel & Fitness Coach</h1>
+        <p className="text-sm text-gray-400">Bitte deine Coach-PIN eingeben. Sie wird auf diesem Gerät gespeichert.</p>
+        <div className="relative">
+          <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            autoFocus
+            type="password"
+            inputMode="numeric"
+            value={pin}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-3 py-3 text-white focus:outline-none focus:border-emerald-400"
+          />
+        </div>
+        <button className="w-full py-3 rounded-xl font-semibold bg-emerald-500 text-gray-950">Weiter</button>
+      </form>
+    </div>
+  )
+}
 
 export default function CoachPage() {
   const [tab, setTab] = useState<Tab>('today')
-  const [data, setData] = useState<ApiData | null>(null)
+  const [data, setData] = useState<WearableData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [needPin, setNeedPin] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const { state, update, replace, sync, resync } = useCoachState()
   const [today, setToday] = useState(() => isoDate(new Date()))
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('oura_token')
-      const res = await fetch(`/api/dashboard${token ? `?oura_token=${encodeURIComponent(token)}` : ''}`, { cache: 'no-store' })
+      const res = await fetch('/api/data', { headers: { 'x-coach-pin': getPin() }, cache: 'no-store' })
+      if (res.status === 401) {
+        setNeedPin(true)
+        return
+      }
       if (res.ok) setData(await res.json())
     } catch (e) {
       console.error(e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void load()
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
-    // Datum aktualisieren, wenn die App über Nacht offen bleibt
+
+    const params = new URLSearchParams(window.location.search)
+    const oura = params.get('oura')
+    if (oura) {
+      setNotice(oura === 'connected' ? 'Oura ist verbunden ✅' : `Oura-Verbindung fehlgeschlagen (${oura})`)
+      setTab('settings')
+      window.history.replaceState(null, '', '/')
+    }
+
+    // Neuer Tag, wenn die App über Nacht offen bleibt
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return
       const now = isoDate(new Date())
@@ -61,19 +104,26 @@ export default function CoachPage() {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [load, resync])
 
   const signals = useMemo(
-    () =>
-      data
-        ? buildSignals(data, today)
-        : { date: today, recentActivities: [], sources: { oura: false, garmin: false } },
+    () => (data ? buildSignals(data, today) : { date: today, recentActivities: [], sources: { oura: false, garmin: false } }),
     [data, today],
   )
 
+  if (needPin)
+    return (
+      <PinGate
+        onDone={() => {
+          setNeedPin(false)
+          void load()
+          void resync()
+        }}
+      />
+    )
+
   return (
-    <div className="min-h-screen bg-[#0a0f1e] pb-24 sm:pb-10">
+    <div className="min-h-screen pb-24 sm:pb-10">
       <header className="sticky top-0 z-20 border-b border-gray-800 bg-[#0a0f1e]/95 backdrop-blur-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -82,19 +132,20 @@ export default function CoachPage() {
             </h1>
             <p className="text-xs text-gray-400 truncate">
               {format(new Date(`${today}T12:00:00`), 'EEEE, dd. MMMM', { locale: de })}
-              {data && !signals.sources.oura && !signals.sources.garmin && <span className="ml-2 text-amber-400">· ohne Wearable-Daten</span>}
+              {data?.demo && (
+                <button onClick={() => setTab('settings')} className="ml-2 text-amber-400 underline">
+                  Beispieldaten – Oura/Garmin verbinden
+                </button>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <span title={sync === 'synced' ? 'Synchronisiert' : 'Nur lokal'} className="p-2">
+            <span title={sync === 'synced' ? 'Mit allen Geräten synchronisiert' : 'Nur auf diesem Gerät'} className="p-2">
               {sync === 'synced' ? <Cloud className="w-4 h-4 text-emerald-400" /> : <CloudOff className="w-4 h-4 text-gray-600" />}
             </span>
             <button onClick={() => void load()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white" aria-label="Daten neu laden">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <Link href="/" className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white" aria-label="Health Dashboard">
-              <LayoutDashboard className="w-4 h-4" />
-            </Link>
           </div>
         </div>
         <nav className="hidden sm:flex max-w-6xl mx-auto px-4 pb-3 gap-1">
@@ -114,6 +165,14 @@ export default function CoachPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-5">
+        {notice && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100">
+            {notice}
+            <button onClick={() => setNotice(null)} className="text-emerald-300">
+              ✕
+            </button>
+          </div>
+        )}
         {!state ? (
           <div className="flex justify-center py-20">
             <RefreshCw className="w-6 h-6 text-gray-500 animate-spin" />
@@ -125,11 +184,10 @@ export default function CoachPage() {
         ) : tab === 'training' ? (
           <TrainingView state={state} signals={signals} today={today} />
         ) : (
-          <SettingsView state={state} update={update} replace={replace} sync={sync} resync={resync} signals={signals} />
+          <SettingsView state={state} update={update} replace={replace} sync={sync} resync={resync} signals={signals} data={data} />
         )}
       </main>
 
-      {/* Mobile Tab-Bar */}
       <nav
         className="sm:hidden fixed bottom-0 inset-x-0 z-20 border-t border-gray-800 bg-[#0a0f1e]/95 backdrop-blur-sm grid grid-cols-4"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

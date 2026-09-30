@@ -119,6 +119,13 @@ export default function TodayView({
   }
 
   const needsCheckIn = !record?.checkIn || editing
+  const garminPadel = signals.recentActivities.find((a) => a.date === yesterday && /padel|tennis|racket|squash/i.test(a.type))
+  const padelSuggestion = garminPadel
+    ? {
+        intensity: ((garminPadel.aerobicTE ?? 0) >= 3 || garminPadel.minutes >= 75 ? 'match' : 'light') as 'match' | 'light',
+        minutes: garminPadel.minutes >= 105 ? 120 : garminPadel.minutes >= 75 ? 90 : 60,
+      }
+    : undefined
   const tacticAnswered = record?.tacticAnswer?.id === tactic.id ? record.tacticAnswer.index : undefined
   const quizAnswered = record?.quizAnswer?.id === quiz.id ? record.quizAnswer.index : undefined
 
@@ -132,7 +139,10 @@ export default function TodayView({
             <Card className="border-emerald-500/30">
               <SectionTitle icon={<Sparkles className="w-4 h-4 text-emerald-400" />} title="Morgen-Check-in" />
               <p className="text-sm text-gray-400 mb-4">Kurz ehrlich antworten – daraus und aus deinen Oura/Garmin-Daten entsteht dein Training für heute.</p>
-              <CheckInForm initial={record?.checkIn} yesterdayTitle={yRecord?.plannedSession?.title} onSubmit={submitCheckIn} />
+              <CheckInForm initial={record?.checkIn} yesterdayTitle={yRecord?.plannedSession?.title}
+                padelYesterdaySuggestion={padelSuggestion}
+                onSubmit={submitCheckIn}
+              />
             </Card>
           ) : (
             <Card>

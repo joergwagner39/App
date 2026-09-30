@@ -81,11 +81,6 @@ export interface DashboardData {
   garmin: {
     daily: GarminDailyData[]
     activities: GarminActivityData[]
-    /** Aus dem Garmin-Sync (scripts/garmin_sync), falls vorhanden */
-    vo2max?: number
-    maxHr?: number
-    trainingReadiness?: number
-    syncedAt?: string
   }
   lastUpdated: string
 }

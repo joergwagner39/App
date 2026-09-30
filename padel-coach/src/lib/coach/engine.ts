@@ -1,6 +1,6 @@
 // Entscheidet anhand von Wearable-Daten, Check-in und Verlauf, welche Einheit heute dran ist.
 import type { CheckIn, CoachSettings, CoachState, DayRecord, SessionType, Signals } from './types'
-import type { DashboardData } from '@/types'
+import type { WearableData } from '@/lib/wearables'
 import { WORKOUTS, workoutsOf, type Modality, type Workout, type WorkoutContext } from './workouts'
 import { PADEL_TACTICS } from './padel'
 import { QUIZ, FACTS } from './knowledge'
@@ -26,38 +26,36 @@ const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.le
 
 // ── Signale aus Dashboard-Daten ──────────────────────────────────────────
 
-export function buildSignals(data: DashboardData & { garminIsMock?: boolean; isMockData?: boolean }, today: string): Signals {
-  const ouraReal = !data.isMockData
-  const garminReal = data.garminIsMock === false
-  const sleep = ouraReal ? data.oura.sleep : []
-  const readiness = ouraReal ? data.oura.readiness : []
+export function buildSignals(data: WearableData, today: string): Signals {
+  const sleep = data.oura.sleep
+  const readiness = data.oura.readiness
   const lastSleep = sleep[sleep.length - 1]
   const lastReadiness = readiness[readiness.length - 1]
-  const hrvs = sleep.map((s) => s.average_hrv).filter((v): v is number => typeof v === 'number' && v > 0)
-  const rhrs = sleep.map((s) => s.lowest_heart_rate).filter((v): v is number => typeof v === 'number' && v > 0)
+  const hrvs = sleep.map((s) => s.averageHrv).filter((v): v is number => typeof v === 'number' && v > 0)
+  const rhrs = sleep.map((s) => s.lowestHeartRate).filter((v): v is number => typeof v === 'number' && v > 0)
 
-  const gDaily = garminReal ? data.garmin.daily : []
+  const gDaily = data.garmin.daily
   const lastG = gDaily[gDaily.length - 1]
-  const acts = garminReal ? data.garmin.activities : []
+  const acts = data.garmin.activities
   const weekAgo = addDays(today, -7)
-  const vo2 = [...acts].reverse().find((a) => a.vo2max)?.vo2max ?? data.garmin.vo2max
+  const vo2 = data.garmin.vo2max ?? [...acts].reverse().find((a) => a.vo2max)?.vo2max
   const observedMax = acts.reduce((m, a) => Math.max(m, a.maxHR ?? 0), 0)
 
   return {
     date: today,
     readiness: lastReadiness?.score,
     sleepScore: lastSleep?.score,
-    sleepHours: lastSleep?.total_sleep_duration ? lastSleep.total_sleep_duration / 3600 : undefined,
-    hrv: lastSleep?.average_hrv,
+    sleepHours: lastSleep?.totalSleepSeconds ? lastSleep.totalSleepSeconds / 3600 : undefined,
+    hrv: lastSleep?.averageHrv,
     hrvBaseline: avg(hrvs.slice(-30, -1)),
-    restingHr: lastSleep?.lowest_heart_rate,
+    restingHr: lastSleep?.lowestHeartRate ?? lastG?.restingHeartRate,
     restingHrBaseline: avg(rhrs.slice(-30, -1)),
-    tempDeviation: lastReadiness?.temperature_deviation,
+    tempDeviation: lastReadiness?.temperatureDeviation,
     bodyBattery: lastG?.bodyBatteryHighestValue || undefined,
     stress: lastG?.averageStressLevel || undefined,
-    vo2max: garminReal ? vo2 : undefined,
-    maxHr: garminReal ? data.garmin.maxHr ?? (observedMax > 150 ? observedMax : undefined) : undefined,
-    garminTrainingReadiness: garminReal ? data.garmin.trainingReadiness : undefined,
+    vo2max: vo2 ? Math.round(vo2 * 10) / 10 : undefined,
+    maxHr: observedMax > 150 ? observedMax : undefined,
+    garminTrainingReadiness: data.garmin.trainingReadiness,
     recentActivities: acts
       .filter((a) => a.date >= weekAgo)
       .map((a) => ({
@@ -67,7 +65,7 @@ export function buildSignals(data: DashboardData & { garminIsMock?: boolean; isM
         aerobicTE: a.trainingEffect,
         anaerobicTE: a.anaerobicTrainingEffect,
       })),
-    sources: { oura: ouraReal && sleep.length > 0, garmin: garminReal && (gDaily.length > 0 || acts.length > 0) },
+    sources: { oura: data.oura.connected, garmin: data.garmin.connected },
   }
 }
 

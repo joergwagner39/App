@@ -1,6 +1,6 @@
 // Minimaler Service Worker: App-Shell offline verfügbar, API immer frisch.
-const CACHE = 'coach-v1'
-const SHELL = ['/coach', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png']
+const CACHE = 'padel-coach-v1'
+const SHELL = ['/', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png']
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()))
@@ -26,6 +26,6 @@ self.addEventListener('fetch', (e) => {
         }
         return res
       })
-      .catch(() => caches.match(req).then((r) => r || caches.match('/coach'))),
+      .catch(() => caches.match(req).then((r) => r || caches.match('/'))),
   )
 })
