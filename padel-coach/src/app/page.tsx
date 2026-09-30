@@ -23,33 +23,48 @@ const TABS: { id: Tab; label: string; icon: typeof Swords }[] = [
   { id: 'settings', label: 'Setup', icon: Settings },
 ]
 
-function PinGate({ onDone }: { onDone: () => void }) {
+function PinGate({ setup, onDone }: { setup: boolean; onDone: () => void }) {
   const [pin, setValue] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const input =
+    'w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-3 py-3 text-white tracking-widest focus:outline-none focus:border-emerald-400'
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const p = pin.trim()
+    if (setup) {
+      if (!/^\d{4,8}$/.test(p)) return setError('Bitte 4–8 Ziffern verwenden.')
+      if (p !== pin2.trim()) return setError('Die beiden PINs stimmen nicht überein.')
+      const res = await fetch('/api/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: p }) })
+      if (!res.ok) return setError(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Fehler beim Speichern')
+    }
+    setPin(p)
+    onDone()
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <form
-        className="w-full max-w-xs space-y-4 text-center"
-        onSubmit={(e) => {
-          e.preventDefault()
-          setPin(pin.trim())
-          onDone()
-        }}
-      >
+      <form className="w-full max-w-xs space-y-4 text-center" onSubmit={submit}>
         <div className="text-5xl">🎾</div>
         <h1 className="text-xl font-bold text-white">Padel & Hyrox Coach</h1>
-        <p className="text-sm text-gray-400">Bitte deine Coach-PIN eingeben. Sie wird auf diesem Gerät gespeichert.</p>
+        <p className="text-sm text-gray-400">
+          {setup
+            ? 'Willkommen! Lege eine PIN fest (4–8 Ziffern). Sie schützt deine Gesundheitsdaten – auf jedem weiteren Gerät gibst du sie einmal ein.'
+            : 'Bitte deine Coach-PIN eingeben. Sie wird auf diesem Gerät gespeichert.'}
+        </p>
         <div className="relative">
           <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            autoFocus
-            type="password"
-            inputMode="numeric"
-            value={pin}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-3 py-3 text-white focus:outline-none focus:border-emerald-400"
-          />
+          <input autoFocus type="password" inputMode="numeric" placeholder="PIN" value={pin} onChange={(e) => setValue(e.target.value)} className={input} />
         </div>
-        <button className="w-full py-3 rounded-xl font-semibold bg-emerald-500 text-gray-950">Weiter</button>
+        {setup && (
+          <div className="relative">
+            <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input type="password" inputMode="numeric" placeholder="PIN wiederholen" value={pin2} onChange={(e) => setPin2(e.target.value)} className={input} />
+          </div>
+        )}
+        {error && <p className="text-sm text-rose-300">{error}</p>}
+        <button className="w-full py-3 rounded-xl font-semibold bg-emerald-500 text-gray-950">{setup ? 'PIN festlegen' : 'Weiter'}</button>
       </form>
     </div>
   )
@@ -59,7 +74,7 @@ export default function CoachPage() {
   const [tab, setTab] = useState<Tab>('today')
   const [data, setData] = useState<WearableData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [needPin, setNeedPin] = useState(false)
+  const [needPin, setNeedPin] = useState<false | 'enter' | 'setup'>(false)
   const [notice, setNotice] = useState<string | null>(null)
   const { state, update, replace, sync, resync } = useCoachState()
   const [today, setToday] = useState(() => isoDate(new Date()))
@@ -69,7 +84,8 @@ export default function CoachPage() {
     try {
       const res = await fetch('/api/data', { headers: { 'x-coach-pin': getPin() }, cache: 'no-store' })
       if (res.status === 401) {
-        setNeedPin(true)
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        setNeedPin(body.error === 'pin_setup' ? 'setup' : 'enter')
         return
       }
       if (res.ok) setData(await res.json())
@@ -116,6 +132,7 @@ export default function CoachPage() {
   if (needPin)
     return (
       <PinGate
+        setup={needPin === 'setup'}
         onDone={() => {
           setNeedPin(false)
           void load()

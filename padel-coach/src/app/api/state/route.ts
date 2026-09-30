@@ -9,20 +9,20 @@ export const dynamic = 'force-dynamic'
 const KEY = 'coach:state'
 
 // Geräteübergreifender Speicher für Check-ins, Quiz-Antworten und Einstellungen.
-function guard(req: NextRequest): NextResponse | null {
-  if (!hasValidPin(req)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+async function guard(req: NextRequest): Promise<NextResponse | null> {
+  if (!(await hasValidPin(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   if (!kvEnabled()) return NextResponse.json({ error: 'sync_disabled' }, { status: 501 })
   return null
 }
 
 export async function GET(req: NextRequest) {
-  const blocked = guard(req)
+  const blocked = await guard(req)
   if (blocked) return blocked
   return NextResponse.json((await kvGetJson<CoachState>(KEY)) ?? emptyState())
 }
 
 export async function PUT(req: NextRequest) {
-  const blocked = guard(req)
+  const blocked = await guard(req)
   if (blocked) return blocked
   let incoming: CoachState
   try {

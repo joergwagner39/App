@@ -3,6 +3,7 @@ import { kvGetJson, kvSetJson } from './kv'
 import type { OuraReadiness, OuraSleep } from './wearables'
 
 const TOKEN_KEY = 'oura:token'
+const PAT_KEY = 'oura:pat'
 const API = 'https://api.ouraring.com/v2/usercollection'
 
 interface StoredToken {
@@ -15,9 +16,14 @@ export function ouraOAuthConfigured(): boolean {
   return Boolean(process.env.OURA_CLIENT_ID && process.env.OURA_CLIENT_SECRET)
 }
 
-/** Oura nutzbar: per OAuth-App oder per persönlichem Token (OURA_ACCESS_TOKEN) */
-export function ouraConfigured(): boolean {
-  return ouraOAuthConfigured() || Boolean(process.env.OURA_ACCESS_TOKEN)
+/** Oura nutzbar: per OAuth-App oder per persönlichem Token (Vercel-Variable oder in der App gespeichert) */
+export async function ouraConfigured(): Promise<boolean> {
+  if (ouraOAuthConfigured() || process.env.OURA_ACCESS_TOKEN) return true
+  return Boolean(await kvGetJson<string>(PAT_KEY).catch(() => null))
+}
+
+export async function saveOuraPat(token: string): Promise<void> {
+  await kvSetJson(PAT_KEY, token)
 }
 
 export async function exchangeCode(code: string, redirectUri: string): Promise<void> {
@@ -67,7 +73,7 @@ async function refresh(t: StoredToken): Promise<StoredToken | null> {
 async function accessToken(): Promise<string | null> {
   let t = ouraOAuthConfigured() ? await kvGetJson<StoredToken>(TOKEN_KEY).catch(() => null) : null
   // Ohne OAuth-Login: persönlichen Token aus der Umgebung verwenden
-  if (!t) return process.env.OURA_ACCESS_TOKEN || null
+  if (!t) return process.env.OURA_ACCESS_TOKEN || (await kvGetJson<string>(PAT_KEY).catch(() => null)) || null
   if (t.expires_at - Date.now() < 5 * 60_000) t = await refresh(t)
   return t?.access_token ?? null
 }

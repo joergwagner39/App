@@ -52,8 +52,11 @@ Ohne verbundene Daten zeigt die App Beispielwerte.
    **Root Directory `padel-coach`** wählen.
 2. **Storage → „Upstash for Redis“** verbinden. Dadurch werden
    `KV_REST_API_URL` und `KV_REST_API_TOKEN` automatisch gesetzt.
-3. Umgebungsvariable **`COACH_PIN`** setzen. Die PIN gibst du auf jedem Gerät einmal ein.
-4. **Oura:** Unter https://cloud.ouraring.com/oauth/applications eine App anlegen und als
+3. **PIN:** Beim ersten Öffnen der App legst du die PIN direkt in der App fest; sie wird als
+   Hash im KV gespeichert. Alternativ kann sie als Umgebungsvariable `COACH_PIN` gesetzt werden.
+4. **Oura:** Am einfachsten unter *Setup* in der App deinen Oura Personal Access Token
+   einfügen (wird geprüft und im KV gespeichert) – oder als `OURA_ACCESS_TOKEN` in Vercel.
+   Alternativ per OAuth: Unter https://cloud.ouraring.com/oauth/applications eine App anlegen und als
    Redirect-URI `https://<deine-domain>/api/oura/callback` eintragen. Dann
    `OURA_CLIENT_ID` und `OURA_CLIENT_SECRET` in Vercel setzen, neu deployen und in der
    App unter **Setup → „Mit Oura verbinden“** klicken.

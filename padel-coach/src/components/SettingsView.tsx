@@ -237,11 +237,7 @@ export default function SettingsView({
             </div>
             {data?.oura.error && <p className="text-xs text-rose-300 mt-1">Fehler: {data.oura.error}</p>}
             {data && !data.status.ouraOAuth ? (
-              <p className="text-xs text-gray-500 mt-1">
-                {data.status.ouraConfigured
-                  ? 'Verbunden über OURA_ACCESS_TOKEN (Vercel).'
-                  : 'OURA_ACCESS_TOKEN oder OURA_CLIENT_ID / OURA_CLIENT_SECRET in Vercel setzen (siehe README).'}
-              </p>
+              <OuraTokenForm onSaved={resync} connected={signals.sources.oura} />
             ) : data && !data.status.kv ? (
               <p className="text-xs text-gray-500 mt-1">Zuerst den Server-Speicher (Upstash) einrichten.</p>
             ) : (
@@ -281,6 +277,53 @@ export default function SettingsView({
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
         </div>
       </Card>
+    </div>
+  )
+}
+
+function OuraTokenForm({ onSaved, connected }: { onSaved: () => void; connected: boolean }) {
+  const [token, setToken] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  async function save() {
+    setBusy(true)
+    setMsg(null)
+    const res = await fetch('/api/oura/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-coach-pin': getPin() },
+      body: JSON.stringify({ token }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    setBusy(false)
+    if (res.ok) {
+      setToken('')
+      setMsg('Gespeichert ✅ – Daten werden neu geladen …')
+      setTimeout(() => window.location.reload(), 800)
+      onSaved()
+    } else setMsg(body.error ?? 'Fehler beim Speichern')
+  }
+  return (
+    <div className="mt-2 space-y-2">
+      <p className="text-xs text-gray-500">
+        {connected ? 'Neuen Token eintragen, falls du ihn geändert hast:' : 'Oura Personal Access Token einfügen (cloud.ouraring.com → Personal Access Tokens):'}
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="Oura-Token"
+          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full focus:outline-none focus:border-violet-400"
+        />
+        <button
+          onClick={save}
+          disabled={busy || token.trim().length < 20}
+          className="px-3 rounded-xl bg-violet-500/80 text-white text-sm font-medium disabled:bg-gray-700 disabled:text-gray-400"
+        >
+          {busy ? '…' : 'Speichern'}
+        </button>
+      </div>
+      {msg && <p className="text-xs text-gray-300">{msg}</p>}
     </div>
   )
 }

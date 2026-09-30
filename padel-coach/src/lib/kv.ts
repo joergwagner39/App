@@ -44,3 +44,9 @@ export async function kvGetJson<T>(key: string): Promise<T | null> {
 export async function kvSetJson(key: string, value: unknown): Promise<void> {
   await command(['SET', key, JSON.stringify(value)])
 }
+
+/** Setzt den Wert nur, wenn der Key noch nicht existiert. true = gesetzt. */
+export async function kvSetJsonIfAbsent(key: string, value: unknown): Promise<boolean> {
+  const res = await command<string | null>(['SET', key, JSON.stringify(value), 'NX'])
+  return res === 'OK'
+}
