@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Padel & Fitness Coach',
+  title: 'Padel & Hyrox Coach',
   description: 'Tägliches Training aus Oura- und Garmin-Daten, Padel-Taktik, Quiz und Fakt des Tages.',
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },

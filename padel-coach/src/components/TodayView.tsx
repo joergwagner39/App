@@ -2,14 +2,16 @@
 
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Brain, Lightbulb, Pencil, Sparkles, Swords, Dumbbell, CheckCircle2 } from 'lucide-react'
-import type { CheckIn, CoachState, Signals } from '@/lib/coach/types'
-import { addDays, factOfDay, planDay, quizOfDay, tacticOfDay } from '@/lib/coach/engine'
+import type { CheckIn, CoachState, Dose, Signals } from '@/lib/coach/types'
+import { addDays, factOfDay, padelThisWeek, planDay, quizOfDay, tacticOfDay } from '@/lib/coach/engine'
 import { WORKOUTS, workoutById, SESSION_LABEL } from '@/lib/coach/workouts'
 import CheckInForm from './CheckInForm'
 import WorkoutCard from './WorkoutCard'
 import QuizCard from './QuizCard'
 import PadelCourt, { CourtLegend } from './PadelCourt'
 import { Card, SectionTitle } from './ui'
+import GoalCard from './GoalCard'
+import DosePicker from './DosePicker'
 
 function Stat({ label, value, unit, hint, tone }: { label: string; value?: string | number; unit?: string; hint?: string; tone?: 'good' | 'bad' }) {
   return (
@@ -43,11 +45,13 @@ export default function TodayView({
   update,
   signals,
   today,
+  onOpenSettings,
 }: {
   state: CoachState
   update: (fn: (s: CoachState) => CoachState) => void
   signals: Signals
   today: string
+  onOpenSettings: () => void
 }) {
   const record = state.days[today]
   const yesterday = addDays(today, -1)
@@ -56,7 +60,7 @@ export default function TodayView({
   const [swap, setSwap] = useState(false)
 
   const plan = useMemo(() => {
-    const p = planDay(state, signals, record?.checkIn, today)
+    const p = planDay(state, signals, record?.checkIn, today, record?.dose)
     const chosen = record?.plannedSession && workoutById(record.plannedSession.workoutId)
     return chosen ? { ...p, workout: chosen, type: chosen.type } : p
   }, [state, signals, record, today])
@@ -78,7 +82,7 @@ export default function TodayView({
         updatedAt: now,
       } as (typeof days)[string]
       const withYesterday = { ...s, days }
-      const p = planDay(withYesterday, signals, c, today)
+      const p = planDay(withYesterday, signals, c, today, days[today]?.dose)
       days[today] = {
         ...(days[today] ?? { date: today }),
         date: today,
@@ -98,10 +102,23 @@ export default function TodayView({
       ...s,
       days: {
         ...s.days,
-        [today]: { ...(s.days[today] ?? { date: today }), plannedSession: { type: w.type, workoutId: w.id, title: w.title }, updatedAt: Date.now() },
+        [today]: { ...(s.days[today] ?? { date: today }), plannedSession: { type: w.type, workoutId: w.id, title: w.title, manual: true }, updatedAt: Date.now() },
       },
     }))
     setSwap(false)
+  }
+
+  function chooseDose(d: Dose) {
+    update((s) => {
+      const rec = s.days[today] ?? { date: today, updatedAt: 0 }
+      const next = { ...rec, dose: d, updatedAt: Date.now() }
+      // Einheit neu berechnen (z. B. leichter bei wenig Energie), außer sie wurde manuell gewählt
+      if (!rec.plannedSession?.manual) {
+        const p = planDay(s, signals, rec.checkIn, today, d)
+        next.plannedSession = { type: p.type, workoutId: p.workout.id, title: p.workout.title }
+      }
+      return { ...s, days: { ...s.days, [today]: next } }
+    })
   }
 
   function markToday(v: 'yes' | 'partly' | 'no') {
@@ -131,6 +148,7 @@ export default function TodayView({
 
   return (
     <div className="space-y-5">
+      <GoalCard phase={plan.phase} settings={state.settings} padelDone={padelThisWeek(state, today)} onOpenSettings={onOpenSettings} />
       <SignalStrip s={signals} />
 
       <div className="grid lg:grid-cols-2 gap-5 items-start">
@@ -188,6 +206,7 @@ export default function TodayView({
                 </div>
               </div>
 
+              <DosePicker dose={record?.dose ?? plan.dose} onChange={chooseDose} />
               <WorkoutCard workout={plan.workout} ctx={plan.ctx} />
 
               {plan.optional && <p className="mt-3 text-sm text-sky-200 bg-sky-500/10 rounded-xl px-3 py-2">➕ {plan.optional}</p>}

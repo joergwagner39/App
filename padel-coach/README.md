@@ -1,4 +1,4 @@
-# Padel & Fitness Coach
+# Padel & Hyrox Coach
 
 Eigenständige Web-App (Next.js, installierbar als App auf Handy und Laptop).
 Sie nutzt deine **Oura**- und **Garmin**-Daten, fragt jeden Morgen, wie es dir geht,
@@ -9,17 +9,28 @@ Skizze, eine Quizfrage und einen Fakt.
 
 - **Morgen-Check-in:** Befinden, Knie (0–10), Muskelkater, Einheit von gestern gemacht?,
   Padel gestern (wird aus Garmin vorausgefüllt), heute oder morgen?
+- **Ziele:** Hyrox-Wettkampf (Datum, Division, Zielzeit) mit Countdown sowie Padel-Einheiten
+  pro Woche und ein eigenes Padel-Ziel. Mit Wettkampfdatum plant der Coach in Phasen:
+  Grundlage → Aufbau → spezifischer Aufbau (mehr Hyrox) → wettkampfnah → Tapering.
 - **Training des Tages** aus Oura Readiness, HRV, Ruhepuls, Temperatur, Schlaf,
   Garmin Body Battery, Training Readiness und Aktivitäten:
-  - **VO2max:** 4×4, 30/30, 5×3 oder Pyramide auf Rad, Rudergerät, SkiErg oder im Wasser.
-    Laufen nur, wenn du es erlaubst und das Knie bei höchstens 2/10 liegt.
-  - **Hyrox:** Stationen und „Compromised Intervals“ mit Ergometer statt Laufen,
-    mit Knie-Varianten.
-  - **Kraft** (kniefreundlich), **Zone 2**, **Recovery**, **Ruhetag** und
+  - **Nach einem Padel-Match** entscheiden die Daten: bei guter Bereitschaft
+    **Oberkörper + Rad Zone 2** (Beine locker durchbewegen), sonst oder bei schweren
+    Beinen **nur Oberkörper & Rumpf**, bei schlechten Werten Recovery.
+  - **VO2max:** 4×4, 30/30, 3-Minuten-Intervalle oder Pyramide auf Rad, Rudergerät,
+    SkiErg oder im Wasser. Laufen nur, wenn du es erlaubst und das Knie bei höchstens
+    2/10 liegt.
+  - **Hyrox:** Stationen, EMOM, „Compromised Intervals“ und Simulationen mit Ergometer
+    statt Laufen, mit Knie-Varianten.
+  - **Kraft** (kniefreundlich), **Oberkörper**, **Zone 2**, **Recovery**, **Ruhetag** und
     **Padel-Aktivierung** vor dem Spiel.
-  - Wochenziele: 2× VO2max, 1× Hyrox (2×, wenn der Wettkampf weniger als 8 Wochen
-    entfernt ist), 1× Kraft, 1× Zone 2. Nach einem harten Tag (auch nach einem
-    Padel-Match) folgt nie direkt ein zweiter.
+  - Wochenziele je nach Phase. Zwei oder mehr Padel-Matches pro Woche ersetzen einen
+    VO2max-Termin. Nach einem harten Tag folgt nie direkt ein zweiter.
+- **Vor dem Workout: Weniger / Normal / Mehr**
+  - *Weniger – wenig Zeit:* kürzere Version bei gleicher Intensität
+  - *Weniger – wenig Kraft/Gefühl:* eine Stufe leichter (z. B. VO2max → Zone 2,
+    Kraft → Oberkörper, Oberkörper + Rad → nur Oberkörper)
+  - *Mehr:* mehr Intervalle, Runden oder Sätze plus ein Extra-Block
 - **Padel:** 20 Taktiken mit animierten Court-Skizzen und Quiz. Falsch beantwortete
   kommen wieder dran. Dazu 8 Übungen, auch zur kniefreundlichen Athletik.
 - **Quiz** zu Körper und Training sowie **Fakt des Tages**.

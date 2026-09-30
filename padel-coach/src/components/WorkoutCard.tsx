@@ -2,7 +2,7 @@
 
 import { Clock, Target } from 'lucide-react'
 import type { Workout, WorkoutContext } from '@/lib/coach/workouts'
-import { SESSION_LABEL, MODALITY_LABEL } from '@/lib/coach/workouts'
+import { SESSION_LABEL, MODALITY_LABEL, durationLabel } from '@/lib/coach/workouts'
 import { SESSION_STYLE } from './ui'
 
 export default function WorkoutCard({ workout, ctx, compact = false }: { workout: Workout; ctx: WorkoutContext; compact?: boolean }) {
@@ -17,7 +17,7 @@ export default function WorkoutCard({ workout, ctx, compact = false }: { workout
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-400">
           <Clock className="w-3.5 h-3.5" />
-          {workout.duration}
+          {durationLabel(workout, ctx.dose)}
         </span>
         {showModality && <span className="text-xs text-gray-400">· {MODALITY_LABEL[ctx.modality]}</span>}
       </div>
@@ -30,7 +30,7 @@ export default function WorkoutCard({ workout, ctx, compact = false }: { workout
       </div>
       <ol className="space-y-2">
         {blocks.map((b, i) => (
-          <li key={i} className="flex gap-3 bg-gray-800/40 rounded-xl p-3">
+          <li key={i} className={`flex gap-3 rounded-xl p-3 ${b.extra ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-gray-800/40'}`}>
             <span className="text-xs font-bold text-gray-500 w-5 shrink-0 pt-0.5">{i + 1}</span>
             <div className="min-w-0">
               {!/^\d+$/.test(b.name) && <p className="text-sm font-semibold text-gray-100">{b.name}</p>}

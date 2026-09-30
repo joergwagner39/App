@@ -4,21 +4,21 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import type { CoachState, SessionType, Signals } from '@/lib/coach/types'
-import { addDays, resolveMaxHr } from '@/lib/coach/engine'
-import { WORKOUTS, SESSION_LABEL, type WorkoutContext } from '@/lib/coach/workouts'
+import { addDays, phaseFor, resolveMaxHr } from '@/lib/coach/engine'
+import { WORKOUTS, SESSION_LABEL, durationLabel, type WorkoutContext } from '@/lib/coach/workouts'
 import WorkoutCard from './WorkoutCard'
 import { Card, SectionTitle, SESSION_STYLE } from './ui'
-
-const TARGETS: { t: SessionType; target: number }[] = [
-  { t: 'vo2max', target: 2 },
-  { t: 'hyrox', target: 1 },
-  { t: 'strength', target: 1 },
-  { t: 'zone2', target: 1 },
-]
 
 export default function TrainingView({ state, signals, today }: { state: CoachState; signals: Signals; today: string }) {
   const [filter, setFilter] = useState<SessionType | 'all'>('all')
   const [openId, setOpenId] = useState<string | null>(null)
+  const phase = phaseFor(state.settings, today)
+  const TARGETS: { t: SessionType; target: number }[] = [
+    { t: 'hyrox', target: phase.targets.hyrox },
+    { t: 'vo2max', target: phase.targets.vo2max },
+    { t: 'strength', target: phase.targets.strength },
+    { t: 'zone2', target: phase.targets.zone2 },
+  ]
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, -13 + i))
   const last7 = days.slice(-7)
 
@@ -36,6 +36,7 @@ export default function TrainingView({ state, signals, today }: { state: CoachSt
     maxHr: resolveMaxHr(state.settings, signals),
     modality: state.settings.equipment.bike ? 'bike' : 'rower',
     knee: 0,
+    dose: 'normal',
     canRun: state.settings.allowRunning,
     equipment: state.settings.equipment,
   }
@@ -43,7 +44,7 @@ export default function TrainingView({ state, signals, today }: { state: CoachSt
   return (
     <div className="space-y-5">
       <Card>
-        <SectionTitle title="Letzte 7 Tage – Wochenziele" />
+        <SectionTitle title={`Letzte 7 Tage – Wochenziele (Phase: ${phase.name})`} />
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {TARGETS.map(({ t, target }) => {
             const n = doneOf(t)
@@ -57,14 +58,20 @@ export default function TrainingView({ state, signals, today }: { state: CoachSt
                   <span className="text-sm text-gray-500">/{target}</span>
                 </p>
                 <div className="h-1.5 bg-gray-800 rounded-full mt-1 overflow-hidden">
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(100, (n / target) * 100)}%` }} />
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${target ? Math.min(100, (n / target) * 100) : 100}%` }} />
                 </div>
               </div>
             )
           })}
           <div className="bg-gray-800/40 rounded-xl p-3">
             <p className="text-xs text-gray-400">🎾 Padel</p>
-            <p className="text-xl font-bold text-white">{padelCount}×</p>
+            <p className="text-xl font-bold text-white">
+              {padelCount}
+              <span className="text-sm text-gray-500">/{state.settings.padelPerWeek}</span>
+            </p>
+            <div className="h-1.5 bg-gray-800 rounded-full mt-1 overflow-hidden">
+              <div className="h-full bg-lime-400 rounded-full" style={{ width: `${Math.min(100, (padelCount / Math.max(1, state.settings.padelPerWeek)) * 100)}%` }} />
+            </div>
           </div>
         </div>
       </Card>
@@ -115,7 +122,7 @@ export default function TrainingView({ state, signals, today }: { state: CoachSt
       <div>
         <SectionTitle title="Einheiten-Bibliothek" />
         <div className="flex flex-wrap gap-2 mb-3">
-          {(['all', 'vo2max', 'hyrox', 'strength', 'zone2', 'recovery', 'padel'] as const).map((f) => (
+          {(['all', 'hyrox', 'vo2max', 'strength', 'upper', 'zone2', 'recovery', 'padel'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -144,7 +151,7 @@ export default function TrainingView({ state, signals, today }: { state: CoachSt
                   </span>
                   <p className="font-semibold text-white mt-2">{w.title}</p>
                   <p className="text-sm text-gray-400">{w.goal}</p>
-                  <p className="text-xs text-gray-500 mt-1">{w.duration}</p>
+                  <p className="text-xs text-gray-500 mt-1">{durationLabel(w, 'normal')}</p>
                 </button>
               )}
             </Card>

@@ -20,6 +20,7 @@ export const SESSION_STYLE: Record<SessionType, { badge: string; ring: string; e
   vo2max: { badge: 'bg-rose-500/20 text-rose-200 border-rose-400/40', ring: 'border-rose-500/50', emoji: '❤️‍🔥' },
   hyrox: { badge: 'bg-amber-500/20 text-amber-200 border-amber-400/40', ring: 'border-amber-500/50', emoji: '🏋️' },
   strength: { badge: 'bg-sky-500/20 text-sky-200 border-sky-400/40', ring: 'border-sky-500/50', emoji: '💪' },
+  upper: { badge: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/40', ring: 'border-cyan-500/50', emoji: '🦾' },
   zone2: { badge: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40', ring: 'border-emerald-500/50', emoji: '🚴' },
   recovery: { badge: 'bg-violet-500/20 text-violet-200 border-violet-400/40', ring: 'border-violet-500/50', emoji: '🧘' },
   rest: { badge: 'bg-gray-500/20 text-gray-200 border-gray-400/40', ring: 'border-gray-500/50', emoji: '😴' },

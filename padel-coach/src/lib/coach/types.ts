@@ -4,6 +4,7 @@ export type SessionType =
   | 'vo2max'
   | 'hyrox'
   | 'strength'
+  | 'upper'
   | 'zone2'
   | 'recovery'
   | 'rest'
@@ -12,6 +13,14 @@ export type SessionType =
 export type Feeling = 1 | 2 | 3 | 4 | 5
 
 export type PadelIntensity = 'none' | 'light' | 'match'
+
+/** Umfang der heutigen Einheit – vor dem Workout wählbar */
+export type DoseLevel = 'less' | 'normal' | 'more'
+export interface Dose {
+  level: DoseLevel
+  /** Bei „weniger“: wegen Zeit (kürzer, gleiche Intensität) oder Kraft/Gefühl (leichter) */
+  reason?: 'time' | 'energy'
+}
 
 export interface CheckIn {
   feeling: Feeling
@@ -35,7 +44,8 @@ export interface DayRecord {
   date: string // YYYY-MM-DD
   checkIn?: CheckIn
   /** Die Einheit, die für diesen Tag vorgeschlagen wurde */
-  plannedSession?: { type: SessionType; workoutId: string; title: string }
+  plannedSession?: { type: SessionType; workoutId: string; title: string; manual?: boolean }
+  dose?: Dose
   /** Nachträglich per Check-in am Folgetag erfasst */
   completed?: 'yes' | 'partly' | 'no'
   padelPlayed?: PadelIntensity
@@ -61,6 +71,13 @@ export interface CoachSettings {
     kettlebell: boolean
   }
   hyroxRaceDate?: string
+  hyroxDivision?: 'open' | 'pro' | 'doubles' | 'relay'
+  /** Zielzeit, z. B. "1:25:00" */
+  hyroxTargetTime?: string
+  /** Padel-Einheiten pro Woche als Ziel */
+  padelPerWeek: number
+  /** Freitext, z. B. „Turnier im Mai“ oder „Level 3.5“ */
+  padelGoal?: string
   updatedAt: number
 }
 
@@ -72,6 +89,7 @@ export interface CoachState {
 
 export const DEFAULT_SETTINGS: CoachSettings = {
   allowRunning: false,
+  padelPerWeek: 2,
   equipment: {
     bike: true,
     rower: true,

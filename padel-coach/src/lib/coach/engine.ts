@@ -1,5 +1,5 @@
 // Entscheidet anhand von Wearable-Daten, Check-in und Verlauf, welche Einheit heute dran ist.
-import type { CheckIn, CoachSettings, CoachState, DayRecord, SessionType, Signals } from './types'
+import { DEFAULT_SETTINGS, type CheckIn, type CoachSettings, type CoachState, type DayRecord, type Dose, type DoseLevel, type SessionType, type Signals } from './types'
 import type { WearableData } from '@/lib/wearables'
 import { WORKOUTS, workoutsOf, type Modality, type Workout, type WorkoutContext } from './workouts'
 import { PADEL_TACTICS } from './padel'
@@ -183,6 +183,8 @@ export interface DayPlan {
   readiness: ReadinessResult
   why: string[]
   optional?: string
+  dose: Dose
+  phase: Phase
 }
 
 function pickModality(settings: CoachSettings, knee: number, seed: number, forHyrox = false): Modality {
@@ -204,29 +206,125 @@ export function resolveMaxHr(settings: CoachSettings, s: Signals): number | unde
   return undefined
 }
 
-export function planDay(state: CoachState, s: Signals, c: CheckIn | undefined, today: string): DayPlan {
+// ── Ziel & Trainingsphase ────────────────────────────────────────────────
+
+export interface Phase {
+  name: string
+  description: string
+  weeksLeft?: number
+  daysLeft?: number
+  targets: { vo2max: number; hyrox: number; strength: number; zone2: number }
+  /** Standard-Umfang in dieser Phase */
+  defaultDose: DoseLevel
+}
+
+export function phaseFor(settings: CoachSettings, today: string): Phase {
+  const race = settings.hyroxRaceDate
+  const daysLeft = race ? dayNumber(race) - dayNumber(today) : undefined
+  const weeksLeft = daysLeft !== undefined ? Math.ceil(daysLeft / 7) : undefined
+  if (daysLeft === undefined || daysLeft < -2) {
+    return {
+      name: 'Grundlagen & Fitness',
+      description: 'Kein Wettkampf eingetragen: VO2max, Kraft und Hyrox-Fitness ausgewogen aufbauen.',
+      targets: { vo2max: 2, hyrox: 1, strength: 1, zone2: 1 },
+      defaultDose: 'normal',
+    }
+  }
+  if (daysLeft < 0) return { name: 'Regeneration nach dem Rennen', description: 'Glückwunsch! Jetzt locker erholen.', daysLeft, weeksLeft, targets: { vo2max: 0, hyrox: 0, strength: 0, zone2: 1 }, defaultDose: 'less' }
+  if (daysLeft === 0) return { name: 'Wettkampftag', description: 'Heute zählt es – vertrau deinem Training.', daysLeft, weeksLeft, targets: { vo2max: 0, hyrox: 0, strength: 0, zone2: 0 }, defaultDose: 'less' }
+  if (daysLeft <= 9)
+    return {
+      name: 'Tapering',
+      description: 'Umfang runter, Intensität kurz halten – frisch an die Startlinie.',
+      daysLeft,
+      weeksLeft,
+      targets: { vo2max: 1, hyrox: 1, strength: 0, zone2: 1 },
+      defaultDose: 'less',
+    }
+  if (daysLeft <= 21)
+    return {
+      name: 'Wettkampfnah',
+      description: 'Rennspezifische Simulationen, Pacing und Übergänge üben.',
+      daysLeft,
+      weeksLeft,
+      targets: { vo2max: 1, hyrox: 2, strength: 1, zone2: 1 },
+      defaultDose: 'normal',
+    }
+  if (daysLeft <= 56)
+    return {
+      name: 'Spezifischer Aufbau',
+      description: 'Mehr Hyrox-Einheiten, VO2max halten, Kraft erhalten.',
+      daysLeft,
+      weeksLeft,
+      targets: { vo2max: 1, hyrox: 2, strength: 1, zone2: 1 },
+      defaultDose: 'normal',
+    }
+  if (daysLeft <= 112)
+    return {
+      name: 'Aufbau',
+      description: 'VO2max und Kraftausdauer steigern – die Motoren für Hyrox.',
+      daysLeft,
+      weeksLeft,
+      targets: { vo2max: 2, hyrox: 1, strength: 1, zone2: 1 },
+      defaultDose: 'normal',
+    }
+  return {
+    name: 'Grundlage',
+    description: 'Noch viel Zeit: aerobe Basis, Kraft und Technik an den Stationen.',
+    daysLeft,
+    weeksLeft,
+    targets: { vo2max: 1, hyrox: 1, strength: 2, zone2: 2 },
+    defaultDose: 'normal',
+  }
+}
+
+export function padelThisWeek(state: CoachState, today: string): number {
+  return padelSessions(state, today)
+}
+
+// ── Tagesplan ────────────────────────────────────────────────────────────
+
+/** Bei „weniger wegen Kraft/Gefühl“ eine Stufe leichter */
+const LIGHTER: Partial<Record<SessionType, SessionType>> = {
+  vo2max: 'zone2',
+  hyrox: 'zone2',
+  strength: 'upper',
+  zone2: 'recovery',
+}
+
+export function planDay(state: CoachState, s: Signals, c: CheckIn | undefined, today: string, dose?: Dose): DayPlan {
   const settings = state.settings
   const knee = c?.knee ?? 0
   const readiness = computeReadiness(s, c)
   const score = readiness.score
   const why: string[] = []
   const seed = dayNumber(today)
+  const phase = phaseFor(settings, today)
   let type: SessionType
+  let workoutId: string | undefined
   let optional: string | undefined
 
   const hardYesterday = yesterdayWasHard(state, s, c, today)
   const vo2Done = countDone(state, today, 'vo2max')
   const hyroxDone = countDone(state, today, 'hyrox')
   const strengthDone = countDone(state, today, 'strength')
+  const upperDone = countDone(state, today, 'upper', 3)
   const zone2Done = countDone(state, today, 'zone2')
   const padelDone = padelSessions(state, today)
-  const raceSoon =
-    settings.hyroxRaceDate && dayNumber(settings.hyroxRaceDate) - seed <= 56 && dayNumber(settings.hyroxRaceDate) >= seed
-  const hyroxTarget = raceSoon ? 2 : 1
-  const vo2Target = 2
+  const t = { ...phase.targets }
+  // Viele Padel-Matches sind selbst intensives Intervalltraining → ein VO2max-Termin weniger
+  const padelMatches = Object.values(state.days).filter((d) => d.date >= addDays(today, -7) && d.date < today && d.padelPlayed === 'match').length
+  if (padelMatches >= 2 && t.vo2max > 1) {
+    t.vo2max -= 1
+    why.push(`${padelMatches} Padel-Matches diese Woche zählen als intensive Intervalle – ein VO2max-Termin weniger`)
+  }
 
   const sick = s.tempDeviation !== undefined && s.tempDeviation >= 0.8
-  if (sick || knee >= 7 || (c && c.feeling === 1) || score < 40) {
+  const legsTired = (c?.soreness ?? 0) >= 2 || knee >= 4
+  if (phase.name === 'Wettkampftag') {
+    type = 'rest'
+    why.push('Hyrox-Wettkampf heute – viel Erfolg! Nur Aktivierung, dann Vollgas.')
+  } else if (sick || knee >= 7 || (c && c.feeling === 1) || score < 40) {
     type = score < 30 || sick ? 'rest' : 'recovery'
     why.push(sick ? 'Temperatur deutlich erhöht – heute keine Belastung' : 'Deine Signale sagen klar: Erholung')
   } else if (c?.padelToday === 'match') {
@@ -238,53 +336,87 @@ export function planDay(state: CoachState, s: Signals, c: CheckIn | undefined, t
   } else if (c?.padelToday === 'light') {
     type = 'padel'
     why.push('Lockeres Padel heute')
-    if (score >= 70 && strengthDone === 0) optional = 'Optional nach dem Padel: 20 min Oberkörper + Core aus „Kraft B“ (Blöcke 4–5).'
+    if (score >= 70 && upperDone === 0) optional = 'Du fühlst dich fit: Tippe auf „Mehr“, dann gibt es nach dem Padel einen kurzen Oberkörper-Zirkel.'
+  } else if (c?.padelYesterday === 'match') {
+    // Nach dem Match: Beine schonen, Oberkörper trainieren – je nach Daten mit Rad Zone 2
+    type = 'upper'
+    if (score >= 70 && !legsTired) {
+      workoutId = 'upper-z2'
+      why.push(`Gestern Padel-Match, Bereitschaft trotzdem gut (${score}) → Oberkörper + lockeres Rad in Zone 2 zum Durchbewegen der Beine`)
+    } else {
+      workoutId = 'upper-only'
+      why.push(
+        legsTired
+          ? 'Gestern Padel-Match und die Beine sind noch schwer → nur Oberkörper & Rumpf'
+          : `Gestern Padel-Match, Bereitschaft ${score} → Oberkörper & Rumpf, Beine erholen lassen`,
+      )
+    }
   } else if (hardYesterday || score < 68) {
     if (hardYesterday) why.push(`${hardYesterday} – kein zweiter harter Tag in Folge`)
     else why.push(`Bereitschaft ${score}/100 – moderat statt hart`)
-    type = strengthDone === 0 && score >= 60 && knee < 6 && !(c?.soreness && c.soreness >= 2) ? 'strength' : 'zone2'
+    if (strengthDone < t.strength && score >= 60 && !legsTired) type = 'strength'
+    else if (legsTired && upperDone === 0) type = 'upper'
+    else type = 'zone2'
   } else if (c?.padelTomorrow) {
     why.push('Morgen Padel – heute keine schwere Beinbelastung')
-    type = vo2Done < vo2Target && score >= 75 ? 'vo2max' : 'zone2'
+    type = vo2Done < t.vo2max && score >= 75 ? 'vo2max' : upperDone === 0 ? 'upper' : 'zone2'
     if (type === 'vo2max') why.push('Kurzes VO2max-Intervall auf dem Ergometer passt trotzdem')
+    if (type === 'upper') workoutId = score >= 70 ? 'upper-z2' : 'upper-only'
   } else {
-    // Wochenziele: 2× VO2max, 1–2× Hyrox, 1× Kraft, 1× Zone 2 (+ Padel)
     const candidates: { t: SessionType; need: number; min: number }[] = [
-      { t: 'vo2max', need: vo2Target - vo2Done, min: 72 },
-      { t: 'hyrox', need: hyroxTarget - hyroxDone, min: 70 },
-      { t: 'strength', need: 1 - strengthDone, min: 62 },
-      { t: 'zone2', need: 1 - zone2Done, min: 55 },
+      { t: 'hyrox', need: t.hyrox - hyroxDone, min: 70 },
+      { t: 'vo2max', need: t.vo2max - vo2Done, min: 72 },
+      { t: 'strength', need: t.strength - strengthDone, min: 62 },
+      { t: 'zone2', need: t.zone2 - zone2Done, min: 55 },
     ]
     const deficits = candidates.filter((d) => d.need > 0 && score >= d.min)
     deficits.sort((a, b) => b.need - a.need)
     type = deficits[0]?.t ?? 'zone2'
     why.push(`Bereitschaft ${score}/100 – ein Qualitätstag ist drin`)
-    const labels: Record<string, string> = { vo2max: 'VO2max', hyrox: 'Hyrox', strength: 'Kraft', zone2: 'Zone 2' }
     why.push(
-      `Diese Woche erledigt: VO2max ${vo2Done}/${vo2Target}, Hyrox ${hyroxDone}/${hyroxTarget}, Kraft ${strengthDone}/1, Zone 2 ${zone2Done}/1, Padel ${padelDone}×` +
-        (deficits[0] ? ` → heute ${labels[type]}` : ''),
+      `Phase „${phase.name}“ – diese Woche: VO2max ${vo2Done}/${t.vo2max}, Hyrox ${hyroxDone}/${t.hyrox}, Kraft ${strengthDone}/${t.strength}, Zone 2 ${zone2Done}/${t.zone2}, Padel ${padelDone}/${settings.padelPerWeek}`,
     )
-    if (raceSoon) why.push('Hyrox-Wettkampf in weniger als 8 Wochen – mehr Hyrox-Einheiten')
   }
+
+  // Umfang: Auswahl des Nutzers, sonst Standard der Phase
+  const effDose: Dose = dose ?? { level: phase.defaultDose }
+  if (effDose.level === 'less' && effDose.reason === 'energy' && LIGHTER[type]) {
+    const lighter = LIGHTER[type]!
+    why.push(`Du hast weniger Kraft/Energie angegeben → statt ${type === 'strength' ? 'Kraft' : type === 'zone2' ? 'Zone 2' : type === 'vo2max' ? 'VO2max' : 'Hyrox'} heute leichter`)
+    type = lighter
+    workoutId = lighter === 'upper' ? 'upper-only' : undefined
+  } else if (effDose.level === 'less' && effDose.reason === 'energy' && type === 'upper' && workoutId !== 'upper-only') {
+    why.push('Du hast weniger Kraft/Energie angegeben → heute nur Oberkörper, ohne Rad-Einheit')
+    workoutId = 'upper-only'
+  } else if (effDose.level === 'less') {
+    why.push(effDose.reason === 'time' ? 'Wenig Zeit → kürzere Version, gleiche Qualität' : 'Kürzere Version')
+  } else if (effDose.level === 'more') {
+    why.push('Du willst mehr → zusätzliche Wiederholungen und ein Extra-Block')
+  }
+  if (!dose && phase.defaultDose === 'less') why.push(`Phase „${phase.name}“: standardmäßig reduzierter Umfang`)
 
   if (c?.yesterdayDone === 'no') why.push('Gestern ausgelassen? Kein Problem – nicht nachholen, einfach weiter nach Plan.')
   if (c?.padelYesterday === 'light') why.push('Gestern lockeres Padel – zählt als Bewegung, aber nicht als harter Tag')
 
   const options = workoutsOf(type)
   const done = type === 'vo2max' ? vo2Done : type === 'hyrox' ? hyroxDone : type === 'strength' ? strengthDone : 0
-  let workout = options[(seed + done) % options.length]
+  let workout = (workoutId && options.find((w) => w.id === workoutId)) || options[(seed + done) % options.length]
   if (type === 'recovery') workout = options.find((w) => w.id === (settings.equipment.pool && seed % 3 === 0 ? 'recovery-swim' : 'recovery-mobility'))!
   const ctx: WorkoutContext = {
     maxHr: resolveMaxHr(settings, s),
-    modality: type === 'recovery' || type === 'zone2' ? pickModality({ ...settings, allowRunning: false }, knee, seed) : pickModality(settings, knee, seed + done, type === 'hyrox'),
+    modality:
+      type === 'upper'
+        ? 'bike'
+        : type === 'recovery' || type === 'zone2'
+          ? pickModality({ ...settings, allowRunning: false }, knee, seed)
+          : pickModality(settings, knee, seed + done, type === 'hyrox'),
     knee,
     canRun: settings.allowRunning && knee <= 2,
+    dose: effDose.level,
     equipment: settings.equipment,
   }
-  if (!settings.allowRunning || knee > 2) {
-    if (type === 'vo2max' || type === 'hyrox') why.push('Kniefreundlich: Laufen ist durch Ergometer ersetzt')
-  }
-  return { type, workout, ctx, readiness, why, optional }
+  if ((!settings.allowRunning || knee > 2) && (type === 'vo2max' || type === 'hyrox')) why.push('Kniefreundlich: Laufen ist durch Ergometer ersetzt')
+  return { type, workout, ctx, readiness, why, optional, dose: effDose, phase }
 }
 
 export function allWorkouts(): Workout[] {
@@ -343,6 +475,8 @@ export function mergeStates(a: CoachState, b: CoachState): CoachState {
     const cur = days[k]
     if (!cur || (v.updatedAt ?? 0) > (cur.updatedAt ?? 0)) days[k] = v
   }
-  const settings = (b.settings.updatedAt ?? 0) > (a.settings.updatedAt ?? 0) ? b.settings : a.settings
+  const newer = (b.settings?.updatedAt ?? 0) > (a.settings?.updatedAt ?? 0) ? b.settings : a.settings
+  // ältere Stände ohne neue Felder (z. B. padelPerWeek) mit Standardwerten auffüllen
+  const settings = { ...DEFAULT_SETTINGS, ...newer, equipment: { ...DEFAULT_SETTINGS.equipment, ...newer?.equipment } }
   return { version: 1, days, settings }
 }

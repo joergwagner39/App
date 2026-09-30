@@ -34,7 +34,7 @@ function PinGate({ onDone }: { onDone: () => void }) {
         }}
       >
         <div className="text-5xl">🎾</div>
-        <h1 className="text-xl font-bold text-white">Padel & Fitness Coach</h1>
+        <h1 className="text-xl font-bold text-white">Padel & Hyrox Coach</h1>
         <p className="text-sm text-gray-400">Bitte deine Coach-PIN eingeben. Sie wird auf diesem Gerät gespeichert.</p>
         <div className="relative">
           <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -128,7 +128,7 @@ export default function CoachPage() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              <span className="text-xl">🎾</span> Padel & Fitness Coach
+              <span className="text-xl">🎾</span> Padel & Hyrox Coach
             </h1>
             <p className="text-xs text-gray-400 truncate">
               {format(new Date(`${today}T12:00:00`), 'EEEE, dd. MMMM', { locale: de })}
@@ -178,7 +178,7 @@ export default function CoachPage() {
             <RefreshCw className="w-6 h-6 text-gray-500 animate-spin" />
           </div>
         ) : tab === 'today' ? (
-          <TodayView state={state} update={update} signals={signals} today={today} />
+          <TodayView state={state} update={update} signals={signals} today={today} onOpenSettings={() => setTab('settings')} />
         ) : tab === 'padel' ? (
           <PadelView state={state} />
         ) : tab === 'training' ? (

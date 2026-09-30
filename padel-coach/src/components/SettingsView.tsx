@@ -104,15 +104,63 @@ export default function SettingsView({
           Aktuell genutzt: {maxHr ? `${maxHr} bpm` : 'keine – Pulsbereiche werden in % angezeigt'}. Reihenfolge: Eingabe → Garmin → Alter (208 − 0,7 × Alter).
         </p>
 
-        <label className="text-xs text-gray-400 space-y-1 block mt-4">
-          <span>Hyrox-Wettkampf (optional)</span>
-          <input type="date" className={input} value={s.hyroxRaceDate ?? ''} onChange={(e) => set({ hyroxRaceDate: e.target.value || undefined })} />
-        </label>
 
         <label className="flex items-center gap-3 mt-4 text-sm text-gray-200">
           <input type="checkbox" className="w-4 h-4 accent-emerald-400" checked={s.allowRunning} onChange={(e) => set({ allowRunning: e.target.checked })} />
           Laufen erlauben (nur an Tagen mit Knie ≤ 2/10)
         </label>
+      </Card>
+
+      <Card className="lg:col-span-2 border-amber-500/30">
+        <SectionTitle title="🎯 Deine Ziele" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Hyrox-Wettkampf (Datum)</span>
+            <input type="date" className={input} value={s.hyroxRaceDate ?? ''} onChange={(e) => set({ hyroxRaceDate: e.target.value || undefined })} />
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Division</span>
+            <select
+              className={input}
+              value={s.hyroxDivision ?? ''}
+              onChange={(e) => set({ hyroxDivision: (e.target.value || undefined) as CoachSettings['hyroxDivision'] })}
+            >
+              <option value="">–</option>
+              <option value="open">Open</option>
+              <option value="pro">Pro</option>
+              <option value="doubles">Doubles</option>
+              <option value="relay">Relay</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Zielzeit</span>
+            <input className={input} placeholder="z. B. 1:25:00" value={s.hyroxTargetTime ?? ''} onChange={(e) => set({ hyroxTargetTime: e.target.value || undefined })} />
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Padel pro Woche</span>
+            <input
+              type="number"
+              min={0}
+              max={7}
+              inputMode="numeric"
+              className={input}
+              value={s.padelPerWeek}
+              onChange={(e) => set({ padelPerWeek: Math.max(0, Math.min(7, Number(e.target.value) || 0)) })}
+            />
+          </label>
+          <label className="text-xs text-gray-400 space-y-1 sm:col-span-2 lg:col-span-4">
+            <span>Padel-Ziel</span>
+            <input
+              className={input}
+              placeholder="z. B. Turnier im Mai, Level 3.5, Bandeja sicher spielen"
+              value={s.padelGoal ?? ''}
+              onChange={(e) => set({ padelGoal: e.target.value || undefined })}
+            />
+          </label>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          Mit Wettkampfdatum plant der Coach in Phasen: Grundlage → Aufbau → spezifischer Aufbau (mehr Hyrox) → wettkampfnah → Tapering.
+        </p>
       </Card>
 
       <Card>
