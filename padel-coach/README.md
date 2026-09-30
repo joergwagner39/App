@@ -7,6 +7,14 @@ Skizze, eine Quizfrage und einen Fakt.
 
 ## Funktionen
 
+- **Werte (Scoreboard):** Oura und Garmin zusammengefasst.
+  - **VO2max als Hauptwert:** aktueller Wert, Veränderung über 4 und 12 Wochen,
+    Fitnessklasse nach Alter und Geschlecht (Richtwerte Cooper Institute),
+    Abstand zum VO2max-Ziel mit Prognose und Verlauf mit Ziellinie.
+  - Kacheln für Readiness, HRV, Ruhepuls, Schlaf, Body Battery und Stress:
+    Ø 7 Tage im Vergleich zu den 30 Tagen davor, Trend als Pfeil mit Text und Mini-Verlauf.
+    Antippen öffnet den 30-Tage-Chart.
+  - Trainingszeit pro Woche (8 Wochen), getrennt nach intensiv und locker.
 - **Morgen-Check-in:** Befinden, Knie (0–10), Muskelkater, Einheit von gestern gemacht?,
   Padel gestern (wird aus Garmin vorausgefüllt), heute oder morgen?
 - **Ziele:** Hyrox-Wettkampf (Datum, Division, Zielzeit) mit Countdown sowie Padel-Einheiten

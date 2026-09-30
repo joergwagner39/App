@@ -100,6 +100,27 @@ export default function SettingsView({
             />
           </label>
         </div>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Geschlecht (für VO2max-Klasse)</span>
+            <select className={input} value={s.sex ?? 'm'} onChange={(e) => set({ sex: e.target.value as 'm' | 'f' })}>
+              <option value="m">männlich</option>
+              <option value="f">weiblich</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>VO2max-Ziel</span>
+            <input
+              type="number"
+              step="0.5"
+              inputMode="decimal"
+              className={input}
+              placeholder={signals.vo2max ? `aktuell ${signals.vo2max}` : 'z. B. 52'}
+              value={s.vo2maxTarget ?? ''}
+              onChange={(e) => set({ vo2maxTarget: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </label>
+        </div>
         <p className="text-xs text-gray-500 mt-2">
           Aktuell genutzt: {maxHr ? `${maxHr} bpm` : 'keine – Pulsbereiche werden in % angezeigt'}. Reihenfolge: Eingabe → Garmin → Alter (208 − 0,7 × Alter).
         </p>

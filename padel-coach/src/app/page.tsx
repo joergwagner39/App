@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { CalendarCheck, Swords, Dumbbell, Settings, Cloud, CloudOff, RefreshCw, Lock } from 'lucide-react'
+import { CalendarCheck, Swords, Dumbbell, Settings, BarChart3, Cloud, CloudOff, RefreshCw, Lock } from 'lucide-react'
 import type { WearableData } from '@/lib/wearables'
 import { buildSignals, isoDate } from '@/lib/coach/engine'
 import { getPin, setPin, useCoachState } from '@/lib/coach/useCoachState'
@@ -11,11 +11,13 @@ import TodayView from '@/components/TodayView'
 import PadelView from '@/components/PadelView'
 import TrainingView from '@/components/TrainingView'
 import SettingsView from '@/components/SettingsView'
+import StatsView from '@/components/StatsView'
 
-type Tab = 'today' | 'padel' | 'training' | 'settings'
+type Tab = 'today' | 'stats' | 'padel' | 'training' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: typeof Swords }[] = [
   { id: 'today', label: 'Heute', icon: CalendarCheck },
+  { id: 'stats', label: 'Werte', icon: BarChart3 },
   { id: 'padel', label: 'Padel', icon: Swords },
   { id: 'training', label: 'Training', icon: Dumbbell },
   { id: 'settings', label: 'Setup', icon: Settings },
@@ -179,6 +181,8 @@ export default function CoachPage() {
           </div>
         ) : tab === 'today' ? (
           <TodayView state={state} update={update} signals={signals} today={today} onOpenSettings={() => setTab('settings')} />
+        ) : tab === 'stats' ? (
+          <StatsView data={data} state={state} signals={signals} today={today} onOpenSettings={() => setTab('settings')} />
         ) : tab === 'padel' ? (
           <PadelView state={state} />
         ) : tab === 'training' ? (
@@ -189,7 +193,7 @@ export default function CoachPage() {
       </main>
 
       <nav
-        className="sm:hidden fixed bottom-0 inset-x-0 z-20 border-t border-gray-800 bg-[#0a0f1e]/95 backdrop-blur-sm grid grid-cols-4"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-20 border-t border-gray-800 bg-[#0a0f1e]/95 backdrop-blur-sm grid grid-cols-5"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {TABS.map((t) => (

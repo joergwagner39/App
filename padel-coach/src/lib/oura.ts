@@ -76,7 +76,7 @@ export async function fetchOura(): Promise<{ sleep: OuraSleep[]; readiness: Oura
   const token = await accessToken()
   if (!token) return null
   // end_date ist exklusiv → morgen, damit die letzte Nacht dabei ist
-  const q = `start_date=${isoDaysAgo(30)}&end_date=${isoDaysAgo(-1)}`
+  const q = `start_date=${isoDaysAgo(60)}&end_date=${isoDaysAgo(-1)}`
   const get = async (path: string) => {
     const res = await fetch(`${API}/${path}?${q}`, {
       headers: { Authorization: `Bearer ${token}` },

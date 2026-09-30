@@ -108,35 +108,40 @@ def first_number(obj, *keys):
     return None
 
 
+def kv_get_json(key: str):
+    try:
+        raw = kv(["GET", key])
+        return json.loads(raw) if raw else None
+    except Exception as e:  # noqa: BLE001
+        print(f"KV {key} nicht lesbar: {e}", file=sys.stderr)
+        return None
+
+
 def main() -> None:
     g = connect()
     today = date.today()
-    days = [today - timedelta(days=i) for i in range(13, -1, -1)]
+    previous = kv_get_json(SUMMARY_KEY) or {}
 
-    daily = []
-    for d in days:
+    # Tageswerte: beim ersten Lauf 30 Tage, danach nur die letzten 3 Tage neu laden
+    known = {d["date"]: d for d in previous.get("daily", [])}
+    lookback = 3 if known else 30
+    for d in (today - timedelta(days=i) for i in range(lookback - 1, -1, -1)):
         s = safe(g.get_user_summary, d.isoformat())
         if not s:
             continue
-        daily.append(
-            {
-                "date": s.get("calendarDate", d.isoformat()),
-                "steps": s.get("totalSteps") or 0,
-                "totalKilocalories": s.get("totalKilocalories") or 0,
-                "activeKilocalories": s.get("activeKilocalories") or 0,
-                "floorsClimbed": s.get("floorsAscended") or 0,
-                "minHeartRate": s.get("minHeartRate") or 0,
-                "maxHeartRate": s.get("maxHeartRate") or 0,
-                "restingHeartRate": s.get("restingHeartRate") or 0,
-                "averageStressLevel": s.get("averageStressLevel") or 0,
-                "bodyBatteryChargedValue": s.get("bodyBatteryChargedValue") or 0,
-                "bodyBatteryDrainedValue": s.get("bodyBatteryDrainedValue") or 0,
-                "bodyBatteryHighestValue": s.get("bodyBatteryHighestValue") or 0,
-                "bodyBatteryLowestValue": s.get("bodyBatteryLowestValue") or 0,
-            }
-        )
+        day = s.get("calendarDate", d.isoformat())
+        known[day] = {
+            "date": day,
+            "steps": s.get("totalSteps") or 0,
+            "restingHeartRate": s.get("restingHeartRate") or 0,
+            "averageStressLevel": s.get("averageStressLevel") or 0,
+            "bodyBatteryHighestValue": s.get("bodyBatteryHighestValue") or 0,
+            "bodyBatteryLowestValue": s.get("bodyBatteryLowestValue") or 0,
+        }
+    cutoff = (today - timedelta(days=60)).isoformat()
+    daily = sorted((d for d in known.values() if d["date"] >= cutoff), key=lambda x: x["date"])
 
-    raw_acts = safe(g.get_activities_by_date, (today - timedelta(days=21)).isoformat(), today.isoformat(), default=[]) or []
+    raw_acts = safe(g.get_activities_by_date, (today - timedelta(days=90)).isoformat(), today.isoformat(), default=[]) or []
     activities = []
     for a in raw_acts:
         start = a.get("startTimeLocal") or ""
@@ -144,13 +149,9 @@ def main() -> None:
             {
                 "date": start[:10],
                 "activityType": (a.get("activityType") or {}).get("typeKey", "unknown"),
-                "distance": a.get("distance") or 0,
                 "duration": a.get("duration") or 0,
                 "averageHR": a.get("averageHR") or 0,
                 "maxHR": a.get("maxHR") or 0,
-                "calories": a.get("calories") or 0,
-                "averagePace": a.get("averageSpeed"),
-                "elevationGain": a.get("elevationGain"),
                 "vo2max": a.get("vO2MaxValue"),
                 "trainingEffect": a.get("aerobicTrainingEffect"),
                 "anaerobicTrainingEffect": a.get("anaerobicTrainingEffect"),
@@ -160,17 +161,29 @@ def main() -> None:
 
     metrics = safe(g.get_max_metrics, today.isoformat())
     readiness = safe(g.get_training_readiness, today.isoformat())
+    vo2 = first_number(metrics, "vo2MaxPreciseValue", "vo2MaxValue")
+
+    # VO2max-Verlauf: gespeicherte Historie + Werte aus Aktivitäten + heutiger Wert
+    history = {h["date"]: h["value"] for h in previous.get("vo2history", [])}
+    for a in activities:
+        if a.get("vo2max") and a["date"] not in history:
+            history[a["date"]] = a["vo2max"]
+    if vo2:
+        history[today.isoformat()] = round(vo2, 1)
+    vo2history = [{"date": k, "value": v} for k, v in sorted(history.items())][-400:]
+
     summary = {
         "daily": daily,
         "activities": activities,
-        "vo2max": first_number(metrics, "vo2MaxPreciseValue", "vo2MaxValue"),
+        "vo2max": vo2,
+        "vo2history": vo2history,
         "trainingReadiness": first_number(readiness, "score"),
         "syncedAt": datetime.now(timezone.utc).isoformat(),
     }
     kv(["SET", SUMMARY_KEY, json.dumps(summary)])
     # Erneuerte Tokens für den nächsten Lauf sichern
     safe(lambda: kv(["SET", TOKEN_KEY, g.client.dumps()]))
-    print(f"Sync ok: {len(daily)} Tage, {len(activities)} Aktivitäten, VO2max={summary['vo2max']}")
+    print(f"Sync ok: {len(daily)} Tage, {len(activities)} Aktivitäten, VO2max={vo2}, Historie={len(vo2history)}")
 
 
 if __name__ == "__main__":

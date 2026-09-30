@@ -58,6 +58,9 @@ export interface DayRecord {
 export interface CoachSettings {
   maxHr?: number
   age?: number
+  sex?: 'm' | 'f'
+  /** Ziel-VO2max in ml/kg/min */
+  vo2maxTarget?: number
   /** Laufen grundsätzlich erlaubt (bei Kniebeschwerden aus) */
   allowRunning: boolean
   /** Verfügbares Equipment */

@@ -19,6 +19,8 @@ export interface GarminDaily {
   restingHeartRate?: number
   averageStressLevel?: number
   bodyBatteryHighestValue?: number
+  bodyBatteryLowestValue?: number
+  steps?: number
 }
 
 export interface GarminActivity {
@@ -40,6 +42,7 @@ export interface WearableData {
     daily: GarminDaily[]
     activities: GarminActivity[]
     vo2max?: number
+    vo2history?: { date: string; value: number }[]
     trainingReadiness?: number
   }
   status: { kv: boolean; pinRequired: boolean; ouraConfigured: boolean }
