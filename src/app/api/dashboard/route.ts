@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateMockData } from '@/lib/mockData'
+import { kvGetJson } from '@/lib/kv'
+import type { DashboardData } from '@/types'
+
+/** Vom Garmin-Sync (GitHub Action, scripts/garmin_sync) in KV abgelegte Daten. */
+async function loadSyncedGarmin(): Promise<DashboardData['garmin'] | null> {
+  try {
+    const g = await kvGetJson<DashboardData['garmin']>('garmin:summary')
+    return g && Array.isArray(g.daily) ? g : null
+  } catch (e) {
+    console.error('Garmin KV read failed:', e)
+    return null
+  }
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -11,12 +24,14 @@ export async function GET(request: NextRequest) {
   const garminEmail = process.env.GARMIN_EMAIL || searchParams.get('garmin_email') || ''
   const garminPassword = process.env.GARMIN_PASSWORD || searchParams.get('garmin_password') || ''
 
+  const synced = await loadSyncedGarmin()
+
   if (ouraToken) {
     try {
       const data = await fetchOuraData(ouraToken)
-      // Garmin via email/password is unreliable on Vercel (timeout) — use mock for now
+      // Garmin-Login per E-Mail/Passwort läuft auf Vercel in Timeouts – daher Sync über GitHub Action + KV
       const mock = generateMockData(30)
-      return NextResponse.json({ ...data, garmin: mock.garmin, isMockData: false })
+      return NextResponse.json({ ...data, garmin: synced ?? mock.garmin, garminIsMock: !synced, isMockData: false })
     } catch (e) {
       console.error('Oura API fetch failed:', e)
     }
@@ -24,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   // Return mock data when no credentials configured
   const data = generateMockData(30)
-  return NextResponse.json({ ...data, isMockData: true })
+  return NextResponse.json({ ...data, garmin: synced ?? data.garmin, garminIsMock: !synced, isMockData: true })
 }
 
 async function fetchOuraData(ouraToken: string) {

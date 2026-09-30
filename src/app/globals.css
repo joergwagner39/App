@@ -27,3 +27,17 @@ body {
   background: #374151;
   border-radius: 3px;
 }
+
+/* Coach: Skizzen-Animationen */
+@keyframes coach-dash {
+  to { stroke-dashoffset: -18; }
+}
+@keyframes coach-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.4; }
+}
+.coach-dash { animation: coach-dash 1.2s linear infinite; }
+.coach-pulse { animation: coach-pulse 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .coach-dash, .coach-pulse { animation: none; }
+}

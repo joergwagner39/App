@@ -204,6 +204,9 @@ export default function Dashboard() {
                   Garmin {!hasGarmin && <span className="text-gray-600">— keine FIT-Daten</span>}
                 </div>
               </div>
+              <a href="/coach" className="px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-sm font-medium hover:bg-emerald-500/25">
+                🎾 Coach
+              </a>
               <button onClick={() => loadData()} className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
