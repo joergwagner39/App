@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hasValidPin, pinRequired } from '@/lib/auth'
 import { kvEnabled, kvGetJson } from '@/lib/kv'
-import { fetchOura, ouraConfigured } from '@/lib/oura'
+import { fetchOura, ouraConfigured, ouraOAuthConfigured } from '@/lib/oura'
 import { demoData } from '@/lib/demo'
 import type { WearableData } from '@/lib/wearables'
 
@@ -10,10 +10,8 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   if (!hasValidPin(req)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const status = { kv: kvEnabled(), pinRequired: pinRequired(), ouraConfigured: ouraConfigured() }
+  const status = { kv: kvEnabled(), pinRequired: pinRequired(), ouraConfigured: ouraConfigured(), ouraOAuth: ouraOAuthConfigured() }
   const demo = demoData()
-  if (!status.kv) return NextResponse.json({ ...demo, status } satisfies WearableData)
-
   let ouraError: string | undefined
   const [oura, garmin] = await Promise.all([
     ouraConfigured()
@@ -23,7 +21,7 @@ export async function GET(req: NextRequest) {
           return null
         })
       : Promise.resolve(null),
-    kvGetJson<Omit<WearableData['garmin'], 'connected'>>('garmin:summary').catch(() => null),
+    status.kv ? kvGetJson<Omit<WearableData['garmin'], 'connected'>>('garmin:summary').catch(() => null) : Promise.resolve(null),
   ])
 
   const body: WearableData = {

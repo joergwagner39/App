@@ -11,8 +11,13 @@ interface StoredToken {
   expires_at: number // ms
 }
 
-export function ouraConfigured(): boolean {
+export function ouraOAuthConfigured(): boolean {
   return Boolean(process.env.OURA_CLIENT_ID && process.env.OURA_CLIENT_SECRET)
+}
+
+/** Oura nutzbar: per OAuth-App oder per persönlichem Token (OURA_ACCESS_TOKEN) */
+export function ouraConfigured(): boolean {
+  return ouraOAuthConfigured() || Boolean(process.env.OURA_ACCESS_TOKEN)
 }
 
 export async function exchangeCode(code: string, redirectUri: string): Promise<void> {
@@ -60,8 +65,9 @@ async function refresh(t: StoredToken): Promise<StoredToken | null> {
 }
 
 async function accessToken(): Promise<string | null> {
-  let t = await kvGetJson<StoredToken>(TOKEN_KEY)
-  if (!t) return null
+  let t = ouraOAuthConfigured() ? await kvGetJson<StoredToken>(TOKEN_KEY).catch(() => null) : null
+  // Ohne OAuth-Login: persönlichen Token aus der Umgebung verwenden
+  if (!t) return process.env.OURA_ACCESS_TOKEN || null
   if (t.expires_at - Date.now() < 5 * 60_000) t = await refresh(t)
   return t?.access_token ?? null
 }

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hasValidPin } from '@/lib/auth'
-import { ouraConfigured } from '@/lib/oura'
+import { ouraOAuthConfigured } from '@/lib/oura'
 
 export const dynamic = 'force-dynamic'
 
 // Startet den Oura-Login. Aufruf aus der App: /api/oura/auth?pin=…
 export async function GET(req: NextRequest) {
   if (!hasValidPin(req)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if (!ouraConfigured()) return NextResponse.json({ error: 'OURA_CLIENT_ID/SECRET fehlen' }, { status: 501 })
+  if (!ouraOAuthConfigured()) return NextResponse.json({ error: 'OURA_CLIENT_ID/SECRET fehlen' }, { status: 501 })
 
   const state = crypto.randomUUID()
   const url = new URL('https://cloud.ouraring.com/oauth/authorize')

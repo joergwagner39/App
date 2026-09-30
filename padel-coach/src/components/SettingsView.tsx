@@ -236,8 +236,12 @@ export default function SettingsView({
               <span className="text-gray-500">{signals.sources.oura ? 'verbunden' : 'nicht verbunden'}</span>
             </div>
             {data?.oura.error && <p className="text-xs text-rose-300 mt-1">Fehler: {data.oura.error}</p>}
-            {data && !data.status.ouraConfigured ? (
-              <p className="text-xs text-gray-500 mt-1">OURA_CLIENT_ID / OURA_CLIENT_SECRET in Vercel setzen (siehe README).</p>
+            {data && !data.status.ouraOAuth ? (
+              <p className="text-xs text-gray-500 mt-1">
+                {data.status.ouraConfigured
+                  ? 'Verbunden über OURA_ACCESS_TOKEN (Vercel).'
+                  : 'OURA_ACCESS_TOKEN oder OURA_CLIENT_ID / OURA_CLIENT_SECRET in Vercel setzen (siehe README).'}
+              </p>
             ) : data && !data.status.kv ? (
               <p className="text-xs text-gray-500 mt-1">Zuerst den Server-Speicher (Upstash) einrichten.</p>
             ) : (

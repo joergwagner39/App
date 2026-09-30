@@ -45,5 +45,5 @@ export interface WearableData {
     vo2history?: { date: string; value: number }[]
     trainingReadiness?: number
   }
-  status: { kv: boolean; pinRequired: boolean; ouraConfigured: boolean }
+  status: { kv: boolean; pinRequired: boolean; ouraConfigured: boolean; ouraOAuth: boolean }
 }
