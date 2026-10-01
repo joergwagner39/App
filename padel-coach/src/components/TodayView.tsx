@@ -12,6 +12,7 @@ import PadelCourt, { CourtLegend } from './PadelCourt'
 import { Card, SectionTitle } from './ui'
 import GoalCard from './GoalCard'
 import DosePicker from './DosePicker'
+import NeuroCard from './NeuroCard'
 
 function Stat({ label, value, unit, hint, tone }: { label: string; value?: string | number; unit?: string; hint?: string; tone?: 'good' | 'bad' }) {
   return (
@@ -252,6 +253,8 @@ export default function TodayView({
               )}
             </Card>
           )}
+
+          <NeuroCard state={state} update={update} today={today} />
 
           <Card>
             <SectionTitle icon={<Brain className="w-4 h-4 text-sky-400" />} title={`Quiz · ${quiz.topic}`} />

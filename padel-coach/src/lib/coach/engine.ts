@@ -478,5 +478,9 @@ export function mergeStates(a: CoachState, b: CoachState): CoachState {
   const newer = (b.settings?.updatedAt ?? 0) > (a.settings?.updatedAt ?? 0) ? b.settings : a.settings
   // ältere Stände ohne neue Felder (z. B. padelPerWeek) mit Standardwerten auffüllen
   const settings = { ...DEFAULT_SETTINGS, ...newer, equipment: { ...DEFAULT_SETTINGS.equipment, ...newer?.equipment } }
-  return { version: 1, days, settings }
+  const records = { ...(a.records ?? {}) }
+  for (const [k, v] of Object.entries(b.records ?? {})) {
+    if (!records[k] || v.best > records[k].best) records[k] = v
+  }
+  return { version: 1, days, settings, records }
 }

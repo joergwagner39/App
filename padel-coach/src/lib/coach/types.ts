@@ -52,6 +52,10 @@ export interface DayRecord {
   padelMinutes?: number
   tacticAnswer?: { id: string; correct: boolean; index?: number }
   quizAnswer?: { id: string; correct: boolean; index?: number }
+  /** Neuro- & Ballgefühl-Routine erledigt */
+  neuroDone?: boolean
+  /** Ø Reaktionszeit aus dem Reaktionstest (ms) */
+  reactionMs?: number
   updatedAt: number
 }
 
@@ -88,6 +92,8 @@ export interface CoachState {
   version: 1
   days: Record<string, DayRecord>
   settings: CoachSettings
+  /** Bestwerte der Ballgefühl-/Koordinationsübungen (höher = besser) */
+  records?: Record<string, { best: number; date: string }>
 }
 
 export const DEFAULT_SETTINGS: CoachSettings = {
