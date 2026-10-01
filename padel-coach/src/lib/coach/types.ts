@@ -54,6 +54,8 @@ export interface DayRecord {
   quizAnswer?: { id: string; correct: boolean; index?: number }
   /** Neuro- & Ballgefühl-Routine erledigt */
   neuroDone?: boolean
+  /** Neuro-Einheit bewusst auf morgen verschoben */
+  neuroPostponed?: boolean
   /** Ø Reaktionszeit aus dem Reaktionstest (ms) */
   reactionMs?: number
   updatedAt: number
@@ -81,6 +83,8 @@ export interface CoachSettings {
   hyroxDivision?: 'open' | 'pro' | 'doubles' | 'relay'
   /** Zielzeit, z. B. "1:25:00" */
   hyroxTargetTime?: string
+  /** Neuro & Ballgefühl: alle N Tage (Standard 2) */
+  neuroEvery?: 1 | 2 | 3
   /** Padel-Einheiten pro Woche als Ziel */
   padelPerWeek: number
   /** Freitext, z. B. „Turnier im Mai“ oder „Level 3.5“ */

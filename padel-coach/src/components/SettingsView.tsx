@@ -169,7 +169,19 @@ export default function SettingsView({
               onChange={(e) => set({ padelPerWeek: Math.max(0, Math.min(7, Number(e.target.value) || 0)) })}
             />
           </label>
-          <label className="text-xs text-gray-400 space-y-1 sm:col-span-2 lg:col-span-4">
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Neuro & Ballgefühl</span>
+            <select
+              className={input}
+              value={s.neuroEvery ?? 2}
+              onChange={(e) => set({ neuroEvery: Number(e.target.value) as 1 | 2 | 3 })}
+            >
+              <option value={1}>täglich</option>
+              <option value={2}>alle 2 Tage</option>
+              <option value={3}>alle 3 Tage</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-400 space-y-1 sm:col-span-2 lg:col-span-3">
             <span>Padel-Ziel</span>
             <input
               className={input}

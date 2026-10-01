@@ -41,7 +41,7 @@ Skizze, eine Quizfrage und einen Fakt.
   - *Mehr:* mehr Intervalle, Runden oder Sätze plus ein Extra-Block
 - **Padel:** 20 Taktiken mit animierten Court-Skizzen und Quiz. Falsch beantwortete
   kommen wieder dran. Dazu 8 Übungen, auch zur kniefreundlichen Athletik.
-- **Neuro & Ballgefühl (täglich ~12 Min.):** Augen (Sakkaden, Nah-Fern, Blickstabilisation),
+- **Neuro & Ballgefühl (~12 Min., täglich oder alle 2–3 Tage, verschiebbar):** Augen (Sakkaden, Nah-Fern, Blickstabilisation),
   Balance, Koordination, Ballgefühl mit Schläger (tippen Vorhand/Rückhand, schwache Hand,
   Rahmen, abstoppen, prellen), Tap-Out übers Handgelenk, Reaktion. Modus Wohnung oder Court,
   Rekorde pro Übung, Reaktionstest (ms) mit Verlauf, Reaktionspfeile für den Split-Step, Serie.

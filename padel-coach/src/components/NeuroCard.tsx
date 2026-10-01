@@ -114,14 +114,28 @@ export default function NeuroCard({
   }, [])
 
   const drills = neuroRoutine(today, place)
-  const done = Boolean(state.days[today]?.neuroDone)
+  const rec = state.days[today]
+  const done = Boolean(rec?.neuroDone)
+  const postponed = Boolean(rec?.neuroPostponed) && !done
+  const every = state.settings.neuroEvery ?? 2
+  const [forceOpen, setForceOpen] = useState(false)
 
-  // Serie: aufeinanderfolgende Tage mit erledigter Routine (heute zählt, wenn erledigt)
-  let streak = 0
-  for (let i = done ? 0 : 1; i < 365; i++) {
-    if (state.days[addDays(today, -i)]?.neuroDone) streak++
-    else break
+  // Letzte erledigte Einheit vor heute
+  let daysSince = Infinity
+  for (let i = 1; i <= 60; i++) {
+    if (state.days[addDays(today, -i)]?.neuroDone) {
+      daysSince = i
+      break
+    }
   }
+  const postponedYesterday = Boolean(state.days[addDays(today, -1)]?.neuroPostponed)
+  const due = done || daysSince >= every || postponedYesterday
+  const nextIn = Number.isFinite(daysSince) ? Math.max(1, every - daysSince) : 0
+
+  // Einheiten in den letzten 7 Tagen (inkl. heute) vs. Ziel
+  let weekCount = 0
+  for (let i = 0; i < 7; i++) if (state.days[addDays(today, -i)]?.neuroDone) weekCount++
+  const weekTarget = Math.ceil(7 / every)
 
   const reactions = Object.values(state.days)
     .filter((d) => d.reactionMs)
@@ -152,9 +166,33 @@ export default function NeuroCard({
       <SectionTitle
         icon={<Brain className="w-4 h-4 text-sky-400" />}
         title="Neuro & Ballgefühl · ~12 Min."
-        right={streak > 0 ? <span className="text-[11px] text-amber-300">🔥 {streak} {streak === 1 ? 'Tag' : 'Tage'}</span> : undefined}
+        right={
+          <span className={`text-[11px] ${weekCount >= weekTarget ? 'text-emerald-300' : 'text-gray-400'}`}>
+            {weekCount}/{weekTarget} diese Woche
+          </span>
+        }
       />
-      <p className="text-sm text-gray-400 mb-3">Augen, Gleichgewicht, Koordination und Ballgefühl – jeden Tag, auch an Ruhetagen. Geht mit Schläger und Ball in der Wohnung.</p>
+      {(postponed || (!due && !forceOpen)) && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            {postponed
+              ? 'Auf morgen verschoben 👍 – dann ist die Einheit fällig.'
+              : `Heute Pause – nächste Einheit ${nextIn <= 1 ? 'morgen' : `in ${nextIn} Tagen`} (Rhythmus: alle ${every} Tage).`}
+          </p>
+          <button
+            onClick={() => {
+              if (postponed) patchToday({ neuroPostponed: false })
+              setForceOpen(true)
+            }}
+            className="px-3 py-2 rounded-lg border border-gray-700 text-sm text-gray-200 hover:border-gray-500"
+          >
+            Trotzdem heute machen
+          </button>
+        </div>
+      )}
+      {!(postponed || (!due && !forceOpen)) && (
+      <>
+      <p className="text-sm text-gray-400 mb-3">Augen, Gleichgewicht, Koordination und Ballgefühl – auch an Ruhetagen. Geht mit Schläger und Ball in der Wohnung. Rhythmus einstellbar unter Setup.</p>
 
       <div className="flex gap-1 bg-gray-800/60 border border-gray-700 rounded-xl p-1 mb-3">
         {(
@@ -220,12 +258,27 @@ export default function NeuroCard({
         )}
       </div>
 
-      <button
-        onClick={() => patchToday({ neuroDone: !done })}
-        className={`mt-4 w-full py-2.5 rounded-xl text-sm font-semibold ${done ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40' : 'bg-emerald-500 text-gray-950'}`}
-      >
-        {done ? '✅ Heute erledigt' : 'Routine erledigt'}
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={() => patchToday({ neuroDone: !done, neuroPostponed: false })}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold ${done ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40' : 'bg-emerald-500 text-gray-950'}`}
+        >
+          {done ? '✅ Heute erledigt' : 'Routine erledigt'}
+        </button>
+        {!done && (
+          <button
+            onClick={() => {
+              patchToday({ neuroPostponed: true })
+              setForceOpen(false)
+            }}
+            className="shrink-0 px-3 py-2.5 rounded-xl border border-gray-700 text-sm text-gray-300 hover:border-gray-500"
+          >
+            Auf morgen
+          </button>
+        )}
+      </div>
+      </>
+      )}
 
       {modal === 'reaction' && <ReactionTest onDone={(ms) => patchToday({ reactionMs: ms })} onClose={() => setModal(null)} />}
       {modal === 'arrows' && <ArrowDrill onClose={() => setModal(null)} />}
