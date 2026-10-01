@@ -4,6 +4,7 @@ import type { OuraReadiness, OuraSleep } from './wearables'
 
 const TOKEN_KEY = 'oura:token'
 const PAT_KEY = 'oura:pat'
+const APP_KEY = 'oura:oauthapp'
 const API = 'https://api.ouraring.com/v2/usercollection'
 
 interface StoredToken {
@@ -12,13 +13,30 @@ interface StoredToken {
   expires_at: number // ms
 }
 
-export function ouraOAuthConfigured(): boolean {
-  return Boolean(process.env.OURA_CLIENT_ID && process.env.OURA_CLIENT_SECRET)
+interface OAuthApp {
+  clientId: string
+  clientSecret: string
+}
+
+/** Zugangsdaten der Oura-App: aus Vercel-Variablen oder in der App gespeichert (KV) */
+export async function oauthApp(): Promise<OAuthApp | null> {
+  if (process.env.OURA_CLIENT_ID && process.env.OURA_CLIENT_SECRET)
+    return { clientId: process.env.OURA_CLIENT_ID, clientSecret: process.env.OURA_CLIENT_SECRET }
+  return (await kvGetJson<OAuthApp>(APP_KEY).catch(() => null)) ?? null
+}
+
+export async function saveOAuthApp(app: OAuthApp): Promise<void> {
+  await kvSetJson(APP_KEY, app)
+}
+
+export async function ouraOAuthConfigured(): Promise<boolean> {
+  return Boolean(await oauthApp())
 }
 
 /** Oura nutzbar: per OAuth-App oder per persönlichem Token (Vercel-Variable oder in der App gespeichert) */
 export async function ouraConfigured(): Promise<boolean> {
-  if (ouraOAuthConfigured() || process.env.OURA_ACCESS_TOKEN) return true
+  if (process.env.OURA_ACCESS_TOKEN) return true
+  if (await kvGetJson<StoredToken>(TOKEN_KEY).catch(() => null)) return true
   return Boolean(await kvGetJson<string>(PAT_KEY).catch(() => null))
 }
 
@@ -27,6 +45,8 @@ export async function saveOuraPat(token: string): Promise<void> {
 }
 
 export async function exchangeCode(code: string, redirectUri: string): Promise<void> {
+  const app = await oauthApp()
+  if (!app) throw new Error('Oura-App nicht eingerichtet')
   const res = await fetch('https://api.ouraring.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -34,8 +54,8 @@ export async function exchangeCode(code: string, redirectUri: string): Promise<v
       grant_type: 'authorization_code',
       code,
       redirect_uri: redirectUri,
-      client_id: process.env.OURA_CLIENT_ID!,
-      client_secret: process.env.OURA_CLIENT_SECRET!,
+      client_id: app.clientId,
+      client_secret: app.clientSecret,
     }),
   })
   if (!res.ok) throw new Error(`Oura token exchange ${res.status}: ${(await res.text()).slice(0, 200)}`)
@@ -52,15 +72,16 @@ async function storeToken(t: { access_token: string; refresh_token?: string; exp
 }
 
 async function refresh(t: StoredToken): Promise<StoredToken | null> {
-  if (!t.refresh_token) return null
+  const app = await oauthApp()
+  if (!t.refresh_token || !app) return null
   const res = await fetch('https://api.ouraring.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: t.refresh_token,
-      client_id: process.env.OURA_CLIENT_ID!,
-      client_secret: process.env.OURA_CLIENT_SECRET!,
+      client_id: app.clientId,
+      client_secret: app.clientSecret,
     }),
   })
   if (!res.ok) return null
@@ -71,7 +92,7 @@ async function refresh(t: StoredToken): Promise<StoredToken | null> {
 }
 
 async function accessToken(): Promise<string | null> {
-  let t = ouraOAuthConfigured() ? await kvGetJson<StoredToken>(TOKEN_KEY).catch(() => null) : null
+  let t = await kvGetJson<StoredToken>(TOKEN_KEY).catch(() => null)
   // Ohne OAuth-Login: persönlichen Token aus der Umgebung verwenden
   if (!t) return process.env.OURA_ACCESS_TOKEN || (await kvGetJson<string>(PAT_KEY).catch(() => null)) || null
   if (t.expires_at - Date.now() < 5 * 60_000) t = await refresh(t)

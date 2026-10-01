@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (!(await hasValidPin(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const oura = await ouraConfigured()
-  const status = { kv: kvEnabled(), pinRequired: pin === 'set', ouraConfigured: oura, ouraOAuth: ouraOAuthConfigured() }
+  const status = { kv: kvEnabled(), pinRequired: pin === 'set', ouraConfigured: oura, ouraOAuth: await ouraOAuthConfigured() }
   const demo = demoData()
   let ouraError: string | undefined
   const [ouraData, garmin] = await Promise.all([

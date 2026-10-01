@@ -237,7 +237,13 @@ export default function SettingsView({
             </div>
             {data?.oura.error && <p className="text-xs text-rose-300 mt-1">Fehler: {data.oura.error}</p>}
             {data && !data.status.ouraOAuth ? (
-              <OuraTokenForm onSaved={resync} connected={signals.sources.oura} />
+              <>
+                <OuraAppForm />
+                <details className="mt-3">
+                  <summary className="text-xs text-gray-500 cursor-pointer">Alternative: Personal Access Token</summary>
+                  <OuraTokenForm onSaved={resync} connected={signals.sources.oura} />
+                </details>
+              </>
             ) : data && !data.status.kv ? (
               <p className="text-xs text-gray-500 mt-1">Zuerst den Server-Speicher (Upstash) einrichten.</p>
             ) : (
@@ -323,6 +329,55 @@ function OuraTokenForm({ onSaved, connected }: { onSaved: () => void; connected:
           {busy ? '…' : 'Speichern'}
         </button>
       </div>
+      {msg && <p className="text-xs text-gray-300">{msg}</p>}
+    </div>
+  )
+}
+
+function OuraAppForm() {
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const field =
+    'bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full focus:outline-none focus:border-violet-400'
+  async function save() {
+    setBusy(true)
+    setMsg(null)
+    const res = await fetch('/api/oura/app', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-coach-pin': getPin() },
+      body: JSON.stringify({ clientId, clientSecret }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    setBusy(false)
+    if (!res.ok) return setMsg(body.error ?? 'Fehler beim Speichern')
+    setMsg('Gespeichert ✅ – weiter zu Oura …')
+    // direkt den Oura-Login starten
+    setTimeout(() => (window.location.href = `/api/oura/auth?pin=${encodeURIComponent(getPin())}`), 600)
+  }
+  return (
+    <div className="mt-2 space-y-2">
+      <p className="text-xs text-gray-500">
+        Client ID und Client Secret deiner Oura-App einfügen (Redirect-URI dort:{' '}
+        <span className="text-gray-300 break-all">{typeof window !== 'undefined' ? window.location.origin : ''}/api/oura/callback</span>):
+      </p>
+      <input value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="Client ID" className={field} autoComplete="off" />
+      <input
+        type="password"
+        value={clientSecret}
+        onChange={(e) => setClientSecret(e.target.value)}
+        placeholder="Client Secret"
+        className={field}
+        autoComplete="off"
+      />
+      <button
+        onClick={save}
+        disabled={busy || clientId.trim().length < 8 || clientSecret.trim().length < 8}
+        className="w-full py-2 rounded-xl bg-violet-500/80 text-white text-sm font-medium disabled:bg-gray-700 disabled:text-gray-400"
+      >
+        {busy ? '…' : 'Speichern & mit Oura verbinden'}
+      </button>
       {msg && <p className="text-xs text-gray-300">{msg}</p>}
     </div>
   )
