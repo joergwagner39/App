@@ -54,6 +54,8 @@ export interface DayRecord {
   quizAnswer?: { id: string; correct: boolean; index?: number }
   /** Neuro- & Ballgefühl-Routine erledigt */
   neuroDone?: boolean
+  /** Täglicher Kurzblock Sprunggelenk & Hüftbeuger erledigt */
+  mobilityDone?: boolean
   /** Neuro-Einheit bewusst auf morgen verschoben */
   neuroPostponed?: boolean
   /** Ø Reaktionszeit aus dem Reaktionstest (ms) */

@@ -1,7 +1,16 @@
 // Tägliches neurozentriertes Training: Augen, Gleichgewicht, Koordination, Ballgefühl, Handgelenk.
 // Alles mit Padel-Schläger und Ball – das meiste geht auch in der Wohnung.
 
-export type NeuroCategory = 'Augen' | 'Balance' | 'Koordination' | 'Ballgefühl' | 'Handgelenk' | 'Reaktion'
+export type NeuroCategory =
+  | 'Augen'
+  | 'Balance'
+  | 'Koordination'
+  | 'Ballgefühl'
+  | 'Handgelenk'
+  | 'Reaktion'
+  | 'Sprunggelenk'
+  | 'Hüftbeuger'
+  | 'Dehnung'
 
 export interface NeuroDrill {
   id: string

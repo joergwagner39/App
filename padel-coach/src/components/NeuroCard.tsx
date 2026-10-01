@@ -18,6 +18,9 @@ const CAT_COLOR: Record<string, string> = {
   Ballgefühl: 'text-lime-300',
   Handgelenk: 'text-rose-300',
   Reaktion: 'text-emerald-300',
+  Sprunggelenk: 'text-orange-300',
+  Hüftbeuger: 'text-fuchsia-300',
+  Dehnung: 'text-teal-300',
 }
 
 export function DrillItem({
@@ -165,10 +168,10 @@ export default function NeuroCard({
     <Card className="border-sky-500/20">
       <SectionTitle
         icon={<Brain className="w-4 h-4 text-sky-400" />}
-        title="Neuro & Ballgefühl · ~12 Min."
+        title="Neuro & Ballgefühl · 12 Min."
         right={
           <span className={`text-[11px] ${weekCount >= weekTarget ? 'text-emerald-300' : 'text-gray-400'}`}>
-            {weekCount}/{weekTarget} diese Woche
+            {weekCount}/{weekTarget} Woche
           </span>
         }
       />

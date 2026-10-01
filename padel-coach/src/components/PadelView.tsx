@@ -5,6 +5,7 @@ import { ChevronLeft, CheckCircle2, Footprints } from 'lucide-react'
 import type { CoachState } from '@/lib/coach/types'
 import { PADEL_TACTICS, PADEL_DRILLS, type PadelTactic } from '@/lib/coach/padel'
 import { NEURO_CATEGORIES, NEURO_DRILLS } from '@/lib/coach/neuro'
+import { MOBILITY_DRILLS } from '@/lib/coach/mobility'
 import { DrillItem } from './NeuroCard'
 import PadelCourt, { CourtLegend } from './PadelCourt'
 import QuizCard from './QuizCard'
@@ -113,6 +114,22 @@ export default function PadelView({ state }: { state: CoachState }) {
               </button>
             )
           })}
+        </div>
+      </div>
+
+      <div>
+        <SectionTitle title="🦶 Sprunggelenk & Hüftbeuger – alle Übungen" />
+        <div className="grid sm:grid-cols-3 gap-3">
+          {(['Sprunggelenk', 'Hüftbeuger', 'Dehnung'] as const).map((cat) => (
+            <Card key={cat} className="!p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{cat}</p>
+              <ul className="space-y-2">
+                {MOBILITY_DRILLS.filter((d) => d.category === cat).map((d) => (
+                  <DrillItem key={d.id} d={d} best={state.records?.[d.id]?.best} />
+                ))}
+              </ul>
+            </Card>
+          ))}
         </div>
       </div>
 

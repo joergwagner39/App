@@ -13,6 +13,7 @@ import { Card, SectionTitle } from './ui'
 import GoalCard from './GoalCard'
 import DosePicker from './DosePicker'
 import NeuroCard from './NeuroCard'
+import MobilityCard from './MobilityCard'
 
 function Stat({ label, value, unit, hint, tone }: { label: string; value?: string | number; unit?: string; hint?: string; tone?: 'good' | 'bad' }) {
   return (
@@ -253,6 +254,8 @@ export default function TodayView({
               )}
             </Card>
           )}
+
+          <MobilityCard state={state} update={update} today={today} />
 
           <NeuroCard state={state} update={update} today={today} />
 

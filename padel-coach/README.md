@@ -45,6 +45,9 @@ Skizze, eine Quizfrage und einen Fakt.
   Balance, Koordination, Ballgefühl mit Schläger (tippen Vorhand/Rückhand, schwache Hand,
   Rahmen, abstoppen, prellen), Tap-Out übers Handgelenk, Reaktion. Modus Wohnung oder Court,
   Rekorde pro Übung, Reaktionstest (ms) mit Verlauf, Reaktionspfeile für den Split-Step, Serie.
+- **Sprunggelenk & Hüftbeuger (täglich ~7 Min.):** 2 Mobilitätsübungen fürs Sprunggelenk,
+  2 Kräftigungsübungen für die Hüftbeuger, 1 Gegendehnung – wechselnd. Montags mit
+  Knie-zur-Wand-Test (cm) als Messwert.
 - **Quiz** zu Körper und Training sowie **Fakt des Tages**.
 - **Sync:** Check-ins und Antworten werden zwischen Handy und Laptop abgeglichen.
 
