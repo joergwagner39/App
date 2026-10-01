@@ -41,3 +41,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .coach-dash, .coach-pulse { animation: none; }
 }
+
+/* iOS Safari: Datumsfelder haben sonst eine feste Mindestbreite und ragen aus Karten heraus */
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  min-height: 2.5rem;
+}
