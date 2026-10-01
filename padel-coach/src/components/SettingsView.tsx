@@ -70,11 +70,11 @@ export default function SettingsView({
     }
   }
 
-  const input = 'bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full focus:outline-none focus:border-emerald-400'
+  const input = 'bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full min-w-0 focus:outline-none focus:border-emerald-400'
   const maxHr = resolveMaxHr(s, signals)
 
   return (
-    <div className="grid lg:grid-cols-2 gap-5 items-start">
+    <div className="grid lg:grid-cols-2 gap-5 items-start [&>*]:min-w-0">
       <Card>
         <SectionTitle title="Herzfrequenz & Körper" />
         <div className="grid grid-cols-2 gap-3">
@@ -216,7 +216,7 @@ export default function SettingsView({
               setPin(pin.trim())
               resync()
             }}
-            className="px-4 rounded-xl bg-emerald-500 text-gray-950 text-sm font-semibold"
+            className="shrink-0 px-4 rounded-xl bg-emerald-500 text-gray-950 text-sm font-semibold"
           >
             Speichern
           </button>
@@ -319,12 +319,12 @@ function OuraTokenForm({ onSaved, connected }: { onSaved: () => void; connected:
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="Oura-Token"
-          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full focus:outline-none focus:border-violet-400"
+          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full min-w-0 focus:outline-none focus:border-violet-400"
         />
         <button
           onClick={save}
           disabled={busy || token.trim().length < 20}
-          className="px-3 rounded-xl bg-violet-500/80 text-white text-sm font-medium disabled:bg-gray-700 disabled:text-gray-400"
+          className="shrink-0 px-3 rounded-xl bg-violet-500/80 text-white text-sm font-medium disabled:bg-gray-700 disabled:text-gray-400"
         >
           {busy ? '…' : 'Speichern'}
         </button>
@@ -340,7 +340,7 @@ function OuraAppForm() {
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const field =
-    'bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full focus:outline-none focus:border-violet-400'
+    'bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 w-full min-w-0 focus:outline-none focus:border-violet-400'
   async function save() {
     setBusy(true)
     setMsg(null)
