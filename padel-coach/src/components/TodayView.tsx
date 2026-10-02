@@ -138,7 +138,7 @@ export default function TodayView({
   }
 
   const needsCheckIn = !record?.checkIn || editing
-  const garminPadel = signals.recentActivities.find((a) => a.date === yesterday && /padel|tennis|racket|squash/i.test(a.type))
+  const garminPadel = signals.recentActivities.find((a) => a.date === yesterday && /padel|paddel|tennis|racket|squash/i.test(a.type))
   const padelSuggestion = garminPadel
     ? {
         intensity: ((garminPadel.aerobicTE ?? 0) >= 3 || garminPadel.minutes >= 75 ? 'match' : 'light') as 'match' | 'light',
