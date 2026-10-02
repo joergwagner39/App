@@ -165,6 +165,7 @@ export default function TodayView({
             padelLevels: [...(s.padelLevels ?? []).filter((l) => l.date !== today), { date: today, level }].sort((a, b) => (a.date < b.date ? -1 : 1)),
           }))
         }
+        onSetTarget={(target) => update((s) => ({ ...s, settings: { ...s.settings, padelLevelTarget: target, updatedAt: Date.now() } }))}
       />
       <SignalStrip s={signals} form={plan.readiness.score} />
 
