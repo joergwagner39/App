@@ -229,6 +229,7 @@ export default function StatsView({
           <SectionTitle title={`${sel.label} – 30 Tage`} right={<span className="text-[11px] text-gray-500">{sel.source}</span>} />
           <LineChart points={sel.series} unit={sel.unit} decimals={sel.decimals} label={sel.label} />
           <p className="text-xs text-gray-500 mt-2">{sel.hint}</p>
+          {sel.id === 'form' && <FormExplainer score={form.score} reasons={form.reasons} warnings={form.warnings} />}
         </Card>
       )}
 
@@ -240,6 +241,84 @@ export default function StatsView({
           <p className="text-sm text-gray-500">Noch keine Garmin-Aktivitäten.</p>
         )}
       </Card>
+    </div>
+  )
+}
+
+/** Erklärung der Tagesform + Aufschlüsselung für heute */
+function FormExplainer({ score, reasons, warnings }: { score: number; reasons: string[]; warnings: string[] }) {
+  const rows: [string, string][] = [
+    ['HRV > 15 % unter deinem Schnitt', '−8'],
+    ['HRV > 10 % über deinem Schnitt', '+3'],
+    ['Ruhepuls ≥ 5 Schläge über Schnitt', '−6'],
+    ['Körpertemperatur ≥ +0,5 °C', '−12 + Warnung'],
+    ['Weniger als 6 h Schlaf', '−6'],
+    ['Befinden im Check-in (1–5)', '−14 … +14'],
+    ['Deutlicher / starker Muskelkater', '−6 / −9'],
+  ]
+  const bands: [string, string][] = [
+    ['unter 40', 'Ruhetag oder Recovery'],
+    ['40–54', 'Recovery'],
+    ['55–67', 'moderat: Kraft, Oberkörper oder Zone 2'],
+    ['ab ~70', 'Qualitätstag: VO2max oder Hyrox'],
+  ]
+  return (
+    <div className="mt-4 space-y-4 border-t border-gray-800 pt-4">
+      <div className="rounded-xl bg-gray-800/40 p-3">
+        <p className="text-sm text-gray-200">
+          Heute: <span className="font-semibold text-white">{score}</span>/100
+        </p>
+        <ul className="mt-1 space-y-0.5 text-xs text-gray-400 list-disc pl-4">
+          {reasons.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+          {warnings.map((w) => (
+            <li key={w} className="text-amber-300">
+              {w}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="text-sm text-gray-300 space-y-3">
+        <p className="font-semibold text-white">So entsteht die Tagesform</p>
+        <p className="text-xs text-gray-400">
+          Eine eigene Kennzahl der App (kein offizieller Oura- oder Garmin-Wert). Sie fasst deine Daten zu 0–100 zusammen – danach richtet sich, wie hart dein Training ausfällt.
+        </p>
+        <p className="text-xs">
+          <span className="text-gray-200 font-medium">1. Startwert:</span> Oura Readiness. Mit Garmin Body Battery: 75 % Readiness + 25 % Body Battery. Ohne Oura: Garmin Training Readiness, sonst Body Battery.
+        </p>
+        <div>
+          <p className="text-xs text-gray-200 font-medium mb-1">2. Zu- und Abschläge</p>
+          <table className="w-full text-xs">
+            <tbody>
+              {rows.map(([k, v]) => (
+                <tr key={k} className="border-t border-gray-800">
+                  <td className="py-1 pr-2 text-gray-400">{k}</td>
+                  <td className="py-1 text-right text-gray-200 tabular-nums whitespace-nowrap">{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-[11px] text-gray-500 mt-1">Das Knie verändert die Zahl nicht, bestimmt aber, welche Übungen erlaubt sind. Ergebnis wird auf 0–100 begrenzt.</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-200 font-medium mb-1">3. Was die App daraus macht</p>
+          <table className="w-full text-xs">
+            <tbody>
+              {bands.map(([k, v]) => (
+                <tr key={k} className="border-t border-gray-800">
+                  <td className="py-1 pr-2 text-gray-400 whitespace-nowrap">{k}</td>
+                  <td className="py-1 text-gray-200">{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-gray-500">
+          Gewichte und Schwellen sind praxisnahe Faustregeln, keine wissenschaftlich validierte Formel. Passt die Tagesform oft nicht zu deinem Gefühl, lässt sich die Gewichtung anpassen.
+        </p>
+      </div>
     </div>
   )
 }
