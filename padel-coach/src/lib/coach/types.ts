@@ -126,6 +126,8 @@ export interface Signals {
   date: string
   readiness?: number
   sleepScore?: number
+  /** Datum der letzten Oura-Nacht / Readiness */
+  ouraDate?: string
   sleepHours?: number
   hrv?: number
   hrvBaseline?: number

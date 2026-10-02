@@ -285,6 +285,7 @@ export default function SettingsView({
             </li>
           )}
         </ul>
+        {data && !data.demo && <RawDataTable data={data} />}
         <div className="flex gap-2">
           <button onClick={exportJson} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-700 text-sm text-gray-200 hover:border-gray-500">
             <Download className="w-4 h-4" /> Export
@@ -392,5 +393,60 @@ function OuraAppForm() {
       </button>
       {msg && <p className="text-xs text-gray-300">{msg}</p>}
     </div>
+  )
+}
+
+/** Rohdaten zum Nachprüfen: genau die Werte, die Oura und Garmin geliefert haben. */
+function RawDataTable({ data }: { data: WearableData }) {
+  const dates = Array.from(
+    new Set([...data.oura.sleep.map((d) => d.date), ...data.oura.readiness.map((d) => d.date), ...data.garmin.daily.map((d) => d.date)]),
+  )
+    .sort()
+    .reverse()
+    .slice(0, 5)
+  const fmtDay = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+  const cell = (v: number | undefined, digits = 0) => (v === undefined || v === null ? '–' : v.toFixed(digits))
+  return (
+    <details className="mb-4">
+      <summary className="text-xs text-sky-300 cursor-pointer">Rohdaten prüfen (letzte Tage, wie geliefert)</summary>
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full text-xs text-gray-300 tabular-nums">
+          <thead>
+            <tr className="text-gray-500 text-left">
+              <th className="py-1 pr-2 font-normal">Tag</th>
+              <th className="py-1 pr-2 font-normal">Schlaf-Score</th>
+              <th className="py-1 pr-2 font-normal">Schlaf h</th>
+              <th className="py-1 pr-2 font-normal">Readiness</th>
+              <th className="py-1 pr-2 font-normal">HRV</th>
+              <th className="py-1 pr-2 font-normal">Ruhepuls</th>
+              <th className="py-1 font-normal">Body Battery</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dates.map((d) => {
+              const sl = data.oura.sleep.find((x) => x.date === d)
+              const rd = data.oura.readiness.find((x) => x.date === d)
+              const g = data.garmin.daily.find((x) => x.date === d)
+              return (
+                <tr key={d} className="border-t border-gray-800">
+                  <td className="py-1 pr-2 text-gray-400">{fmtDay(d)}</td>
+                  <td className="py-1 pr-2">{cell(sl?.score)}</td>
+                  <td className="py-1 pr-2">{cell(sl?.totalSleepSeconds ? sl.totalSleepSeconds / 3600 : undefined, 1)}</td>
+                  <td className="py-1 pr-2">{cell(rd?.score)}</td>
+                  <td className="py-1 pr-2">{cell(sl?.averageHrv)}</td>
+                  <td className="py-1 pr-2">{cell(sl?.lowestHeartRate)}</td>
+                  <td className="py-1">{cell(g?.bodyBatteryHighestValue)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <p className="text-[10px] text-gray-500 mt-1">
+          Schlaf, Readiness, HRV, Ruhepuls: Oura (live abgerufen). Body Battery: Garmin
+          {data.garmin.syncedAt ? ` (Stand ${new Date(data.garmin.syncedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })})` : ''}.
+          Oura ordnet eine Nacht dem Tag zu, an dem du aufwachst.
+        </p>
+      </div>
+    </details>
   )
 }

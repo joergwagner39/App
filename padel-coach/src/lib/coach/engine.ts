@@ -45,6 +45,7 @@ export function buildSignals(data: WearableData, today: string): Signals {
     date: today,
     readiness: lastReadiness?.score,
     sleepScore: lastSleep?.score,
+    ouraDate: lastSleep?.date ?? lastReadiness?.date,
     sleepHours: lastSleep?.totalSleepSeconds ? lastSleep.totalSleepSeconds / 3600 : undefined,
     hrv: lastSleep?.averageHrv,
     hrvBaseline: avg(hrvs.slice(-30, -1)),
