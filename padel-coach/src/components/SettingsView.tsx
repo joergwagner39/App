@@ -170,6 +170,20 @@ export default function SettingsView({
             />
           </label>
           <label className="text-xs text-gray-400 space-y-1">
+            <span>Playtomic Ziel-Level</span>
+            <input
+              type="number"
+              step="0.05"
+              min="0"
+              max="7"
+              inputMode="decimal"
+              className={input}
+              placeholder="z. B. 3.5"
+              value={s.padelLevelTarget ?? ''}
+              onChange={(e) => set({ padelLevelTarget: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
             <span>Neuro & Ballgefühl</span>
             <select
               className={input}
@@ -181,7 +195,7 @@ export default function SettingsView({
               <option value={3}>alle 3 Tage</option>
             </select>
           </label>
-          <label className="text-xs text-gray-400 space-y-1 sm:col-span-2 lg:col-span-3">
+          <label className="text-xs text-gray-400 space-y-1 sm:col-span-2 lg:col-span-4">
             <span>Padel-Ziel</span>
             <input
               className={input}

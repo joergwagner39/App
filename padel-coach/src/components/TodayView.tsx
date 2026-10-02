@@ -153,7 +153,19 @@ export default function TodayView({
 
   return (
     <div className="space-y-5">
-      <GoalCard phase={plan.phase} settings={state.settings} padelDone={padelThisWeek(state, today)} onOpenSettings={onOpenSettings} />
+      <GoalCard
+        phase={plan.phase}
+        settings={state.settings}
+        padelDone={padelThisWeek(state, today)}
+        onOpenSettings={onOpenSettings}
+        levels={state.padelLevels}
+        onAddLevel={(level) =>
+          update((s) => ({
+            ...s,
+            padelLevels: [...(s.padelLevels ?? []).filter((l) => l.date !== today), { date: today, level }].sort((a, b) => (a.date < b.date ? -1 : 1)),
+          }))
+        }
+      />
       <SignalStrip s={signals} form={plan.readiness.score} />
 
       <div className="grid lg:grid-cols-2 gap-5 items-start">

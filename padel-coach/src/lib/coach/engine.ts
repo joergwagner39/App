@@ -483,5 +483,8 @@ export function mergeStates(a: CoachState, b: CoachState): CoachState {
   for (const [k, v] of Object.entries(b.records ?? {})) {
     if (!records[k] || v.best > records[k].best) records[k] = v
   }
-  return { version: 1, days, settings, records }
+  const levelMap = new Map((a.padelLevels ?? []).map((l) => [l.date, l]))
+  for (const l of b.padelLevels ?? []) levelMap.set(l.date, l)
+  const padelLevels = Array.from(levelMap.values()).sort((x, y) => (x.date < y.date ? -1 : 1))
+  return { version: 1, days, settings, records, padelLevels }
 }

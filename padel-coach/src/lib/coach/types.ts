@@ -89,6 +89,8 @@ export interface CoachSettings {
   neuroEvery?: 1 | 2 | 3
   /** Padel-Einheiten pro Woche als Ziel */
   padelPerWeek: number
+  /** Ziel-Level bei Playtomic, z. B. 3.5 */
+  padelLevelTarget?: number
   /** Freitext, z. B. „Turnier im Mai“ oder „Level 3.5“ */
   padelGoal?: string
   updatedAt: number
@@ -98,6 +100,8 @@ export interface CoachState {
   version: 1
   days: Record<string, DayRecord>
   settings: CoachSettings
+  /** Playtomic-Level-Verlauf (manuell eingetragen) */
+  padelLevels?: { date: string; level: number }[]
   /** Bestwerte der Ballgefühl-/Koordinationsübungen (höher = besser) */
   records?: Record<string, { best: number; date: string }>
 }

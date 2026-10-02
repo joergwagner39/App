@@ -18,7 +18,8 @@ Skizze, eine Quizfrage und einen Fakt.
 - **Morgen-Check-in:** Befinden, Knie (0–10), Muskelkater, Einheit von gestern gemacht?,
   Padel gestern (wird aus Garmin vorausgefüllt), heute oder morgen?
 - **Ziele:** Hyrox-Wettkampf (Datum, Division, Zielzeit) mit Countdown sowie Padel-Einheiten
-  pro Woche und ein eigenes Padel-Ziel. Mit Wettkampfdatum plant der Coach in Phasen:
+  pro Woche, Playtomic-Level (manuell eintragen, mit Ziel-Level, Fortschritt und Verlauf) und ein
+  eigenes Padel-Ziel. Mit Wettkampfdatum plant der Coach in Phasen:
   Grundlage → Aufbau → spezifischer Aufbau (mehr Hyrox) → wettkampfnah → Tapering.
 - **Training des Tages** aus Oura Readiness, HRV, Ruhepuls, Temperatur, Schlaf,
   Garmin Body Battery, Training Readiness und Aktivitäten:
