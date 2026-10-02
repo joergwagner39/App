@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, HeartPulse } from 'lucide-react'
 import type { WearableData } from '@/lib/wearables'
 import type { CoachState, Signals } from '@/lib/coach/types'
-import { buildMetrics, vo2Summary, weeklyLoad, type Metric, type Status } from '@/lib/coach/metrics'
+import { buildMetric, buildMetrics, formSeries, vo2Summary, weeklyLoad, type Metric, type Status } from '@/lib/coach/metrics'
 import { computeReadiness } from '@/lib/coach/engine'
 import { LineChart, Sparkline, WeekBars, VIZ } from './charts'
 import { Card, SectionTitle } from './ui'
@@ -72,8 +72,15 @@ export default function StatsView({
   today: string
   onOpenSettings: () => void
 }) {
-  const [selected, setSelected] = useState('hrv')
-  const metrics = useMemo(() => (data ? buildMetrics(data, today) : []), [data, today])
+  const [selected, setSelected] = useState('form')
+  const metrics = useMemo(() => {
+    if (!data) return []
+    const form = buildMetric('form', 'Tagesform', 'Oura + Garmin', formSeries(data, state, today), today, {
+      higherIsBetter: true,
+      hint: 'Deine Bereitschaft (0–100) aus Oura Readiness, Body Battery, HRV und Ruhepuls im Vergleich zu deinem Schnitt, Schlaf, Temperatur und Check-in. Danach richtet sich das Training.',
+    })
+    return [form, ...buildMetrics(data, today)]
+  }, [data, state, today])
   const vo2 = useMemo(() => (data ? vo2Summary(data, state.settings, today) : null), [data, state.settings, today])
   const weeks = useMemo(() => (data ? weeklyLoad(data, today) : []), [data, today])
   const form = computeReadiness(signals, state.days[today]?.checkIn)
@@ -210,7 +217,7 @@ export default function StatsView({
             </span>
           }
         />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {visible.map((m) => (
             <Tile key={m.id} m={m} active={sel?.id === m.id} onClick={() => setSelected(m.id)} />
           ))}

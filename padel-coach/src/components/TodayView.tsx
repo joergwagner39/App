@@ -28,13 +28,15 @@ function Stat({ label, value, unit, hint, tone }: { label: string; value?: strin
   )
 }
 
-export function SignalStrip({ s }: { s: Signals }) {
+export function SignalStrip({ s, form }: { s: Signals; form?: number }) {
   const hrvTone = s.hrv && s.hrvBaseline ? (s.hrv < s.hrvBaseline * 0.85 ? 'bad' : s.hrv > s.hrvBaseline * 1.05 ? 'good' : undefined) : undefined
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+      {form !== undefined && <Stat label="Tagesform" value={form} hint="gesamt" tone={form >= 70 ? 'good' : form < 55 ? 'bad' : undefined} />}
       <Stat label="Readiness" value={s.readiness} hint="Oura" tone={s.readiness !== undefined ? (s.readiness >= 80 ? 'good' : s.readiness < 60 ? 'bad' : undefined) : undefined} />
       <Stat label="HRV" value={s.hrv ? Math.round(s.hrv) : undefined} unit="ms" hint={s.hrvBaseline ? `Ø ${Math.round(s.hrvBaseline)}` : 'Oura'} tone={hrvTone} />
-      <Stat label="Schlaf" value={s.sleepHours ? s.sleepHours.toFixed(1) : undefined} unit="h" hint={s.sleepScore ? `Score ${s.sleepScore}` : 'Oura'} />
+      <Stat label="Schlaf-Score" value={s.sleepScore} hint="Oura" tone={s.sleepScore !== undefined ? (s.sleepScore >= 80 ? 'good' : s.sleepScore < 60 ? 'bad' : undefined) : undefined} />
+      <Stat label="Schlaf" value={s.sleepHours ? s.sleepHours.toFixed(1) : undefined} unit="h" hint="Oura" />
       <Stat label="Ruhepuls" value={s.restingHr} unit="bpm" hint={s.restingHrBaseline ? `Ø ${Math.round(s.restingHrBaseline)}` : undefined} />
       <Stat label="Body Battery" value={s.bodyBattery} hint="Garmin" />
       <Stat label="VO2max" value={s.vo2max} hint="Garmin" />
@@ -151,7 +153,7 @@ export default function TodayView({
   return (
     <div className="space-y-5">
       <GoalCard phase={plan.phase} settings={state.settings} padelDone={padelThisWeek(state, today)} onOpenSettings={onOpenSettings} />
-      <SignalStrip s={signals} />
+      <SignalStrip s={signals} form={plan.readiness.score} />
 
       <div className="grid lg:grid-cols-2 gap-5 items-start">
         <div className="space-y-5">

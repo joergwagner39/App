@@ -1,7 +1,7 @@
 // Scoreboard: Oura + Garmin zu Kennzahlen mit Trend zusammenfassen.
 import type { WearableData } from '@/lib/wearables'
-import type { CoachSettings } from './types'
-import { addDays } from './engine'
+import type { CoachSettings, CoachState } from './types'
+import { addDays, buildSignals, computeReadiness } from './engine'
 
 export interface Point {
   date: string
@@ -33,7 +33,7 @@ function windowAvg(series: Point[], from: string, to: string) {
   return avg(series.filter((p) => p.date >= from && p.date < to).map((p) => p.value))
 }
 
-function build(
+export function buildMetric(
   id: string,
   label: string,
   source: string,
@@ -78,31 +78,35 @@ export function buildMetrics(data: WearableData, today: string): Metric[] {
   const rhr = sleep.some((s) => s.lowestHeartRate) ? pts(sleep, (s) => s.date, (s) => s.lowestHeartRate) : pts(g, (d) => d.date, (d) => d.restingHeartRate)
 
   return [
-    build('readiness', 'Readiness', 'Oura', pts(readiness, (r) => r.date, (r) => r.score), today, {
+    buildMetric('readiness', 'Readiness', 'Oura', pts(readiness, (r) => r.date, (r) => r.score), today, {
       higherIsBetter: true,
       hint: 'Gesamtbild aus HRV, Ruhepuls, Temperatur, Schlaf und Belastung.',
     }),
-    build('hrv', 'HRV', 'Oura', pts(sleep, (s) => s.date, (s) => s.averageHrv), today, {
+    buildMetric('hrv', 'HRV', 'Oura', pts(sleep, (s) => s.date, (s) => s.averageHrv), today, {
       unit: 'ms',
       higherIsBetter: true,
       hint: 'Steigt mit guter Erholung und Ausdauer-Fitness. Nur mit dir selbst vergleichen.',
     }),
-    build('rhr', 'Ruhepuls', sleep.some((s) => s.lowestHeartRate) ? 'Oura' : 'Garmin', rhr, today, {
+    buildMetric('rhr', 'Ruhepuls', sleep.some((s) => s.lowestHeartRate) ? 'Oura' : 'Garmin', rhr, today, {
       unit: 'bpm',
       higherIsBetter: false,
       hint: 'Sinkt, wenn das Herz pro Schlag mehr pumpt – ein Marker für aerobe Fitness.',
     }),
-    build('sleep', 'Schlaf', 'Oura', pts(sleep, (s) => s.date, (s) => (s.totalSleepSeconds ? s.totalSleepSeconds / 3600 : undefined)), today, {
+    buildMetric('sleep', 'Schlaf', 'Oura', pts(sleep, (s) => s.date, (s) => (s.totalSleepSeconds ? s.totalSleepSeconds / 3600 : undefined)), today, {
       unit: 'h',
       higherIsBetter: true,
       decimals: 1,
       hint: 'Ziel: 7–9 Stunden. Hier passiert die Anpassung an das Training.',
     }),
-    build('battery', 'Body Battery', 'Garmin', pts(g, (d) => d.date, (d) => d.bodyBatteryHighestValue), today, {
+    buildMetric('sleepScore', 'Schlaf-Score', 'Oura', pts(sleep, (s) => s.date, (s) => s.score), today, {
+      higherIsBetter: true,
+      hint: 'Ouras Gesamtbewertung der Nacht aus Dauer, Tiefschlaf, REM, Effizienz, Ruhe und Timing.',
+    }),
+    buildMetric('battery', 'Body Battery', 'Garmin', pts(g, (d) => d.date, (d) => d.bodyBatteryHighestValue), today, {
       higherIsBetter: true,
       hint: 'Höchster Wert des Tages – wie voll der Akku nach der Nacht ist.',
     }),
-    build('stress', 'Stress', 'Garmin', pts(g, (d) => d.date, (d) => d.averageStressLevel), today, {
+    buildMetric('stress', 'Stress', 'Garmin', pts(g, (d) => d.date, (d) => d.averageStressLevel), today, {
       higherIsBetter: false,
       hint: 'Tagesdurchschnitt aus der Herzfrequenzvariabilität.',
     }),
@@ -207,4 +211,24 @@ export function weeklyLoad(data: WearableData, today: string): WeekLoad[] {
     )
     return { weekStart: start, minutes, intenseMinutes, sessions: acts.length }
   })
+}
+
+/** Tagesform (0–100) für jeden der letzten 30 Tage – gleiche Berechnung wie im Tagesplan. */
+export function formSeries(data: WearableData, state: CoachState, today: string): Point[] {
+  const out: Point[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = addDays(today, -i)
+    const upTo = <T extends { date: string }>(rows: T[]) => rows.filter((r) => r.date <= d)
+    const sliced: WearableData = {
+      ...data,
+      oura: { ...data.oura, sleep: upTo(data.oura.sleep), readiness: upTo(data.oura.readiness) },
+      garmin: { ...data.garmin, daily: upTo(data.garmin.daily), activities: upTo(data.garmin.activities) },
+    }
+    const sig = buildSignals(sliced, d)
+    // Nur Tage mit echten Messwerten für genau diesen Tag
+    const hasDay = sliced.oura.readiness.some((r) => r.date === d) || sliced.garmin.daily.some((g) => g.date === d)
+    if (!hasDay) continue
+    out.push({ date: d, value: computeReadiness(sig, state.days[d]?.checkIn).score })
+  }
+  return out
 }
