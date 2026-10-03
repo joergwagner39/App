@@ -1,6 +1,7 @@
 import {
   addInjury,
   addSyncLog,
+  getClub,
   findClubByProviderRef,
   findPlayerByProviderRef,
   getPlayer,
@@ -127,6 +128,61 @@ export async function importProviderPlayer(
     providerRef: p.ref,
   })
   return { id: saved.id, isNew: true }
+}
+
+/**
+ * Kader eines Vereins vom Anbieter übernehmen.
+ *
+ * Das ist der Abgleich, der die Datenbasis aktuell hält: neue Spieler kommen
+ * dazu, vorhandene werden in ihren Anbieterfeldern aufgefrischt. Manuell
+ * gepflegte Angaben — Marktwert, Gehalt, Spielerprofil — bleiben unangetastet.
+ */
+export async function syncSquad(clubId: string): Promise<SyncResult> {
+  const { provider } = activeProvider()
+  const club = await getClub(clubId)
+  if (!club) throw new Error('Verein nicht gefunden.')
+  if (!club.providerRef) {
+    throw new Error(
+      `„${club.name}“ stammt nicht vom Anbieter. Nur abgeglichene Vereine haben eine Anbieterreferenz; der Kader lässt sich sonst über den Tabellen-Import pflegen.`,
+    )
+  }
+
+  const squad = await provider.listSquad({ clubRef: club.providerRef })
+
+  let created = 0
+  let updated = 0
+  for (const entry of squad) {
+    const { isNew } = await importProviderPlayer({ ...entry, clubRef: club.providerRef })
+    isNew ? created++ : updated++
+  }
+
+  const message = `${club.name}: ${squad.length} Spieler gelesen.`
+  await addSyncLog({ provider: provider.id, scope: `squad:${clubId}`, created, updated, message })
+  return { provider: provider.id, created, updated, message }
+}
+
+/** Kader mehrerer Vereine nacheinander abgleichen. */
+export async function syncAllSquads(clubIds: string[]): Promise<SyncResult> {
+  const { provider } = activeProvider()
+  let created = 0
+  let updated = 0
+  const failures: string[] = []
+
+  for (const id of clubIds) {
+    try {
+      const result = await syncSquad(id)
+      created += result.created
+      updated += result.updated
+    } catch (err) {
+      failures.push((err as Error).message)
+    }
+  }
+
+  const message =
+    `${clubIds.length - failures.length} von ${clubIds.length} Vereinen abgeglichen.` +
+    (failures.length ? ` Nicht möglich: ${failures.slice(0, 2).join(' ')}` : '')
+  await addSyncLog({ provider: provider.id, scope: 'squads', created, updated, message })
+  return { provider: provider.id, created, updated, message }
 }
 
 /** Verletzungen eines Spielers nachziehen, ohne Duplikate anzulegen. */

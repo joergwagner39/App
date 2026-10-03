@@ -84,6 +84,25 @@ für ein Angebot an einen Verein also ohnehin mit Vorsicht zu behandeln.
 Die Vereinsbewertung — Budget, Bedarf, Spielstil, Transferpolitik — liefert ohnehin
 kein Anbieter. Genau diese Einträge entscheiden im Matching über die Reihenfolge.
 
+### Geprüfte freie Quellen
+
+Zwei naheliegende kostenlose Quellen wurden getestet und verworfen:
+
+- **OpenLigaDB** (`api.openligadb.de`, ohne Schlüssel nutzbar) liefert Vereine,
+  Tabellen, Spielpläne und Torschützen für die deutschen Ligen — aber **keine
+  Kader**. Der Endpunktkatalog kennt keinen Spieler- oder Kaderabruf. Für
+  Vereinsstammdaten brauchbar, für Spielerdaten nicht.
+- **Wikidata** (SPARQL) liefert technisch Spieler mit Position, Geburtsdatum und
+  Verein, aber in unbrauchbarer Qualität: aktuelle und längst zurückgetretene
+  Spieler stehen gleichberechtigt nebeneinander (im Test erschien ein Jahrgang
+  1920 im aktuellen Kader), Dubletten sind häufig, Positionen sehr grob, Verträge
+  fehlen ganz.
+
+**Praktikabel für kicker-Niveau ist die kostenlose Stufe von API-Football:**
+100 Abfragen pro Tag bei vollem Endpunktzugriff. Ein täglicher Kaderabgleich der
+1. und 2. Bundesliga braucht rund 36 Abfragen plus Statistik — das passt. Der
+Adapter dafür ist eingebaut, es fehlt nur der Schlüssel in `API_FOOTBALL_KEY`.
+
 ### Drei Wege, Daten hereinzubekommen
 
 1. **Tabellen-Import** (`/scouting/import/tabelle`) — Spalten aus Excel, einem
@@ -150,6 +169,59 @@ Rest der App bleibt unverändert.
 Beim Abgleich überschreibt ein Anbieter nie manuell gepflegte Felder — Budgets,
 Bedarf, Spielstil und Notizen bleiben stehen.
 
+## Kaderabgleich
+
+Vereine, die über *Vereine abgleichen* vom Anbieter übernommen wurden, tragen eine
+Anbieterreferenz. Für sie lässt sich der Kader nachziehen:
+
+- einzeln über *Kader vom Anbieter aktualisieren* auf der Vereinsseite,
+- für alle auf einmal über *Kader aller Vereine abgleichen* in den Einstellungen.
+
+Neue Spieler kommen dazu, vorhandene werden in ihren Anbieterfeldern aufgefrischt.
+Manuell gepflegte Angaben — Marktwert, Gehalt, Spielerprofil, Notizen — bleiben
+unangetastet. Vereine, die von Hand oder per Tabelle angelegt wurden, haben keine
+Anbieterreferenz; ihr Kader wird über den Tabellen-Import gepflegt.
+
+## Bedarf aus dem Kader berechnen
+
+Welche Art von Spieler ein Verein sucht, lässt sich teilweise aus seinem Kader
+herleiten, statt es nur zu raten. Auf jeder Vereinsseite steht die Analyse über dem
+Formular und schlägt je Position einen Bedarf zwischen 0 und 100 vor.
+
+Vier Signale, getrennt ausgewiesen:
+
+| Signal | Gewicht | Frage |
+| --- | --- | --- |
+| Kaderbreite | 45 | Stehen genug Spieler auf der Position? |
+| Auslaufende Verträge | 25 | Wie viele laufen binnen zwölf Monaten aus? |
+| Altersstruktur | 18 | Wie viele sind 31 oder älter? |
+| Lastverteilung | 12 | Hängt die Position an einem einzigen Spieler? |
+
+Die Sollbreite richtet sich nach der hinterlegten Formation: eine Dreierkette
+verlangt fünf Innenverteidiger statt vier, ein System mit zwei Spitzen mehr Stürmer
+und weniger Flügelspieler.
+
+**Aushilfe zählt nicht als Kadertiefe.** Ein Außenstürmer kann im Notfall im Zentrum
+spielen, ersetzt aber keinen Mittelstürmer. Verwandte Positionen werden deshalb nur
+bis zu einem halben Spieler angerechnet, und eine Position ganz ohne gelernten
+Spieler gilt immer als Lücke. Ohne diese Grenze deckt ein Kader voller Flügelspieler
+den Sturm rechnerisch ab und der Bedarf verschwindet, obwohl kein Mittelstürmer da
+ist.
+
+Jeder Wert wird mit Begründung und den deckenden Spielern angezeigt, etwa:
+
+> **TW Torwart — 56** · 1 von 2
+> Kaderbreite 1.0 von 2 benötigten Spielern; 1 Spieler mit Vertrag unter 12 Monaten
+> Restlaufzeit; 1 Spieler ab 31 Jahren; 100% der Einsatzzeit auf einem Spieler
+
+Das Ergebnis ist ein **Vorschlag, keine Festlegung** — der Verein kennt seine Planung
+besser als jede Kaderstatistik. Er steht neben dem manuell gepflegten Wert („23 statt
+70") und wird erst per *Als Bedarf übernehmen* übernommen; danach lässt sich jede
+Position von Hand nachjustieren.
+
+Fehlt die Grundlage, sagt die Analyse das: zu kleiner Kader, keine Vertragsenden,
+keine Einsatzminuten.
+
 ## Wie die Prozentzahl entsteht
 
 Zwölf Kriterien, jedes liefert einen Wert zwischen 0 und 1 plus einen Begründungstext:
@@ -188,7 +260,7 @@ Der aktuelle Verein des Spielers wird aus der Rangliste ausgenommen.
 ## Tests
 
 ```bash
-npm test        # 34 Tests: Bewertungslogik und Tabellen-Import
+npm test        # 48 Tests: Bewertung, Tabellen-Import und Bedarfsanalyse
 ```
 
 Bewertung: Positionsaffinität, Wirkung fehlender Daten auf die Datenbasis,
@@ -198,3 +270,7 @@ Kriterien sowie Sortierung und Wertebereich der Rangliste.
 
 Import: Trennzeichenerkennung, Anführungszeichen und Zeilenumbrüche im Feld,
 Positions- und Datumsformate, automatische Spaltenzuordnung deutsch wie englisch.
+
+Bedarfsanalyse: Wirkung jedes der vier Signale einzeln, Formationsabhängigkeit,
+Anrechnung von Nebenpositionen, die Grenze für Aushilfe sowie Sortierung,
+Wertebereich und die Hinweise bei dünner Datenlage.

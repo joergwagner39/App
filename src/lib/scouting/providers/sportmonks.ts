@@ -121,6 +121,42 @@ export const sportmonksProvider: DataProvider = {
     return out
   },
 
+  async listSquad({ clubRef }): Promise<ProviderPlayer[]> {
+    const teamId = clubRef.split(':')[1]
+    if (!teamId) throw new Error(`Unbrauchbare Vereinsreferenz: ${clubRef}`)
+
+    const data = await call<any>(`/teams/${teamId}`, {
+      include: 'players.player.position;players.player.nationality;players.player.detailedPosition',
+    })
+    const entries: any[] = data?.players ?? []
+
+    return entries
+      .map((entry) => entry.player)
+      .filter(Boolean)
+      .map((p: any) => ({
+        ref: `sportmonks:${p.id}`,
+        name: p.display_name ?? p.name ?? [p.firstname, p.lastname].filter(Boolean).join(' '),
+        position: mapCoarsePosition(p.detailedPosition?.name ?? p.position?.name),
+        altPositions: [],
+        age: p.date_of_birth ? ageFromBirthDate(p.date_of_birth) : null,
+        birthDate: p.date_of_birth ?? null,
+        nationality: p.nationality?.name ?? null,
+        foot: p.foot ? (FOOT_MAP[String(p.foot).toLowerCase()] ?? null) : null,
+        heightCm: typeof p.height === 'number' ? p.height : null,
+        clubRef,
+        clubName: data?.name ?? null,
+        marketValueEur: null,
+        contractUntil: null,
+        leagueName: null,
+        country: p.nationality?.name ?? null,
+        minutesLastSeason: null,
+        appearances: null,
+        goals: null,
+        assists: null,
+        currentlyInjured: null,
+      }))
+  },
+
   async listInjuries({ playerRef }): Promise<ProviderInjury[]> {
     if (!playerRef) {
       throw new Error('Für den Verletzungsabruf wird ein Spieler benötigt.')

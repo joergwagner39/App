@@ -21,6 +21,7 @@ import {
   resetWeightsAction,
   saveWeightsAction,
   seedDemoAction,
+  syncAllSquadsAction,
   syncClubsAction,
 } from '../actions'
 
@@ -118,6 +119,11 @@ export default async function SettingsPage({
             />
             <button className={buttonClass} type="submit">
               Vereine abgleichen
+            </button>
+          </form>
+          <form action={syncAllSquadsAction}>
+            <button className={secondaryButtonClass} type="submit">
+              Kader aller Vereine abgleichen
             </button>
           </form>
           <form action={seedDemoAction}>

@@ -22,6 +22,8 @@ import {
   deleteRumor,
   getClub,
   getPlayer,
+  listClubs,
+  listPlayersByClub,
   resetWeights,
   saveWeights,
   upsertClub,
@@ -39,7 +41,15 @@ import {
 } from '@/lib/scouting/types'
 import { CRITERIA } from '@/lib/scouting/criteria'
 import { activeProvider } from '@/lib/scouting/providers'
-import { importProviderPlayer, seedDemoData, syncClubs, syncInjuriesForPlayer } from '@/lib/scouting/sync'
+import {
+  importProviderPlayer,
+  seedDemoData,
+  syncAllSquads,
+  syncClubs,
+  syncInjuriesForPlayer,
+  syncSquad,
+} from '@/lib/scouting/sync'
+import { analyzeSquad, suggestedNeeds } from '@/lib/scouting/squadAnalysis'
 import { parseTable } from '@/lib/scouting/csv'
 import { importTable, type ImportMode, type TargetKind } from '@/lib/scouting/tableImport'
 
@@ -438,4 +448,62 @@ export async function importTableAction(formData: FormData) {
     )
   }
   redirect(`/scouting/import/tabelle?${params.toString()}`)
+}
+
+
+// --- Kader und Bedarfsanalyse ---------------------------------------------
+
+export async function syncSquadAction(formData: FormData) {
+  await requireUser()
+  const clubId = str(formData, 'clubId')
+  try {
+    await syncSquad(clubId)
+  } catch (err) {
+    withError(`/scouting/vereine/${clubId}`, (err as Error).message)
+  }
+  revalidatePath(`/scouting/vereine/${clubId}`)
+  revalidatePath('/scouting')
+  redirect(`/scouting/vereine/${clubId}?abgeglichen=1`)
+}
+
+export async function syncAllSquadsAction() {
+  await requireUser()
+  const clubs = await listClubs()
+  const withRef = clubs.filter((c) => c.providerRef).map((c) => c.id)
+  if (!withRef.length) {
+    withError(
+      '/scouting/einstellungen',
+      'Kein Verein stammt vom Anbieter. Zuerst „Vereine abgleichen“ ausführen.',
+    )
+  }
+  try {
+    await syncAllSquads(withRef)
+  } catch (err) {
+    withError('/scouting/einstellungen', (err as Error).message)
+  }
+  revalidatePath('/scouting')
+  revalidatePath('/scouting/vereine')
+  redirect('/scouting/einstellungen?abgeglichen=1')
+}
+
+/** Den errechneten Bedarf als Vereinsbedarf übernehmen. */
+export async function applySuggestedNeedsAction(formData: FormData) {
+  await requireUser()
+  const clubId = str(formData, 'clubId')
+  const club = await getClub(clubId)
+  if (!club) withError('/scouting/vereine', 'Verein nicht gefunden.')
+
+  const squad = await listPlayersByClub(clubId)
+  if (!squad.length) {
+    withError(
+      `/scouting/vereine/${clubId}`,
+      'Für diesen Verein ist kein Spieler erfasst — ohne Kader lässt sich kein Bedarf berechnen.',
+    )
+  }
+
+  const analysis = analyzeSquad(club, squad)
+  await upsertClub({ ...club, needs: suggestedNeeds(analysis) })
+
+  revalidatePath(`/scouting/vereine/${clubId}`)
+  redirect(`/scouting/vereine/${clubId}?bedarf=1`)
 }

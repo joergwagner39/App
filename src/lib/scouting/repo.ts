@@ -171,6 +171,15 @@ export async function listPlayers(search?: string): Promise<Player[]> {
   return rows.map(rowToPlayer)
 }
 
+/** Alle Spieler, die diesem Verein zugeordnet sind — Grundlage der Bedarfsanalyse. */
+export async function listPlayersByClub(clubId: string): Promise<Player[]> {
+  const rows = await all(
+    'SELECT * FROM players WHERE current_club_id = ? ORDER BY position, name COLLATE NOCASE',
+    [clubId],
+  )
+  return rows.map(rowToPlayer)
+}
+
 export async function getPlayer(id: string): Promise<Player | null> {
   const r = await one('SELECT * FROM players WHERE id = ?', [id])
   return r ? rowToPlayer(r) : null

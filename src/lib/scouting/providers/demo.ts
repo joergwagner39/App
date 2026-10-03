@@ -213,6 +213,10 @@ export const demoProvider: DataProvider = {
     return CLUBS
   },
 
+  async listSquad({ clubRef }) {
+    return PLAYERS.filter((p) => p.clubRef === clubRef)
+  },
+
   async listInjuries({ playerRef }) {
     return playerRef ? INJURIES.filter((i) => i.playerRef === playerRef) : INJURIES
   },

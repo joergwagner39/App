@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/scouting/guard'
-import { getClub, listAssessments } from '@/lib/scouting/repo'
+import { getClub, listAssessments, listPlayersByClub } from '@/lib/scouting/repo'
+import { analyzeSquad } from '@/lib/scouting/squadAnalysis'
+import { SquadNeedAnalysis } from '@/components/scouting/SquadNeedAnalysis'
 import { formatDate } from '@/lib/scouting/format'
 import { ClubForm } from '@/components/scouting/ClubForm'
 import {
@@ -16,9 +18,11 @@ import {
 } from '@/components/scouting/ui'
 import {
   addAssessmentAction,
+  applySuggestedNeedsAction,
   deleteAssessmentAction,
   deleteClubAction,
   saveClubAction,
+  syncSquadAction,
 } from '../../actions'
 
 export const dynamic = 'force-dynamic'
@@ -28,13 +32,17 @@ export default async function ClubDetailPage({
   searchParams,
 }: {
   params: { id: string }
-  searchParams: { fehler?: string; gespeichert?: string }
+  searchParams: { fehler?: string; gespeichert?: string; bedarf?: string; abgeglichen?: string }
 }) {
   await requireUser()
   const club = await getClub(params.id)
   if (!club) notFound()
 
-  const assessments = await listAssessments({ clubId: club.id })
+  const [assessments, squad] = await Promise.all([
+    listAssessments({ clubId: club.id }),
+    listPlayersByClub(club.id),
+  ])
+  const analysis = analyzeSquad(club, squad)
 
   return (
     <div className="space-y-6">
@@ -56,6 +64,19 @@ export default async function ClubDetailPage({
 
       <ErrorBanner message={searchParams.fehler} />
       {searchParams.gespeichert === '1' && <InfoBanner>Änderungen gespeichert.</InfoBanner>}
+      {searchParams.bedarf === '1' && (
+        <InfoBanner>Der errechnete Bedarf wurde übernommen.</InfoBanner>
+      )}
+      {searchParams.abgeglichen === '1' && <InfoBanner>Kader wurde abgeglichen.</InfoBanner>}
+
+      <SquadNeedAnalysis
+        analysis={analysis}
+        currentNeeds={club.needs}
+        clubId={club.id}
+        applyAction={applySuggestedNeedsAction}
+        syncAction={syncSquadAction}
+        canSync={club.providerRef != null}
+      />
 
       <ClubForm club={club} action={saveClubAction} />
 

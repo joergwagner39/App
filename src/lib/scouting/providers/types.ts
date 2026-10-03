@@ -58,6 +58,8 @@ export interface DataProvider {
 
   searchPlayers(query: string): Promise<ProviderPlayer[]>
   listClubs(options: { league?: string; season?: number }): Promise<ProviderClub[]>
+  /** Kompletter Kader eines Vereins — Grundlage für den laufenden Abgleich. */
+  listSquad(options: { clubRef: string; season?: number }): Promise<ProviderPlayer[]>
   listInjuries(options: { playerRef?: string; league?: string; season?: number }): Promise<
     ProviderInjury[]
   >

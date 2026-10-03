@@ -151,6 +151,70 @@ export const apiFootballProvider: DataProvider = {
     return out
   },
 
+  async listSquad({ clubRef, season }): Promise<ProviderPlayer[]> {
+    const teamId = clubRef.split(':')[1]
+    if (!teamId) throw new Error(`Unbrauchbare Vereinsreferenz: ${clubRef}`)
+
+    // /players/squads liefert den aktuellen Kader mit Position und Alter,
+    // aber ohne Saisonstatistik — die kommt aus /players je Verein.
+    const squad = await call<any[]>('/players/squads', { team: teamId })
+    const entry = squad?.[0]
+    const players: any[] = entry?.players ?? []
+    const teamName: string | null = entry?.team?.name ?? null
+
+    // Statistik in einem zweiten Aufruf; schlägt der fehl, bleibt der Kader
+    // trotzdem nutzbar.
+    const stats = new Map<number, any>()
+    try {
+      const s = season ?? currentSeason()
+      let page = 1
+      while (page <= 3) {
+        const response = await call<any[]>('/players', { team: teamId, season: s, page })
+        for (const row of response ?? []) {
+          if (row?.player?.id) stats.set(row.player.id, row)
+        }
+        if (!response || response.length < 20) break
+        page++
+      }
+    } catch {
+      // Statistik ist optional.
+    }
+
+    return players.map((p) => {
+      const row = stats.get(p.id)
+      const statistics: any[] = Array.isArray(row?.statistics) ? row.statistics : []
+      const sum = (pick: (s: any) => number | null | undefined) =>
+        statistics.reduce((acc, s) => acc + (pick(s) ?? 0), 0) || null
+
+      return {
+        ref: `api-football:${p.id}`,
+        name: p.name ?? row?.player?.name ?? 'Unbekannt',
+        position: mapCoarsePosition(p.position),
+        altPositions: [],
+        age: typeof p.age === 'number' ? p.age : (row?.player?.age ?? null),
+        birthDate: row?.player?.birth?.date ?? null,
+        nationality: row?.player?.nationality ?? null,
+        foot: null,
+        heightCm: (() => {
+          const m = /(\d{2,3})\s*cm/.exec(row?.player?.height ?? '')
+          return m ? Number(m[1]) : null
+        })(),
+        clubRef,
+        clubName: teamName,
+        marketValueEur: null,
+        contractUntil: null,
+        leagueName: statistics[0]?.league?.name ?? null,
+        country: statistics[0]?.league?.country ?? null,
+        minutesLastSeason: sum((s) => s?.games?.minutes),
+        appearances: sum((s) => s?.games?.appearences),
+        goals: sum((s) => s?.goals?.total),
+        assists: sum((s) => s?.goals?.assists),
+        currentlyInjured:
+          typeof row?.player?.injured === 'boolean' ? row.player.injured : null,
+      }
+    })
+  },
+
   async listInjuries({ playerRef, league, season }): Promise<ProviderInjury[]> {
     const s = season ?? currentSeason()
     const params: Record<string, string | number | undefined> = { season: s }
