@@ -40,6 +40,8 @@ import {
 import { CRITERIA } from '@/lib/scouting/criteria'
 import { activeProvider } from '@/lib/scouting/providers'
 import { importProviderPlayer, seedDemoData, syncClubs, syncInjuriesForPlayer } from '@/lib/scouting/sync'
+import { parseTable } from '@/lib/scouting/csv'
+import { importTable, type ImportMode, type TargetKind } from '@/lib/scouting/tableImport'
 
 // --- Hilfsfunktionen -------------------------------------------------------
 
@@ -387,4 +389,53 @@ export async function importPlayerAction(formData: FormData) {
   const { id } = await importProviderPlayer(found)
   revalidatePath('/scouting')
   redirect(`/scouting/spieler/${id}`)
+}
+
+export async function importTableAction(formData: FormData) {
+  await requireUser()
+
+  const kind: TargetKind = str(formData, 'art') === 'clubs' ? 'clubs' : 'players'
+  const raw = String(formData.get('daten') ?? '')
+  const mode: ImportMode = str(formData, 'modus') === 'create_only' ? 'create_only' : 'create_and_update'
+
+  if (!raw.trim()) withError('/scouting/import/tabelle', 'Es wurden keine Daten übergeben.')
+
+  const table = parseTable(raw)
+  if (!table.headers.length) {
+    withError('/scouting/import/tabelle', 'Aus der Eingabe ließ sich keine Tabelle lesen.')
+  }
+
+  // Die Zuordnung kommt spaltenweise aus dem Formular.
+  const mapping = table.headers.map((_, i) => str(formData, `spalte_${i}`))
+
+  let result
+  try {
+    result = await importTable({ kind, headers: table.headers, rows: table.rows, mapping, mode })
+  } catch (err) {
+    withError('/scouting/import/tabelle', (err as Error).message)
+  }
+
+  if (result.errors.length && !result.created && !result.updated) {
+    withError('/scouting/import/tabelle', result.errors[0].message)
+  }
+
+  revalidatePath('/scouting')
+  revalidatePath('/scouting/vereine')
+
+  const params = new URLSearchParams({
+    angelegt: String(result.created),
+    aktualisiert: String(result.updated),
+    uebersprungen: String(result.skipped),
+  })
+  if (result.errors.length) {
+    // Nur die ersten Meldungen, damit die Adresszeile nicht ausufert.
+    params.set(
+      'zeilenfehler',
+      result.errors
+        .slice(0, 3)
+        .map((e) => `Zeile ${e.row}: ${e.message}`)
+        .join('; ') + (result.errors.length > 3 ? ` (+${result.errors.length - 3} weitere)` : ''),
+    )
+  }
+  redirect(`/scouting/import/tabelle?${params.toString()}`)
 }

@@ -39,6 +39,9 @@ export default async function PlayersPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/scouting/import/tabelle" className={secondaryButtonClass}>
+            Tabelle importieren
+          </Link>
           <Link href="/scouting/import" className={secondaryButtonClass}>
             Aus Anbieter importieren
           </Link>

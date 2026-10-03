@@ -27,6 +27,9 @@ export default async function ClubsPage({ searchParams }: { searchParams: { fehl
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/scouting/import/tabelle" className={secondaryButtonClass}>
+            Tabelle importieren
+          </Link>
           <Link href="/scouting/einstellungen" className={secondaryButtonClass}>
             Aus Anbieter laden
           </Link>

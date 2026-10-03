@@ -11,6 +11,7 @@ import {
   inputClass,
   secondaryButtonClass,
 } from '@/components/scouting/ui'
+import Link from 'next/link'
 import { importPlayerAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -47,12 +48,17 @@ export default async function ImportPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Spieler importieren</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Stammdaten und Saisonstatistik vom Anbieter übernehmen. Marktwert, Gehalt und
-          Spielerprofil werden anschließend in der App gepflegt.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100">Spieler importieren</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Stammdaten und Saisonstatistik vom Anbieter übernehmen. Marktwert, Gehalt und
+            Spielerprofil werden anschließend in der App gepflegt.
+          </p>
+        </div>
+        <Link href="/scouting/import/tabelle" className={secondaryButtonClass}>
+          Stattdessen Tabelle einfügen
+        </Link>
       </div>
 
       <ErrorBanner message={searchParams.fehler ?? searchError ?? undefined} />

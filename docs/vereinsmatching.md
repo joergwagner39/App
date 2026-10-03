@@ -75,8 +75,59 @@ Das kostenlose Kontingent von Turso und Vercel reicht für diesen Umfang.
 öffentliche API und untersagen automatisiertes Auslesen in ihren Nutzungsbedingungen.
 Angebunden werden stattdessen Anbieter mit Lizenzmodell.
 
+Zu Transfermarkt kursieren diverse inoffizielle API-Wrapper und Scraper-Projekte.
+Die sind technisch nutzbar, aber rechtlich angreifbar und brechen bei jeder
+Layout-Änderung. Dazu kommt ein inhaltlicher Punkt: die Marktwerte dort sind
+Community-Schätzungen, keine belegten Ablösen oder Gehälter — als harte Grundlage
+für ein Angebot an einen Verein also ohnehin mit Vorsicht zu behandeln.
+
 Die Vereinsbewertung — Budget, Bedarf, Spielstil, Transferpolitik — liefert ohnehin
 kein Anbieter. Genau diese Einträge entscheiden im Matching über die Reihenfolge.
+
+### Drei Wege, Daten hereinzubekommen
+
+1. **Tabellen-Import** (`/scouting/import/tabelle`) — Spalten aus Excel, einem
+   Portal-Export oder der Zwischenablage einfügen. Funktioniert mit jeder Quelle,
+   die sich exportieren lässt, und braucht keinen Vertrag. Details unten.
+2. **Lizenz-API** — Sportmonks und API-Football sind als Adapter fertig. Sportmonks
+   listet seine Tarife öffentlich (Einstieg ab rund 29 € im Monat für wenige Ligen,
+   mittlere Pakete um 99 €). Liefert Stammdaten, Statistik und Verletzungen, keine
+   Marktwerte und keine Gehälter.
+3. **Scouting-Plattform** — Hudl Wyscout ist der Branchenstandard bei Vereinen,
+   Preise nur auf Anfrage, Einzellizenzen beginnen im niedrigen dreistelligen
+   Jahresbereich. Keine offene API im Paket, aber Exporte, die sich über den
+   Tabellen-Import einlesen lassen.
+
+## Tabellen-Import
+
+Unter *Import* lässt sich eine Tabelle einfügen oder eine CSV-Datei wählen —
+wahlweise für Spieler oder für Vereine. Semikolon, Komma und Tabulator werden
+erkannt, aus Excel kopierte Zellen funktionieren direkt.
+
+Die Spaltenzuordnung schlägt die App vor: deutsche und englische Überschriften
+werden erkannt (`Marktwert` wie `Market Value`, `Verein` wie `Current Club`), jedes
+Zielfeld wird höchstens einmal vergeben. Jede Zuordnung lässt sich von Hand
+korrigieren, nicht zugeordnete Spalten werden ignoriert. Die Vorschau zeigt vor dem
+Import, was wohin geht.
+
+Beim Einlesen werden umgewandelt:
+
+- **Beträge** mit Einheit — `2,5 Mio`, `900 Tsd`, `4500000`
+- **Datumsangaben** in deutschem, englischem und ISO-Format — `30.06.2028`,
+  `Jun 30, 2028`, `2028-06-30`
+- **Positionen** in Lang- und Kurzform, deutsch und englisch — `Innenverteidiger`,
+  `IV`, `Centre-Back`
+- **Vereinsnamen** werden mit bereits angelegten Vereinen abgeglichen und verknüpft
+
+Zwei Regeln, die Datenverlust verhindern:
+
+- **Leere Zellen überschreiben nichts.** Wer eine Spielerliste ohne Gehaltsspalte
+  importiert, verliert die bereits gepflegten Gehälter nicht.
+- **Abgleich über den Namen.** Ein zweiter Import derselben Liste aktualisiert die
+  vorhandenen Einträge, statt sie zu verdoppeln. Wahlweise lässt sich auch „nur neue
+  anlegen“ wählen, dann bleiben vorhandene Einträge unberührt.
+
+Zeilen ohne Namen werden übersprungen und in der Vorschau vorab als solche markiert.
 
 ### Anbieter konfigurieren
 
@@ -137,10 +188,13 @@ Der aktuelle Verein des Spielers wird aus der Rangliste ausgenommen.
 ## Tests
 
 ```bash
-npm test        # 19 Tests der Bewertungslogik
+npm test        # 34 Tests: Bewertungslogik und Tabellen-Import
 ```
 
-Abgedeckt sind unter anderem: Positionsaffinität, Wirkung fehlender Daten auf die
-Datenbasis, Ablöseabschlag bei auslaufendem Vertrag, Verstärkung mehrerer Gerüchte,
-Alterung von Meldungen, Verletzungslast gegen Risikobereitschaft, die Deckelung durch
-harte Kriterien sowie Sortierung und Wertebereich der Rangliste.
+Bewertung: Positionsaffinität, Wirkung fehlender Daten auf die Datenbasis,
+Ablöseabschlag bei auslaufendem Vertrag, Verstärkung mehrerer Gerüchte, Alterung von
+Meldungen, Verletzungslast gegen Risikobereitschaft, die Deckelung durch harte
+Kriterien sowie Sortierung und Wertebereich der Rangliste.
+
+Import: Trennzeichenerkennung, Anführungszeichen und Zeilenumbrüche im Feld,
+Positions- und Datumsformate, automatische Spaltenzuordnung deutsch wie englisch.

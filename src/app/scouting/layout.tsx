@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const NAV = [
   { href: '/scouting', label: 'Spieler' },
   { href: '/scouting/vereine', label: 'Vereine' },
-  { href: '/scouting/import', label: 'Import' },
+  { href: '/scouting/import/tabelle', label: 'Import' },
   { href: '/scouting/einstellungen', label: 'Einstellungen' },
 ]
 
