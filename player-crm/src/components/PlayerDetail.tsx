@@ -267,9 +267,9 @@ export default function PlayerDetail({
   const doneTodos = player.todos.filter((t) => t.done)
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-8">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-8">
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
             {player.photoUrl && !photoError ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -285,24 +285,24 @@ export default function PlayerDetail({
               <User className="h-8 w-8 text-slate-400" />
             )}
           </div>
-          <div>
-            <div className="flex gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
               <input
-                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none"
+                className="w-full min-w-0 rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none sm:w-auto sm:flex-1 sm:text-2xl"
                 value={player.firstName}
                 placeholder="Vorname"
                 onChange={(e) => update({ firstName: e.target.value })}
               />
               <input
-                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none"
+                className="w-full min-w-0 rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none sm:w-auto sm:flex-1 sm:text-2xl"
                 value={player.lastName}
                 placeholder="Nachname"
                 onChange={(e) => update({ lastName: e.target.value })}
               />
             </div>
-            <div className="mt-2 flex items-center gap-2 px-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2 px-2">
               <input
-                className="w-64 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-navy-500 focus:px-2 focus:outline-none"
+                className="w-full min-w-0 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-navy-500 focus:px-2 focus:outline-none sm:w-64"
                 value={player.photoUrl ?? ''}
                 placeholder="Bild-URL einfügen…"
                 onChange={(e) => update({ photoUrl: e.target.value })}
@@ -387,10 +387,10 @@ export default function PlayerDetail({
         </div>
         <button
           onClick={onDelete}
-          className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
         >
           <Trash2 className="h-4 w-4" />
-          Löschen
+          <span className="hidden sm:inline">Löschen</span>
         </button>
       </div>
 

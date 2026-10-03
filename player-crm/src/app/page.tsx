@@ -6,12 +6,16 @@ import { loadPlayers, savePlayers } from '@/lib/storage'
 import { seedPlayers } from '@/lib/seedData'
 import PlayerList from '@/components/PlayerList'
 import PlayerDetail from '@/components/PlayerDetail'
-import { Users } from 'lucide-react'
+import { ChevronLeft, Users } from 'lucide-react'
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[]>([])
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [hydrated, setHydrated] = useState(false)
+  // On phones the list and the detail view share the screen, so only one of
+  // them is visible at a time. From md upwards both are shown side by side and
+  // this flag is ignored.
+  const [showDetailOnPhone, setShowDetailOnPhone] = useState(false)
 
   useEffect(() => {
     const loaded = loadPlayers()
@@ -27,10 +31,16 @@ export default function Home() {
 
   const selected = players.find((p) => p.id === selectedId)
 
+  function handleSelect(id: string) {
+    setSelectedId(id)
+    setShowDetailOnPhone(true)
+  }
+
   function handleCreate() {
     const p = createEmptyPlayer()
     setPlayers((prev) => [p, ...prev])
     setSelectedId(p.id)
+    setShowDetailOnPhone(true)
   }
 
   function handleChange(updated: Player) {
@@ -42,6 +52,7 @@ export default function Home() {
     if (!confirm(`${selected.firstName} ${selected.lastName} wirklich löschen?`)) return
     setPlayers((prev) => prev.filter((p) => p.id !== selected.id))
     setSelectedId(undefined)
+    setShowDetailOnPhone(false)
   }
 
   if (!hydrated) {
@@ -62,30 +73,47 @@ export default function Home() {
           className="pointer-events-none absolute -top-2 right-24 h-10 w-40 bg-brand-400/25"
           style={{ clipPath: 'polygon(28% 0, 100% 0, 72% 100%, 0 100%)' }}
         />
-        <div className="relative flex items-center gap-3 px-6 py-4">
-          <Users className="h-5 w-5 text-brand-400" />
-          <h1 className="font-heading text-2xl font-semibold uppercase tracking-[0.12em]">
+        <div className="relative flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <Users className="h-5 w-5 shrink-0 text-brand-400" />
+          <h1 className="font-heading text-lg font-semibold uppercase tracking-[0.12em] sm:text-2xl">
             Player Relations <span className="text-brand-400">CRM</span>
           </h1>
-          <span className="ml-auto text-xs text-navy-100">
+          <span className="ml-auto hidden text-xs text-navy-100 lg:block">
             Daten werden lokal im Browser gespeichert
           </span>
         </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-96 shrink-0 border-r border-slate-200 bg-slate-50">
+        <aside
+          className={`${
+            showDetailOnPhone ? 'hidden md:block' : 'block'
+          } w-full shrink-0 overflow-y-auto border-slate-200 bg-slate-50 md:w-96 md:border-r`}
+        >
           <PlayerList
             players={players}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={handleSelect}
             onCreate={handleCreate}
           />
         </aside>
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className={`${
+            showDetailOnPhone ? 'block' : 'hidden md:block'
+          } min-w-0 flex-1 overflow-y-auto`}
+        >
           {selected ? (
-            <PlayerDetail player={selected} onChange={handleChange} onDelete={handleDelete} />
+            <>
+              <button
+                onClick={() => setShowDetailOnPhone(false)}
+                className="sticky top-0 z-10 flex w-full items-center gap-1.5 border-b border-slate-200 bg-white/95 px-4 py-2.5 text-sm font-medium text-navy-600 backdrop-blur md:hidden"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Zur Spielerliste
+              </button>
+              <PlayerDetail player={selected} onChange={handleChange} onDelete={handleDelete} />
+            </>
           ) : (
-            <div className="flex h-full items-center justify-center text-slate-400">
+            <div className="flex h-full items-center justify-center p-6 text-center text-slate-400">
               Wähle einen Spieler aus oder lege einen neuen an.
             </div>
           )}
