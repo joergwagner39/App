@@ -1,38 +1,58 @@
-const CACHE_NAME = 'player-crm-v1'
+const CACHE_NAME = 'player-crm-v2'
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
-// Cache-first for same-origin GET requests so the app shell works offline.
+// Build artefacts under /_next/static/ carry a content hash in their name, so a
+// changed file always has a new URL. Everything else (the HTML document above
+// all) must come from the network first, otherwise a deployed update is never
+// picked up.
+function isImmutableAsset(url) {
+  return url.pathname.startsWith('/_next/static/')
+}
+
+function cacheFirst(request) {
+  return caches.match(request).then((cached) => {
+    if (cached) return cached
+    return fetch(request).then((response) => {
+      if (response.ok) {
+        const clone = response.clone()
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+      }
+      return response
+    })
+  })
+}
+
+function networkFirst(request) {
+  return fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        const clone = response.clone()
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+      }
+      return response
+    })
+    .catch(() => caches.match(request))
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) {
-    return
-  }
+  const url = new URL(request.url)
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-          }
-          return response
-        })
-        .catch(() => cached)
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return
 
-      return cached || fetchPromise
-    })
-  )
+  event.respondWith(isImmutableAsset(url) ? cacheFirst(request) : networkFirst(request))
 })
