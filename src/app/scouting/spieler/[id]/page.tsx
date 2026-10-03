@@ -7,6 +7,7 @@ import {
   getWeights,
   listAssessments,
   listClubs,
+  listContacts,
   listInjuries,
   listRumors,
 } from '@/lib/scouting/repo'
@@ -49,11 +50,12 @@ export default async function PlayerDetailPage({
   const player = await getPlayer(params.id)
   if (!player) notFound()
 
-  const [clubs, rumors, injuries, assessments, weights] = await Promise.all([
+  const [clubs, rumors, injuries, assessments, contacts, weights] = await Promise.all([
     listClubs(),
     listRumors(player.id),
     listInjuries(player.id),
     listAssessments({ playerId: player.id }),
+    listContacts(),
     getWeights(user.id),
   ])
 
@@ -63,6 +65,7 @@ export default async function PlayerDetailPage({
     rumors,
     injuries,
     assessments,
+    contacts,
     weights,
   })
 

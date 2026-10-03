@@ -11,6 +11,9 @@ import { CRITERIA, CRITERION_META, CriterionKey, defaultWeights } from './criter
 import {
   Assessment,
   Club,
+  Contact,
+  CONTACT_ROLE_LABEL,
+  CONTACT_ROLE_WEIGHT,
   Injury,
   Player,
   POSITION_AFFINITY,
@@ -39,6 +42,8 @@ export interface MatchResult {
   basePercent: number
   /** Begrenzungsfaktor aus den harten Kriterien, 0..1 */
   gate: number
+  /** Auf- oder Abschlag aus dem Draht zum Verein, um 1 herum */
+  reach: number
   /** Harte Kriterien, die die Bewertung spürbar gedeckelt haben */
   limitedBy: CriterionResult[]
   /** Anteil der Gewichtung mit echter Datengrundlage, 0..100 */
@@ -55,6 +60,7 @@ export interface MatchInput {
   rumors: Rumor[]
   injuries: Injury[]
   assessments: Assessment[]
+  contacts?: Contact[]
   weights?: Partial<Record<CriterionKey, number>>
   /** Referenzdatum für Alters-, Vertrags- und Gerüchte-Berechnung */
   now?: Date
@@ -70,6 +76,18 @@ const HARD_CRITERIA: CriterionKey[] = ['positionsbedarf', 'abloese', 'gehalt']
 
 /** Deckel, den ein vollständig verfehltes hartes Kriterium setzt. */
 const GATE_FLOOR = 0.6
+
+/**
+ * Wie stark der Draht zum Verein das Ergebnis über den Mittelwert hinaus
+ * verschiebt, maximal ±20%.
+ *
+ * Positionsbedarf und Budget entscheiden, ob ein Wechsel überhaupt möglich ist.
+ * Der Draht entscheidet, ob man den Termin bekommt — das ist eine andere Art von
+ * Einfluss und geht im Mittelwert aus vierzehn Kriterien unter. Als eigener
+ * Faktor bewegt er die Rangfolge spürbar, kann aber ein fehlendes Budget nicht
+ * überstimmen, weil die Begrenzung zuerst greift.
+ */
+const REACH_MAX = 0.2
 
 /** Stückweise lineare Kennlinie über Stützstellen [x, y], aufsteigend nach x. */
 function curve(x: number, points: [number, number][]): number {
@@ -366,6 +384,69 @@ function cGeruechte(player: Player, club: Club, rumors: Rumor[], now: Date): Out
   }
 }
 
+/**
+ * Draht zum Verein. Für eine Beratung ist das oft der Unterschied zwischen einem
+ * Anruf, der angenommen wird, und einem, der es nicht wird.
+ *
+ * Gewichtet nach drei Dingen: Rolle des Ansprechpartners, Güte der Verbindung und
+ * wie lange der letzte Austausch her ist. Mehrere gute Kontakte bei einem Verein
+ * verstärken sich, ohne dass daraus mehr als eine sichere Verbindung werden kann.
+ */
+function cBeziehung(club: Club, contacts: Contact[], now: Date): Outcome {
+  if (!contacts.length) {
+    return { score: null, detail: 'Keine Kontakte erfasst.' }
+  }
+  const own = contacts.filter((c) => c.clubId === club.id)
+  if (!own.length) {
+    return {
+      score: 0.25,
+      detail: 'Kontakte sind gepflegt, aber keiner bei diesem Verein.',
+    }
+  }
+
+  let inverse = 1
+  let best: Contact | null = null
+  let bestValue = -1
+
+  for (const contact of own) {
+    const roleWeight = CONTACT_ROLE_WEIGHT[contact.role] ?? 0.35
+    // Beziehungen verfallen langsamer als Gerüchte, aber sie verfallen.
+    let recency = 0.7
+    if (contact.lastContact) {
+      const days = daysSince(contact.lastContact, now)
+      if (Number.isFinite(days)) recency = Math.max(0.4, Math.exp(-days / 540))
+    }
+    const value = (contact.relationship / 100) * roleWeight * recency
+    inverse *= 1 - clamp01(value)
+    if (value > bestValue) {
+      bestValue = value
+      best = contact
+    }
+  }
+
+  const combined = clamp01(1 - inverse)
+  // Ein enger Draht zum Sportdirektor soll als klare Stärke durchschlagen und
+  // nicht im Mittelwert verschwinden.
+  const score = curve(combined, [
+    [0, 0.1],
+    [0.2, 0.4],
+    [0.4, 0.65],
+    [0.6, 0.85],
+    [0.8, 0.95],
+    [1, 1],
+  ])
+
+  const label = best ? CONTACT_ROLE_LABEL[best.role] : ''
+  const staleness =
+    best?.lastContact && Number.isFinite(daysSince(best.lastContact, now))
+      ? `, zuletzt vor ${Math.round(daysSince(best.lastContact, now) / 30)} Monaten`
+      : ''
+  return {
+    score,
+    detail: `${own.length} Kontakt(e), stärkster: ${best?.name} (${label}, Beziehung ${best?.relationship}/100${staleness}).`,
+  }
+}
+
 function cVerletzung(player: Player, club: Club, injuries: Injury[], now: Date): Outcome {
   const own = injuries.filter((i) => i.playerId === player.id)
   const dataKnown = own.length > 0 || player.providerRef != null
@@ -544,6 +625,7 @@ export function matchPlayerToClub(
     rumors: Rumor[]
     injuries: Injury[]
     assessments: Assessment[]
+    contacts: Contact[]
     weights: Record<CriterionKey, number>
     now: Date
   },
@@ -555,6 +637,7 @@ export function matchPlayerToClub(
     gehalt: cGehalt(player, club),
     niveau: cNiveau(player, club),
     geruechte: cGeruechte(player, club, ctx.rumors, ctx.now),
+    beziehung: cBeziehung(club, ctx.contacts, ctx.now),
     verletzung: cVerletzung(player, club, ctx.injuries, ctx.now),
     spielstil: cSpielstil(player, club),
     alter: cAlter(player, club),
@@ -600,7 +683,16 @@ export function matchPlayerToClub(
   }
   limitedBy.sort((a, b) => (a.score as number) - (b.score as number))
 
-  const percent = Math.round(base * gate * 100)
+  // Draht zum Verein als eigener Faktor. Das Gewicht steuert ihn mit: bei 0
+  // bleibt der Faktor neutral, die Einstellung wirkt also vollständig.
+  const relation = criteria.find((c) => c.key === 'beziehung')
+  let reach = 1
+  if (relation && relation.score != null && relation.weight > 0) {
+    const strength = relation.weight / 100
+    reach = 1 + REACH_MAX * strength * (relation.score - 0.5) * 2
+  }
+
+  const percent = clamp01(base * gate * reach) * 100
 
   const scored = criteria.filter((c) => c.score != null && c.weight > 0)
   const strengths = scored
@@ -615,9 +707,10 @@ export function matchPlayerToClub(
   return {
     clubId: club.id,
     club,
-    percent,
+    percent: Math.round(percent),
     basePercent: Math.round(base * 100),
     gate,
+    reach,
     limitedBy,
     confidence,
     criteria,
@@ -634,6 +727,7 @@ export function matchPlayer(input: MatchInput): MatchResult[] {
     rumors: input.rumors,
     injuries: input.injuries,
     assessments: input.assessments,
+    contacts: input.contacts ?? [],
     weights,
     now,
   }

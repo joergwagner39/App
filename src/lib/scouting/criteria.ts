@@ -7,6 +7,7 @@ export const CRITERIA = [
   'gehalt',
   'niveau',
   'geruechte',
+  'beziehung',
   'verletzung',
   'spielstil',
   'alter',
@@ -66,6 +67,13 @@ export const CRITERION_META: Record<CriterionKey, CriterionMeta> = {
     description:
       'Dokumentiertes Interesse, gewichtet nach Verhandlungsstand, Glaubwürdigkeit und Aktualität.',
     defaultWeight: 85,
+  },
+  beziehung: {
+    key: 'beziehung',
+    label: 'Draht zum Verein',
+    description:
+      'Verbindung zu den Entscheidern — gewichtet nach Rolle, Güte der Beziehung und wann zuletzt gesprochen wurde.',
+    defaultWeight: 80,
   },
   verletzung: {
     key: 'verletzung',

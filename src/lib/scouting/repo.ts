@@ -4,6 +4,8 @@ import {
   Assessment,
   AssessmentKind,
   Club,
+  Contact,
+  ContactRole,
   Foot,
   Injury,
   Player,
@@ -436,6 +438,55 @@ export async function addAssessment(
 
 export async function deleteAssessment(id: string): Promise<void> {
   await run('DELETE FROM assessments WHERE id = ?', [id])
+}
+
+// ---------------------------------------------------------------------------
+// Kontakte beim Verein
+// ---------------------------------------------------------------------------
+
+function rowToContact(r: any): Contact {
+  return {
+    id: r.id,
+    clubId: r.club_id,
+    name: r.name,
+    role: r.role as ContactRole,
+    relationship: r.relationship,
+    ownerUserId: r.owner_user_id,
+    lastContact: r.last_contact,
+    notes: r.notes,
+    createdAt: r.created_at,
+  }
+}
+
+export async function listContacts(clubId?: string): Promise<Contact[]> {
+  const rows = clubId
+    ? await all('SELECT * FROM contacts WHERE club_id = ? ORDER BY relationship DESC', [clubId])
+    : await all('SELECT * FROM contacts ORDER BY relationship DESC LIMIT 1000')
+  return rows.map(rowToContact)
+}
+
+export async function addContact(input: Omit<Contact, 'id' | 'createdAt'>): Promise<Contact> {
+  const record = {
+    id: newId('con'),
+    club_id: input.clubId,
+    name: input.name.trim(),
+    role: input.role,
+    relationship: Math.max(0, Math.min(100, input.relationship)),
+    owner_user_id: nz(input.ownerUserId),
+    last_contact: nz(input.lastContact),
+    notes: nz(input.notes),
+    created_at: nowIso(),
+  }
+  await run(
+    `INSERT INTO contacts (id, club_id, name, role, relationship, owner_user_id, last_contact, notes, created_at)
+     VALUES (@id, @club_id, @name, @role, @relationship, @owner_user_id, @last_contact, @notes, @created_at)`,
+    record,
+  )
+  return rowToContact(record)
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  await run('DELETE FROM contacts WHERE id = ?', [id])
 }
 
 // ---------------------------------------------------------------------------

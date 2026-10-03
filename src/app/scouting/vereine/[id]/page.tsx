@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/scouting/guard'
-import { getClub, listAssessments, listPlayersByClub } from '@/lib/scouting/repo'
+import { getClub, listAssessments, listContacts, listPlayersByClub } from '@/lib/scouting/repo'
+import { listUsers } from '@/lib/scouting/auth'
+import { ClubContacts } from '@/components/scouting/ClubContacts'
 import { analyzeSquad } from '@/lib/scouting/squadAnalysis'
 import { SquadNeedAnalysis } from '@/components/scouting/SquadNeedAnalysis'
 import { formatDate } from '@/lib/scouting/format'
@@ -18,7 +20,9 @@ import {
 } from '@/components/scouting/ui'
 import {
   addAssessmentAction,
+  addContactAction,
   applySuggestedNeedsAction,
+  deleteContactAction,
   deleteAssessmentAction,
   deleteClubAction,
   saveClubAction,
@@ -34,13 +38,15 @@ export default async function ClubDetailPage({
   params: { id: string }
   searchParams: { fehler?: string; gespeichert?: string; bedarf?: string; abgeglichen?: string }
 }) {
-  await requireUser()
+  const user = await requireUser()
   const club = await getClub(params.id)
   if (!club) notFound()
 
-  const [assessments, squad] = await Promise.all([
+  const [assessments, squad, contacts, users] = await Promise.all([
     listAssessments({ clubId: club.id }),
     listPlayersByClub(club.id),
+    listContacts(club.id),
+    listUsers(),
   ])
   const analysis = analyzeSquad(club, squad)
 
@@ -76,6 +82,15 @@ export default async function ClubDetailPage({
         applyAction={applySuggestedNeedsAction}
         syncAction={syncSquadAction}
         canSync={club.providerRef != null}
+      />
+
+      <ClubContacts
+        contacts={contacts}
+        clubId={club.id}
+        users={users}
+        currentUserId={user.id}
+        addAction={addContactAction}
+        deleteAction={deleteContactAction}
       />
 
       <ClubForm club={club} action={saveClubAction} />

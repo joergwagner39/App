@@ -173,6 +173,19 @@ async function migrate(client: Client) {
     CREATE INDEX IF NOT EXISTS idx_assessments_player ON assessments(player_id);
     CREATE INDEX IF NOT EXISTS idx_assessments_club ON assessments(club_id);
 
+    CREATE TABLE IF NOT EXISTS contacts (
+      id            TEXT PRIMARY KEY,
+      club_id       TEXT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+      name          TEXT NOT NULL,
+      role          TEXT NOT NULL DEFAULT 'sonstige',
+      relationship  INTEGER NOT NULL DEFAULT 50,
+      owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      last_contact  TEXT,
+      notes         TEXT,
+      created_at    TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_contacts_club ON contacts(club_id);
+
     CREATE TABLE IF NOT EXISTS weights (
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       key     TEXT NOT NULL,

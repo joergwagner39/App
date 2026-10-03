@@ -196,3 +196,61 @@ export interface User {
   role: 'admin' | 'berater'
   createdAt: string
 }
+
+// ---------------------------------------------------------------------------
+// Kontakte und Beziehungen
+// ---------------------------------------------------------------------------
+
+export const CONTACT_ROLES = [
+  'sportdirektor',
+  'geschaeftsfuehrer',
+  'kaderplaner',
+  'cheftrainer',
+  'scout',
+  'sonstige',
+] as const
+
+export type ContactRole = (typeof CONTACT_ROLES)[number]
+
+export const CONTACT_ROLE_LABEL: Record<ContactRole, string> = {
+  sportdirektor: 'Sportdirektor',
+  geschaeftsfuehrer: 'Geschäftsführer Sport',
+  kaderplaner: 'Kaderplaner',
+  cheftrainer: 'Cheftrainer',
+  scout: 'Scout',
+  sonstige: 'Sonstige',
+}
+
+/**
+ * Wie viel Einfluss die Rolle auf eine Transferentscheidung hat. Ein guter Draht
+ * zum Sportdirektor öffnet Türen, die ein Kontakt zum Scout nicht öffnet.
+ */
+export const CONTACT_ROLE_WEIGHT: Record<ContactRole, number> = {
+  sportdirektor: 1,
+  geschaeftsfuehrer: 0.9,
+  kaderplaner: 0.85,
+  cheftrainer: 0.75,
+  scout: 0.45,
+  sonstige: 0.35,
+}
+
+/**
+ * Ansprechpartner bei einem Verein und die Güte der Verbindung.
+ *
+ * Das ist das Kapital einer Beratung und steht in keiner Datenbank — es wird
+ * ausschließlich gepflegt.
+ */
+export interface Contact {
+  id: string
+  clubId: string
+  name: string
+  role: ContactRole
+  /** Güte der Verbindung 0 (kennt uns kaum) .. 100 (enges Vertrauensverhältnis) */
+  relationship: number
+  /** Wer in der Beratung die Verbindung hält; leer = Haus-Kontakt */
+  ownerUserId: string | null
+  /** Datum des letzten Austauschs — alte Kontakte wiegen weniger */
+  lastContact: string | null
+  notes: string | null
+  createdAt: string
+}

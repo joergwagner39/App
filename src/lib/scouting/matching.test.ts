@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { matchPlayer, matchPlayerToClub } from './matching'
 import { defaultWeights } from './criteria'
-import { Assessment, Club, Injury, Player, Rumor } from './types'
+import { Assessment, Club, Contact, Injury, Player, Rumor } from './types'
 
 const NOW = new Date('2026-08-01T00:00:00.000Z')
 
@@ -69,8 +69,24 @@ const emptyCtx = {
   rumors: [] as Rumor[],
   injuries: [] as Injury[],
   assessments: [] as Assessment[],
+  contacts: [] as Contact[],
   weights: defaultWeights(),
   now: NOW,
+}
+
+function contact(overrides: Partial<Contact> = {}): Contact {
+  return {
+    id: 'k1',
+    clubId: 'c1',
+    name: 'Thomas Berg',
+    role: 'sportdirektor',
+    relationship: 85,
+    ownerUserId: null,
+    lastContact: '2026-07-01',
+    notes: null,
+    createdAt: NOW.toISOString(),
+    ...overrides,
+  }
 }
 
 function criterion(result: ReturnType<typeof matchPlayerToClub>, key: string) {
@@ -356,4 +372,125 @@ test('Prozentwert bleibt immer im Bereich 0 bis 100', () => {
     assert.ok(r.percent >= 0 && r.percent <= 100, `Prozent außerhalb des Bereichs: ${r.percent}`)
     assert.ok(r.confidence >= 0 && r.confidence <= 100)
   }
+})
+
+test('Draht: ohne erfasste Kontakte bleibt das Kriterium unbewertet', () => {
+  const r = matchPlayerToClub(player(), club(), emptyCtx)
+  assert.equal(criterion(r, 'beziehung').score, null)
+})
+
+test('Draht: enger Kontakt zum Sportdirektor hebt die Passung deutlich', () => {
+  const ohne = matchPlayerToClub(player(), club(), emptyCtx)
+  const mit = matchPlayerToClub(player(), club(), { ...emptyCtx, contacts: [contact()] })
+
+  assert.ok(
+    (criterion(mit, 'beziehung').score ?? 0) > 0.6,
+    `Draht zu schwach bewertet: ${criterion(mit, 'beziehung').score}`,
+  )
+  assert.ok(mit.percent > ohne.percent)
+  assert.ok(criterion(mit, 'beziehung').detail.includes('Thomas Berg'))
+})
+
+test('Draht: Rolle des Ansprechpartners schlägt durch', () => {
+  const direktor = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ role: 'sportdirektor' })],
+  })
+  const scout = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ role: 'scout' })],
+  })
+  assert.ok(
+    (criterion(direktor, 'beziehung').score ?? 0) > (criterion(scout, 'beziehung').score ?? 0),
+    'Sportdirektor wiegt nicht schwerer als Scout',
+  )
+})
+
+test('Draht: alter Kontakt wiegt weniger als frischer', () => {
+  const frisch = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ lastContact: '2026-09-20' })],
+  })
+  const alt = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ lastContact: '2022-01-10' })],
+  })
+  assert.ok(
+    (criterion(frisch, 'beziehung').score ?? 0) > (criterion(alt, 'beziehung').score ?? 0),
+    'Alter des Kontakts wirkt nicht',
+  )
+})
+
+test('Draht: mehrere Kontakte bei einem Verein verstärken sich', () => {
+  const einer = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ relationship: 60 })],
+  })
+  const mehrere = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [
+      contact({ relationship: 60 }),
+      contact({ id: 'k2', name: 'Petra Lang', role: 'cheftrainer', relationship: 70 }),
+    ],
+  })
+  const score = criterion(mehrere, 'beziehung').score ?? 0
+  assert.ok(score > (criterion(einer, 'beziehung').score ?? 0))
+  assert.ok(score <= 1)
+})
+
+test('Draht: Kontakte anderswo, aber keiner hier — schwacher statt fehlender Wert', () => {
+  const r = matchPlayerToClub(player(), club({ id: 'c1' }), {
+    ...emptyCtx,
+    contacts: [contact({ clubId: 'c-anderer' })],
+  })
+  assert.equal(criterion(r, 'beziehung').score, 0.25)
+  assert.ok(criterion(r, 'beziehung').detail.includes('keiner bei diesem Verein'))
+})
+
+test('Draht: wirkt als eigener Faktor spürbar auf das Ergebnis', () => {
+  const ohne = matchPlayerToClub(player(), club(), emptyCtx)
+  const mit = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    contacts: [contact({ relationship: 95 })],
+  })
+
+  assert.ok(mit.reach > 1.05, `Aufschlag zu klein: ${mit.reach}`)
+  assert.ok(
+    mit.percent - ohne.percent >= 5,
+    `Draht bewegt zu wenig: ${ohne.percent}% → ${mit.percent}%`,
+  )
+})
+
+test('Draht: Kontakte anderswo, aber keiner hier, geben einen Abschlag', () => {
+  const r = matchPlayerToClub(player(), club({ id: 'c1' }), {
+    ...emptyCtx,
+    contacts: [contact({ clubId: 'c-anderer' })],
+  })
+  assert.ok(r.reach < 1, `Kein Abschlag: ${r.reach}`)
+})
+
+test('Draht: Gewicht 0 schaltet auch den Faktor ab', () => {
+  const weights = { ...defaultWeights(), beziehung: 0 }
+  const r = matchPlayerToClub(player(), club(), {
+    ...emptyCtx,
+    weights,
+    contacts: [contact({ relationship: 95 })],
+  })
+  assert.equal(r.reach, 1)
+})
+
+test('Draht: ohne Kontakte bleibt der Faktor neutral', () => {
+  const r = matchPlayerToClub(player(), club(), emptyCtx)
+  assert.equal(r.reach, 1)
+})
+
+test('Draht: gute Verbindung ersetzt kein fehlendes Budget', () => {
+  // Ein enger Draht darf einen unbezahlbaren Wechsel nicht möglich rechnen.
+  const r = matchPlayerToClub(
+    player({ marketValueEur: 20_000_000 }),
+    club({ transferBudgetEur: 500_000 }),
+    { ...emptyCtx, contacts: [contact({ relationship: 100 })] },
+  )
+  assert.ok(r.percent < 60, `Beziehung überstimmt das Budget: ${r.percent}`)
+  assert.ok(r.limitedBy.some((c) => c.key === 'abloese'))
 })

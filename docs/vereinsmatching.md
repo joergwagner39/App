@@ -232,6 +232,7 @@ Zwölf Kriterien, jedes liefert einen Wert zwischen 0 und 1 plus einen Begründu
 | Ablöse vs. Budget | 90 | Transferbudget gegen erwartete Ablöse |
 | Gehalt vs. Gehaltsgefüge | 85 | Gehaltssumme und Kaderdurchschnitt |
 | Gerüchte & Interesse | 85 | Verhandlungsstand, Glaubwürdigkeit, Aktualität |
+| Draht zum Verein | 80 | Rolle des Ansprechpartners, Güte der Beziehung, Aktualität |
 | Spielzeit-Perspektive | 80 | Bedarf und Niveauunterschied |
 | Sportliches Niveau | 75 | Ligenstufe des Vereins gegen bisheriges Niveau |
 | Eigene Einschätzung | 65 | manuelle Bewertungen |
@@ -255,12 +256,47 @@ auch wenn sonst alles passt. Ein vollständig verfehltes hartes Kriterium deckel
 60 %, mehrere verstärken sich. Die Oberfläche zeigt die Rechnung offen an:
 *Mittelwert 88 % × Begrenzung 92 % = 81 %*.
 
+**Der Draht zum Verein wirkt zusätzlich als eigener Faktor**, maximal ±20%.
+Positionsbedarf und Budget entscheiden, ob ein Wechsel überhaupt möglich ist; die
+Verbindung zum Sportdirektor entscheidet, ob man den Termin bekommt. Das ist eine
+andere Art von Einfluss und ginge im Mittelwert aus vierzehn Kriterien unter — als
+eigener Faktor bewegt er die Rangfolge spürbar. Ein fehlendes Budget kann er nicht
+überstimmen, weil die Begrenzung zuerst greift. Das Gewicht steuert ihn mit: bei 0
+bleibt der Faktor neutral.
+
 Der aktuelle Verein des Spielers wird aus der Rangliste ausgenommen.
+
+## Ansprechpartner pflegen
+
+Auf jeder Vereinsseite lassen sich Ansprechpartner erfassen: Name, Rolle, Güte der
+Verbindung (0–100), Datum des letzten Austauschs, wer in der Beratung die Verbindung
+hält, und eine Notiz.
+
+Die Rolle bestimmt das Gewicht — ein guter Draht zum Sportdirektor öffnet Türen, die
+ein Kontakt zum Scout nicht öffnet:
+
+| Rolle | Gewicht |
+| --- | --- |
+| Sportdirektor | 1,0 |
+| Geschäftsführer Sport | 0,9 |
+| Kaderplaner | 0,85 |
+| Cheftrainer | 0,75 |
+| Scout | 0,45 |
+| Sonstige | 0,35 |
+
+Beziehungen verfallen langsamer als Gerüchte, aber sie verfallen: ohne Austausch
+sinkt das Gewicht über rund anderthalb Jahre spürbar ab. Mehrere gute Kontakte bei
+einem Verein verstärken sich.
+
+Solange bei keinem Verein ein Kontakt steht, bleibt das Kriterium unbewertet und
+senkt nur die ausgewiesene Datenbasis. Sind Kontakte gepflegt, aber keiner bei diesem
+Verein, gibt es einen Abschlag — die Information „wir haben dort niemanden“ ist dann
+belastbar.
 
 ## Tests
 
 ```bash
-npm test        # 48 Tests: Bewertung, Tabellen-Import und Bedarfsanalyse
+npm test        # 59 Tests: Bewertung, Tabellen-Import und Bedarfsanalyse
 ```
 
 Bewertung: Positionsaffinität, Wirkung fehlender Daten auf die Datenbasis,

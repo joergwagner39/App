@@ -13,10 +13,12 @@ import {
 import { requireAdmin, requireUser } from '@/lib/scouting/guard'
 import {
   addAssessment,
+  addContact,
   addInjury,
   addRumor,
   deleteAssessment,
   deleteClub,
+  deleteContact,
   deleteInjury,
   deletePlayer,
   deleteRumor,
@@ -33,6 +35,8 @@ import { parseEur, parseNumber } from '@/lib/scouting/format'
 import {
   AssessmentKind,
   ASSESSMENT_KINDS,
+  ContactRole,
+  CONTACT_ROLES,
   Foot,
   Position,
   POSITIONS,
@@ -506,4 +510,37 @@ export async function applySuggestedNeedsAction(formData: FormData) {
 
   revalidatePath(`/scouting/vereine/${clubId}`)
   redirect(`/scouting/vereine/${clubId}?bedarf=1`)
+}
+
+
+// --- Ansprechpartner -------------------------------------------------------
+
+export async function addContactAction(formData: FormData) {
+  await requireUser()
+  const clubId = str(formData, 'clubId')
+  const name = str(formData, 'name')
+  if (!name) withError(`/scouting/vereine/${clubId}`, 'Bitte einen Namen angeben.')
+
+  const role = str(formData, 'role')
+  await addContact({
+    clubId,
+    name,
+    role: (CONTACT_ROLES as readonly string[]).includes(role)
+      ? (role as ContactRole)
+      : 'sonstige',
+    relationship: intOrNull(formData, 'relationship') ?? 50,
+    ownerUserId: strOrNull(formData, 'ownerUserId'),
+    lastContact: strOrNull(formData, 'lastContact'),
+    notes: strOrNull(formData, 'notes'),
+  })
+
+  revalidatePath(`/scouting/vereine/${clubId}`)
+  revalidatePath('/scouting')
+}
+
+export async function deleteContactAction(formData: FormData) {
+  await requireUser()
+  await deleteContact(str(formData, 'id'))
+  revalidatePath(`/scouting/vereine/${str(formData, 'clubId')}`)
+  revalidatePath('/scouting')
 }

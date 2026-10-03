@@ -100,7 +100,15 @@ export function MatchList({ results }: { results: MatchResult[] }) {
               <div className="mt-3 grid gap-2 border-t border-slate-800/70 pt-3 text-xs text-slate-500 sm:grid-cols-2">
                 <div>
                   Mittelwert {result.basePercent}% × Begrenzung{' '}
-                  {Math.round(result.gate * 100)}% = {result.percent}%
+                  {Math.round(result.gate * 100)}%
+                  {result.reach !== 1 && (
+                    <>
+                      {' '}
+                      × Draht {result.reach > 1 ? '+' : ''}
+                      {Math.round((result.reach - 1) * 100)}%
+                    </>
+                  )}{' '}
+                  = {result.percent}%
                   <div className="mt-1">
                     Transferbudget: {formatEur(result.club.transferBudgetEur)} · Gehaltssumme:{' '}
                     {formatEur(result.club.salaryBudgetEur)}
