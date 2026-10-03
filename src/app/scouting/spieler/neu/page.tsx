@@ -12,7 +12,7 @@ export default async function NewPlayerPage({ searchParams }: { searchParams: { 
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-100">Spieler anlegen</h1>
+      <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Spieler anlegen</h1>
       <ErrorBanner message={searchParams.fehler} />
       <PlayerForm clubs={clubs} action={savePlayerAction} />
     </div>

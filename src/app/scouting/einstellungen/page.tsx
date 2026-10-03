@@ -43,8 +43,8 @@ export default async function SettingsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Einstellungen</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Einstellungen</h1>
+        <p className="mt-1 text-sm text-rogon-400">
           Gewichtung der Kriterien, Datenanbindung und Benutzerverwaltung.
         </p>
       </div>
@@ -92,7 +92,7 @@ export default async function SettingsPage({
         subtitle="Der Anbieter liefert Stammdaten, Statistik und Verletzungen. Budgets, Positionsbedarf und Spielstil bleiben eigene Eintragungen."
       >
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-slate-400">Aktiv:</span>
+          <span className="text-rogon-400">Aktiv:</span>
           <Badge tone={fellBack ? 'warn' : 'good'}>{provider.label}</Badge>
           {fellBack && (
             <span className="text-xs text-amber-300">
@@ -101,10 +101,10 @@ export default async function SettingsPage({
           )}
         </div>
 
-        <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400">
+        <div className="mb-4 rounded-lg border border-rogon-800 bg-rogon-900/40 p-3 text-xs text-rogon-400">
           {Object.values(PROVIDERS).map((p) => (
             <div key={p.id} className="py-0.5">
-              <span className="text-slate-300">{p.id}</span> — {p.setupHint()}
+              <span className="text-rogon-300">{p.id}</span> — {p.setupHint()}
             </div>
           ))}
         </div>
@@ -134,7 +134,7 @@ export default async function SettingsPage({
         </div>
 
         {syncLog.length > 0 && (
-          <ul className="mt-4 space-y-1 text-xs text-slate-500">
+          <ul className="mt-4 space-y-1 text-xs text-rogon-500">
             {syncLog.map((entry) => (
               <li key={entry.id}>
                 {formatDate(entry.createdAt)} · {entry.provider} · {entry.scope} · neu{' '}
@@ -152,11 +152,11 @@ export default async function SettingsPage({
             {users.map((u) => (
               <li
                 key={u.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
               >
                 <div>
-                  <span className="font-medium text-slate-200">{u.name}</span>
-                  <span className="ml-2 text-xs text-slate-500">{u.email}</span>
+                  <span className="font-medium text-rogon-200">{u.name}</span>
+                  <span className="ml-2 text-xs text-rogon-500">{u.email}</span>
                   {u.role === 'admin' && (
                     <Badge tone="info">
                       <span className="ml-0">Admin</span>

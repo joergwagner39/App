@@ -32,7 +32,7 @@ export function SquadNeedAnalysis({
         canSync ? (
           <form action={syncAction}>
             <input type="hidden" name="clubId" value={clubId} />
-            <button className="text-xs text-sky-400 hover:underline" type="submit">
+            <button className="text-xs text-marke-heller hover:underline" type="submit">
               Kader vom Anbieter aktualisieren
             </button>
           </form>
@@ -50,7 +50,7 @@ export function SquadNeedAnalysis({
       {analysis.squadSize === 0 ? (
         <EmptyState title="Kein Spieler diesem Verein zugeordnet.">
           Spieler lassen sich über den{' '}
-          <Link href="/scouting/import/tabelle" className="text-sky-400 hover:underline">
+          <Link href="/scouting/import/tabelle" className="text-marke-heller hover:underline">
             Tabellen-Import
           </Link>{' '}
           oder einzeln anlegen. Beim Spieler muss der Verein gesetzt sein.
@@ -59,7 +59,7 @@ export function SquadNeedAnalysis({
         <>
           <div className="space-y-2">
             {relevant.length === 0 ? (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-rogon-400">
                 Der Kader ist auf allen Positionen ausreichend besetzt — rechnerisch kein Bedarf.
               </p>
             ) : (
@@ -68,30 +68,30 @@ export function SquadNeedAnalysis({
                 return (
                   <div
                     key={need.position}
-                    className="grid grid-cols-[7rem_3rem_1fr] items-start gap-3 border-t border-slate-800/70 pt-2 text-xs"
+                    className="grid grid-cols-[7rem_3rem_1fr] items-start gap-3 border-t border-rogon-800/70 pt-2 text-xs"
                   >
                     <div>
-                      <span className="text-slate-200">{need.position}</span>
-                      <span className="ml-1 text-slate-600">
+                      <span className="text-rogon-200">{need.position}</span>
+                      <span className="ml-1 text-rogon-600">
                         {POSITION_LABEL[need.position]}
                       </span>
-                      <div className="mt-1 text-slate-600">
+                      <div className="mt-1 text-rogon-600">
                         {need.depth} von {need.target}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium text-slate-200">{need.value}</div>
+                      <div className="font-medium text-rogon-200">{need.value}</div>
                       {current != null && current !== need.value && (
-                        <div className="mt-0.5 text-slate-600">statt {current}</div>
+                        <div className="mt-0.5 text-rogon-600">statt {current}</div>
                       )}
                     </div>
                     <div>
                       <ScoreBar percent={need.value} />
-                      <div className="mt-1.5 text-slate-400">
+                      <div className="mt-1.5 text-rogon-400">
                         {need.reasons.length ? need.reasons.join('; ') : 'leichte Unterdeckung'}
                       </div>
                       {need.covering.length > 0 && (
-                        <div className="mt-1 text-slate-600">
+                        <div className="mt-1 text-rogon-600">
                           {need.covering
                             .slice(0, 4)
                             .map((c) => `${c.player.name}${c.share < 1 ? ` (${Math.round(c.share * 100)}%)` : ''}`)
@@ -113,7 +113,7 @@ export function SquadNeedAnalysis({
                   Als Bedarf übernehmen
                 </button>
               </form>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-rogon-500">
                 Überschreibt die oben eingetragenen Werte. Danach lässt sich jede Position von Hand
                 nachjustieren.
               </span>

@@ -77,7 +77,7 @@ export function TableImportForm({
       >
         <div className="mb-4 flex flex-wrap gap-4">
           {(['players', 'clubs'] as TargetKind[]).map((k) => (
-            <label key={k} className="flex items-center gap-2 text-sm text-slate-300">
+            <label key={k} className="flex items-center gap-2 text-sm text-rogon-300">
               <input
                 type="radio"
                 name="artAuswahl"
@@ -118,11 +118,11 @@ export function TableImportForm({
           >
             Beispiel einsetzen
           </button>
-          {fileName && <span className="text-xs text-slate-500">{fileName}</span>}
+          {fileName && <span className="text-xs text-rogon-500">{fileName}</span>}
           {raw && (
             <button
               type="button"
-              className="text-xs text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
+              className="text-xs text-rogon-500 underline-offset-2 hover:text-rogon-300 hover:underline"
               onClick={() => {
                 setRaw('')
                 setOverrides({})
@@ -178,11 +178,11 @@ export function TableImportForm({
           >
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-800 text-slate-500">
+                <thead className="border-b border-rogon-800 text-rogon-500">
                   <tr>
                     {table.headers.map((header, i) => (
                       <th key={i} className="px-2 py-2 align-bottom">
-                        <div className="whitespace-nowrap text-slate-400">
+                        <div className="whitespace-nowrap text-rogon-400">
                           {header || `Spalte ${i + 1}`}
                         </div>
                         <div className="mt-1">
@@ -198,7 +198,7 @@ export function TableImportForm({
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/70">
+                <tbody className="divide-y divide-rogon-800/70">
                   {table.rows.slice(0, MAX_PREVIEW).map((row, r) => {
                     // Ohne Namen lässt sich die Zeile nicht zuordnen — das soll
                     // hier schon sichtbar sein, nicht erst in der Erfolgsmeldung.
@@ -209,7 +209,7 @@ export function TableImportForm({
                         {row.map((cell, c) => (
                           <td
                             key={c}
-                            className={`px-2 py-1.5 ${mapping[c] ? 'text-slate-200' : 'text-slate-600'}`}
+                            className={`px-2 py-1.5 ${mapping[c] ? 'text-rogon-200' : 'text-rogon-600'}`}
                           >
                             {cell}
                             {willSkip && c === 0 && (
@@ -227,7 +227,7 @@ export function TableImportForm({
 
           <Card title="4. Importieren">
             <div className="space-y-3">
-              <label className="flex items-start gap-2 text-sm text-slate-300">
+              <label className="flex items-start gap-2 text-sm text-rogon-300">
                 <input
                   type="radio"
                   name="modus"
@@ -237,17 +237,17 @@ export function TableImportForm({
                 />
                 <span>
                   Neue anlegen und vorhandene aktualisieren
-                  <span className="mt-0.5 block text-xs text-slate-500">
+                  <span className="mt-0.5 block text-xs text-rogon-500">
                     Abgleich über den Namen. Leere Zellen überschreiben vorhandene Werte nicht —
                     eigene Eintragungen wie Bedarf oder Budget bleiben stehen.
                   </span>
                 </span>
               </label>
-              <label className="flex items-start gap-2 text-sm text-slate-300">
+              <label className="flex items-start gap-2 text-sm text-rogon-300">
                 <input type="radio" name="modus" value="create_only" className="mt-1" />
                 <span>
                   Nur neue anlegen
-                  <span className="mt-0.5 block text-xs text-slate-500">
+                  <span className="mt-0.5 block text-xs text-rogon-500">
                     Vorhandene Einträge bleiben vollständig unberührt.
                   </span>
                 </span>
@@ -265,7 +265,7 @@ export function TableImportForm({
 
       {table && table.headers.length === 0 && (
         <Card>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-rogon-400">
             Aus der Eingabe ließ sich keine Tabelle lesen. Bitte prüfen, ob die erste Zeile
             Spaltenüberschriften enthält.
           </p>

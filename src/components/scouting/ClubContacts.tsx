@@ -48,11 +48,11 @@ export function ClubContacts({
           {contacts.map((c) => (
             <li
               key={c.id}
-              className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+              className="flex items-start justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-slate-200">{c.name}</span>
+                  <span className="font-medium text-rogon-200">{c.name}</span>
                   <Badge tone={c.role === 'sportdirektor' ? 'info' : 'neutral'}>
                     {CONTACT_ROLE_LABEL[c.role]}
                   </Badge>
@@ -60,11 +60,11 @@ export function ClubContacts({
                     Beziehung {c.relationship}
                   </Badge>
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-rogon-500">
                   {c.lastContact ? `zuletzt ${formatDate(c.lastContact)}` : 'kein Kontaktdatum'}
                   {c.ownerUserId ? ` · Draht über ${userName.get(c.ownerUserId) ?? 'unbekannt'}` : ' · Haus-Kontakt'}
                 </div>
-                {c.notes && <div className="mt-1 text-xs text-slate-400">{c.notes}</div>}
+                {c.notes && <div className="mt-1 text-xs text-rogon-400">{c.notes}</div>}
               </div>
               <form action={deleteAction}>
                 <input type="hidden" name="id" value={c.id} />

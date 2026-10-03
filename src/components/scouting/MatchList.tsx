@@ -20,19 +20,19 @@ export function MatchList({ results }: { results: MatchResult[] }) {
         return (
           <li
             key={result.clubId}
-            className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+            className="rounded-xl border border-rogon-800 bg-rogon-900/50 p-4"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-slate-500">#{index + 1}</span>
+                  <span className="text-xs text-rogon-500">#{index + 1}</span>
                   <Link
                     href={`/scouting/vereine/${result.clubId}`}
-                    className="font-medium text-slate-100 hover:text-sky-400"
+                    className="font-medium text-rogon-100 hover:text-marke-heller"
                   >
                     {result.club.name}
                   </Link>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-rogon-500">
                     {result.club.league}
                     {result.club.country ? ` · ${result.club.country}` : ''} · Niveau{' '}
                     {result.club.leagueLevel}
@@ -53,9 +53,9 @@ export function MatchList({ results }: { results: MatchResult[] }) {
               </div>
 
               <div className="w-40 shrink-0 text-right">
-                <div className={`text-2xl font-semibold ${tone.text}`}>{result.percent}%</div>
+                <div className={`font-marke text-3xl ${tone.text}`}>{result.percent}%</div>
                 <ScoreBar percent={result.percent} className="mt-1" />
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-rogon-500">
                   Datenbasis {result.confidence}%
                 </div>
                 {result.limitedBy.length > 0 && (
@@ -67,7 +67,7 @@ export function MatchList({ results }: { results: MatchResult[] }) {
             </div>
 
             <details className="group mt-3">
-              <summary className="cursor-pointer text-xs text-slate-400 transition hover:text-slate-200">
+              <summary className="cursor-pointer text-xs text-rogon-400 transition hover:text-rogon-200">
                 Bewertung im Detail
               </summary>
 
@@ -77,27 +77,27 @@ export function MatchList({ results }: { results: MatchResult[] }) {
                   .map((c) => (
                     <div
                       key={c.key}
-                      className="grid grid-cols-[10rem_4rem_1fr] items-start gap-3 border-t border-slate-800/70 pt-2 text-xs"
+                      className="grid grid-cols-[10rem_4rem_1fr] items-start gap-3 border-t border-rogon-800/70 pt-2 text-xs"
                     >
-                      <div className="text-slate-300">
+                      <div className="text-rogon-300">
                         {c.label}
-                        <span className="ml-1 text-slate-600">·{c.weight}</span>
+                        <span className="ml-1 text-rogon-600">·{c.weight}</span>
                       </div>
                       <div className="text-right">
                         {c.score == null ? (
-                          <span className="text-slate-600">k. A.</span>
+                          <span className="text-rogon-600">k. A.</span>
                         ) : (
                           <span className={matchTone(Math.round(c.score * 100)).text}>
                             {Math.round(c.score * 100)}%
                           </span>
                         )}
                       </div>
-                      <div className="text-slate-400">{c.detail}</div>
+                      <div className="text-rogon-400">{c.detail}</div>
                     </div>
                   ))}
               </div>
 
-              <div className="mt-3 grid gap-2 border-t border-slate-800/70 pt-3 text-xs text-slate-500 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 border-t border-rogon-800/70 pt-3 text-xs text-rogon-500 sm:grid-cols-2">
                 <div>
                   Mittelwert {result.basePercent}% × Begrenzung{' '}
                   {Math.round(result.gate * 100)}%

@@ -41,11 +41,11 @@ export function PlayerForm({
           </Field>
 
           <Field label="Nebenpositionen" className="sm:col-span-2">
-            <div className="flex flex-wrap gap-2 rounded-lg border border-slate-700 bg-slate-900/60 p-2">
+            <div className="flex flex-wrap gap-2 rounded-lg border border-rogon-700 bg-rogon-900/60 p-2">
               {POSITIONS.map((pos) => (
                 <label
                   key={pos}
-                  className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-rogon-300 hover:bg-rogon-800"
                 >
                   <input
                     type="checkbox"
@@ -168,7 +168,7 @@ export function PlayerForm({
               defaultValue={p?.preferredCountries.join(', ') ?? ''}
             />
           </Field>
-          <label className="mt-6 flex items-center gap-2 text-sm text-slate-300">
+          <label className="mt-6 flex items-center gap-2 text-sm text-rogon-300">
             <input
               type="checkbox"
               name="willingToRelocate"

@@ -1,4 +1,4 @@
-# Vereinsmatching
+# ROGON Vereinsmatching
 
 Spieler auswählen, passende Vereine mit prozentualer Bewertung erhalten — inklusive
 Begründung je Kriterium. Erreichbar unter `/scouting`.
@@ -62,6 +62,23 @@ zu verlieren.
 
 Das kostenlose Kontingent von Turso und Vercel reicht für diesen Umfang.
 
+## Erscheinungsbild
+
+Die Oberfläche folgt der ROGON-CI:
+
+- **Hausfarbe** `#0A4165` (aus `--color-primary` auf rogon.tv). Davon abgeleitet die
+  Skala `rogon-50` bis `rogon-950` für Flächen, Ränder und Text, sowie `marke-hell`
+  `#1A6FA8` und `marke-heller` `#3E9BD6` für Schaltflächen und Verweise — die
+  Hausfarbe selbst ist auf dunklem Grund zu dunkel für interaktive Elemente.
+- **Hausschrift Antonio**, geladen über `next/font`. Sie läuft schmal und ist für
+  Fließtext und Tabellen zu eng; gesetzt wird sie über die Klasse `font-marke`
+  gezielt für Überschriften, Navigation und Prozentwerte.
+- **Logo** unter `public/marke/rogon-logo-weiss.png` (weiß auf transparent, passt
+  zur dunklen Grundfläche).
+
+Das Oura-Dashboard im selben Repository ist davon nicht berührt — die Umfärbung
+betrifft ausschließlich `src/app/scouting` und `src/components/scouting`.
+
 ## Woher die Daten kommen
 
 | Datenart | Quelle |
@@ -108,7 +125,7 @@ Adapter dafür ist eingebaut, es fehlt nur der Schlüssel in `API_FOOTBALL_KEY`.
 1. **Tabellen-Import** (`/scouting/import/tabelle`) — Spalten aus Excel, einem
    Portal-Export oder der Zwischenablage einfügen. Funktioniert mit jeder Quelle,
    die sich exportieren lässt, und braucht keinen Vertrag. Details unten.
-2. **Lizenz-API** — Sportmonks und API-Football sind als Adapter fertig. Sportmonks
+2. **Lizenz-API** — football-data.org, Sportmonks und API-Football sind als Adapter fertig. Sportmonks
    listet seine Tarife öffentlich (Einstieg ab rund 29 € im Monat für wenige Ligen,
    mittlere Pakete um 99 €). Liefert Stammdaten, Statistik und Verletzungen, keine
    Marktwerte und keine Gehälter.
@@ -147,6 +164,29 @@ Zwei Regeln, die Datenverlust verhindern:
   anlegen“ wählen, dann bleiben vorhandene Einträge unberührt.
 
 Zeilen ohne Namen werden übersprungen und in der Vorschau vorab als solche markiert.
+
+### football-data.org
+
+```bash
+SCOUTING_DATA_PROVIDER=football-data
+FOOTBALL_DATA_TOKEN=…
+FOOTBALL_DATA_COMPETITIONS=BL1     # Bundesliga
+```
+
+Liefert Vereine und Kader mit Position, Geburtsdatum und Nationalität. Nicht
+enthalten: Marktwerte, Gehälter, Einsatzminuten und Verletzungen.
+
+Zwei Eigenheiten bestimmen den Umgang:
+
+- Der kostenlose Zugang deckt nur ausgewählte Wettbewerbe ab. Die Bundesliga läuft
+  unter `BL1`; die 2. Bundesliga ist dort in aller Regel **nicht** enthalten und
+  antwortet mit HTTP 403.
+- Das Minutenlimit ist knapp. Der Adapter wartet bei HTTP 429 und versucht es
+  erneut, statt den Abgleich abzubrechen.
+
+Eine Spielersuche über alle Wettbewerbe kennt die Schnittstelle nicht; der Adapter
+durchsucht deshalb die Kader der konfigurierten Wettbewerbe, was pro Verein eine
+Abfrage kostet. Für große Ligen ist der Kaderabgleich der günstigere Weg.
 
 ### Anbieter konfigurieren
 

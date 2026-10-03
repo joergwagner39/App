@@ -50,8 +50,8 @@ export default async function ImportPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Spieler importieren</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Spieler importieren</h1>
+          <p className="mt-1 text-sm text-rogon-400">
             Stammdaten und Saisonstatistik vom Anbieter übernehmen. Marktwert, Gehalt und
             Spielerprofil werden anschließend in der App gepflegt.
           </p>
@@ -99,15 +99,15 @@ export default async function ImportPage({
                 return (
                   <li
                     key={r.ref}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2.5 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2.5 text-sm"
                   >
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-slate-100">{r.name}</span>
+                        <span className="font-medium text-rogon-100">{r.name}</span>
                         {r.position && <Badge>{r.position}</Badge>}
                         {r.currentlyInjured && <Badge tone="bad">verletzt</Badge>}
                       </div>
-                      <div className="mt-0.5 text-xs text-slate-500">
+                      <div className="mt-0.5 text-xs text-rogon-500">
                         {[
                           r.clubName,
                           r.leagueName,
@@ -122,7 +122,7 @@ export default async function ImportPage({
                     {existingId ? (
                       <a
                         href={`/scouting/spieler/${existingId}`}
-                        className="text-xs text-sky-400 hover:underline"
+                        className="text-xs text-marke-heller hover:underline"
                       >
                         bereits importiert — öffnen
                       </a>

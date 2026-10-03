@@ -15,8 +15,8 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto mt-16 max-w-md">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-100">Vereinsmatching</h1>
-      <p className="mb-6 text-sm text-slate-400">
+      <h1 className="mb-1 text-2xl font-semibold text-rogon-100">Vereinsmatching</h1>
+      <p className="mb-6 text-sm text-rogon-400">
         Bitte anmelden, um Spieler und Vereine zu bearbeiten.
       </p>
 

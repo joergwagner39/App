@@ -9,7 +9,7 @@ export default async function NewClubPage({ searchParams }: { searchParams: { fe
   await requireUser()
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-100">Verein anlegen</h1>
+      <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Verein anlegen</h1>
       <ErrorBanner message={searchParams.fehler} />
       <ClubForm action={saveClubAction} />
     </div>

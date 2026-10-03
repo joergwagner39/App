@@ -25,8 +25,8 @@ export default async function TableImportPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Tabelle importieren</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Tabelle importieren</h1>
+          <p className="mt-1 text-sm text-rogon-400">
             Spalten aus Excel, einem Portal-Export oder der Zwischenablage einfügen. Die Zuordnung
             schlägt die App vor, korrigieren lässt sie sich von Hand.
           </p>
@@ -56,7 +56,7 @@ export default async function TableImportPage({
       <TableImportForm action={importTableAction} />
 
       <Card title="Hinweis zu Portaldaten">
-        <div className="space-y-2 text-sm text-slate-400">
+        <div className="space-y-2 text-sm text-rogon-400">
           <p>
             Transfermarkt und kicker bieten keine öffentliche Schnittstelle und untersagen
             automatisiertes Auslesen. Was hier eingefügt wird, sollte deshalb aus einer Quelle

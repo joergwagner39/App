@@ -10,8 +10,8 @@ export default async function SetupPage({ searchParams }: { searchParams: { fehl
 
   return (
     <div className="mx-auto mt-12 max-w-md">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-100">Ersteinrichtung</h1>
-      <p className="mb-6 text-sm text-slate-400">
+      <h1 className="mb-1 text-2xl font-semibold text-rogon-100">Ersteinrichtung</h1>
+      <p className="mb-6 text-sm text-rogon-400">
         Das erste Konto wird als Administrator angelegt. Weitere Benutzer lassen sich später in den
         Einstellungen hinzufügen.
       </p>
@@ -35,7 +35,7 @@ export default async function SetupPage({ searchParams }: { searchParams: { fehl
               autoComplete="new-password"
             />
           </Field>
-          <label className="flex items-start gap-2 text-sm text-slate-300">
+          <label className="flex items-start gap-2 text-sm text-rogon-300">
             <input type="checkbox" name="seed" defaultChecked className="mt-0.5" />
             <span>
               Demo-Datensatz anlegen (10 erfundene Vereine mit Bedarf und Budget, 6 erfundene

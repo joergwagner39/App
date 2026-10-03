@@ -21,8 +21,8 @@ export default async function ClubsPage({ searchParams }: { searchParams: { fehl
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Vereine</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">Vereine</h1>
+          <p className="mt-1 text-sm text-rogon-400">
             Bedarf, Budget und Spielstil bestimmen, wie ein Verein im Matching abschneidet.
           </p>
         </div>
@@ -51,7 +51,7 @@ export default async function ClubsPage({ searchParams }: { searchParams: { fehl
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] text-left text-sm">
-              <thead className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-rogon-800 text-xs uppercase tracking-wide text-rogon-500">
                 <tr>
                   <th className="px-2 py-2">Verein</th>
                   <th className="px-2 py-2">Liga</th>
@@ -60,32 +60,32 @@ export default async function ClubsPage({ searchParams }: { searchParams: { fehl
                   <th className="px-2 py-2">Gesuchte Positionen</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/70">
+              <tbody className="divide-y divide-rogon-800/70">
                 {clubs.map((c) => {
                   const needs = Object.entries(c.needs)
                     .filter(([, v]) => Number(v) > 0)
                     .sort((a, b) => Number(b[1]) - Number(a[1]))
                   return (
-                    <tr key={c.id} className="transition hover:bg-slate-800/40">
+                    <tr key={c.id} className="transition hover:bg-rogon-800/40">
                       <td className="px-2 py-2.5">
                         <Link
                           href={`/scouting/vereine/${c.id}`}
-                          className="font-medium text-slate-100 hover:text-sky-400"
+                          className="font-medium text-rogon-100 hover:text-marke-heller"
                         >
                           {c.name}
                         </Link>
                       </td>
-                      <td className="px-2 py-2.5 text-slate-300">
+                      <td className="px-2 py-2.5 text-rogon-300">
                         {c.league || '—'}
-                        {c.country ? <span className="text-slate-500"> · {c.country}</span> : null}
+                        {c.country ? <span className="text-rogon-500"> · {c.country}</span> : null}
                       </td>
-                      <td className="px-2 py-2.5 text-slate-300">{c.leagueLevel}</td>
-                      <td className="px-2 py-2.5 text-slate-300">
+                      <td className="px-2 py-2.5 text-rogon-300">{c.leagueLevel}</td>
+                      <td className="px-2 py-2.5 text-rogon-300">
                         {formatEur(c.transferBudgetEur)}
                       </td>
                       <td className="px-2 py-2.5">
                         {needs.length === 0 ? (
-                          <span className="text-xs text-slate-500">kein Bedarf hinterlegt</span>
+                          <span className="text-xs text-rogon-500">kein Bedarf hinterlegt</span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {needs.map(([pos, value]) => (

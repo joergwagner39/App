@@ -1,11 +1,13 @@
 import { DataProvider } from './types'
 import { demoProvider } from './demo'
 import { apiFootballProvider } from './apiFootball'
+import { footballDataProvider } from './footballData'
 import { sportmonksProvider } from './sportmonks'
 
 export const PROVIDERS: Record<string, DataProvider> = {
   demo: demoProvider,
   'api-football': apiFootballProvider,
+  'football-data': footballDataProvider,
   sportmonks: sportmonksProvider,
 }
 

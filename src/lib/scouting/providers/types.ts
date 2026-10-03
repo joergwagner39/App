@@ -110,8 +110,12 @@ export function mapCoarsePosition(raw: string | null | undefined): Position | nu
   if (p.includes('attacking midfield') || p === 'am') return 'OM'
   if (p.includes('left wing') || p.includes('linksaußen')) return 'LA'
   if (p.includes('right wing') || p.includes('rechtsaußen')) return 'RA'
-  if (p.includes('defender') || p.includes('abwehr')) return 'IV'
-  if (p.includes('midfielder') || p.includes('mittelfeld')) return 'ZM'
+  if (p.includes('centre-forward') || p.includes('center forward')) return 'ST'
+  if (p.includes('central midfield')) return 'ZM'
+  // football-data.org verwendet teils Sammelbegriffe statt konkreter Positionen.
+  if (p.includes('defender') || p.includes('abwehr') || p === 'defence') return 'IV'
+  if (p.includes('midfielder') || p.includes('mittelfeld') || p === 'midfield') return 'ZM'
+  if (p === 'offence' || p === 'offensive') return 'ST'
   if (p.includes('attacker') || p.includes('forward') || p.includes('striker') || p.includes('sturm'))
     return 'ST'
   return null

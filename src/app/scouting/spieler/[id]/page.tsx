@@ -79,11 +79,11 @@ export default async function PlayerDetailPage({
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">{player.name}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+          <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">{player.name}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-rogon-400">
             <Badge>{POSITION_LABEL[player.position]}</Badge>
             {player.altPositions.length > 0 && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-rogon-500">
                 auch: {player.altPositions.join(', ')}
               </span>
             )}
@@ -119,7 +119,7 @@ export default async function PlayerDetailPage({
         title="Passende Vereine"
         subtitle={`${results.length} Vereine bewertet — sortiert nach Gesamtpassung. Die Gewichtung lässt sich in den Einstellungen anpassen.`}
         action={
-          <Link href="/scouting/einstellungen" className="text-xs text-sky-400 hover:underline">
+          <Link href="/scouting/einstellungen" className="text-xs text-marke-heller hover:underline">
             Gewichtung
           </Link>
         }
@@ -139,20 +139,20 @@ export default async function PlayerDetailPage({
               {rumors.map((r) => (
                 <li
                   key={r.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-200">
+                      <span className="font-medium text-rogon-200">
                         {clubById.get(r.clubId)?.name ?? 'Unbekannter Verein'}
                       </span>
                       <Badge tone="info">{r.stage}</Badge>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-rogon-500">
                         {formatDate(r.date)} · Glaubwürdigkeit {r.credibility}/100
                       </span>
                     </div>
-                    {r.source && <div className="text-xs text-slate-500">Quelle: {r.source}</div>}
-                    {r.note && <div className="mt-1 text-xs text-slate-400">{r.note}</div>}
+                    {r.source && <div className="text-xs text-rogon-500">Quelle: {r.source}</div>}
+                    {r.note && <div className="mt-1 text-xs text-rogon-400">{r.note}</div>}
                   </div>
                   <form action={deleteRumorAction}>
                     <input type="hidden" name="id" value={r.id} />
@@ -215,7 +215,7 @@ export default async function PlayerDetailPage({
             player.providerRef ? (
               <form action={syncInjuriesAction}>
                 <input type="hidden" name="playerId" value={player.id} />
-                <button className="text-xs text-sky-400 hover:underline" type="submit">
+                <button className="text-xs text-marke-heller hover:underline" type="submit">
                   Vom Anbieter aktualisieren
                 </button>
               </form>
@@ -229,11 +229,11 @@ export default async function PlayerDetailPage({
               {injuries.map((i) => (
                 <li
                   key={i.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
                 >
                   <div>
-                    <div className="font-medium text-slate-200">{i.type}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="font-medium text-rogon-200">{i.type}</div>
+                    <div className="text-xs text-rogon-500">
                       {formatDate(i.startDate)} –{' '}
                       {i.endDate ? formatDate(i.endDate) : 'laufend'} · Schwere {i.severity}/5
                     </div>
@@ -296,7 +296,7 @@ export default async function PlayerDetailPage({
               .map((a) => (
                 <li
                   key={a.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -304,13 +304,13 @@ export default async function PlayerDetailPage({
                         {a.rating > 0 ? `+${a.rating}` : a.rating}
                       </Badge>
                       {a.clubId && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-rogon-400">
                           zu {clubById.get(a.clubId)?.name ?? 'unbekannt'}
                         </span>
                       )}
-                      <span className="text-xs text-slate-500">{formatDate(a.createdAt)}</span>
+                      <span className="text-xs text-rogon-500">{formatDate(a.createdAt)}</span>
                     </div>
-                    {a.text && <div className="mt-1 text-slate-300">{a.text}</div>}
+                    {a.text && <div className="mt-1 text-rogon-300">{a.text}</div>}
                   </div>
                   <form action={deleteAssessmentAction}>
                     <input type="hidden" name="id" value={a.id} />
@@ -353,7 +353,7 @@ export default async function PlayerDetailPage({
 
       {player.notes && (
         <Card title="Notizen">
-          <p className="whitespace-pre-wrap text-sm text-slate-300">{player.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-rogon-300">{player.notes}</p>
         </Card>
       )}
     </div>
@@ -362,9 +362,9 @@ export default async function PlayerDetailPage({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-lg font-medium text-slate-100">{value}</div>
+    <div className="rounded-xl border border-rogon-800 bg-rogon-900/40 px-4 py-3">
+      <div className="text-xs uppercase tracking-wide text-rogon-500">{label}</div>
+      <div className="mt-1 text-lg font-medium text-rogon-100">{value}</div>
     </div>
   )
 }

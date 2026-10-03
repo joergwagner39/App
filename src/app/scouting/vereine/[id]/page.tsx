@@ -54,8 +54,8 @@ export default async function ClubDetailPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">{club.name}</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="font-marke text-3xl uppercase tracking-wide text-rogon-100">{club.name}</h1>
+          <p className="mt-1 text-sm text-rogon-400">
             {club.league || 'Liga unbekannt'}
             {club.country ? ` · ${club.country}` : ''} · Niveau {club.leagueLevel}
           </p>
@@ -106,7 +106,7 @@ export default async function ClubDetailPage({
             {assessments.map((a) => (
               <li
                 key={a.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm"
+                className="flex items-start justify-between gap-3 rounded-lg border border-rogon-800 px-3 py-2 text-sm"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -116,14 +116,14 @@ export default async function ClubDetailPage({
                     {a.playerId && (
                       <Link
                         href={`/scouting/spieler/${a.playerId}`}
-                        className="text-xs text-sky-400 hover:underline"
+                        className="text-xs text-marke-heller hover:underline"
                       >
                         zur Spielerpaarung
                       </Link>
                     )}
-                    <span className="text-xs text-slate-500">{formatDate(a.createdAt)}</span>
+                    <span className="text-xs text-rogon-500">{formatDate(a.createdAt)}</span>
                   </div>
-                  {a.text && <div className="mt-1 text-slate-300">{a.text}</div>}
+                  {a.text && <div className="mt-1 text-rogon-300">{a.text}</div>}
                 </div>
                 <form action={deleteAssessmentAction}>
                   <input type="hidden" name="id" value={a.id} />
