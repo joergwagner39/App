@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Oswald, Inter } from 'next/font/google'
+import { Antonio, Inter } from 'next/font/google'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import './globals.css'
 
-const heading = Oswald({
+// Antonio ist die Hausschrift von rogon.tv (dort als Webfont eingebunden).
+const heading = Antonio({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
+  weight: ['300', '400', '600'],
   variable: '--font-heading',
 })
 
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0d1622',
+  themeColor: '#0a4165',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -38,7 +38,7 @@ export default function SatisfactionScore({
                   n <= value
                     ? isCriticalSatisfaction(n)
                       ? 'bg-red-500'
-                      : 'bg-green-500'
+                    : 'bg-brand-500'
                     : 'bg-slate-200'
                 } ${selected ? 'ring-2 ring-offset-1 ring-navy-600' : ''}`}
                 style={{ height: `${16 + n * 3.6}px` }}

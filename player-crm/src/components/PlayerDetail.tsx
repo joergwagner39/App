@@ -83,7 +83,7 @@ function Field({
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none'
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-navy-500 focus:outline-none'
 
 export default function PlayerDetail({
   player,
@@ -288,13 +288,13 @@ export default function PlayerDetail({
           <div>
             <div className="flex gap-3">
               <input
-                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
+                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none"
                 value={player.firstName}
                 placeholder="Vorname"
                 onChange={(e) => update({ firstName: e.target.value })}
               />
               <input
-                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none"
+                className="rounded-lg border border-transparent px-2 py-1 text-2xl font-semibold hover:border-slate-200 focus:border-navy-500 focus:outline-none"
                 value={player.lastName}
                 placeholder="Nachname"
                 onChange={(e) => update({ lastName: e.target.value })}
@@ -302,7 +302,7 @@ export default function PlayerDetail({
             </div>
             <div className="mt-2 flex items-center gap-2 px-2">
               <input
-                className="w-64 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-brand-500 focus:px-2 focus:outline-none"
+                className="w-64 rounded-lg border border-transparent px-0 py-1 text-xs text-slate-400 hover:border-slate-200 hover:px-2 focus:border-navy-500 focus:px-2 focus:outline-none"
                 value={player.photoUrl ?? ''}
                 placeholder="Bild-URL einfügen…"
                 onChange={(e) => update({ photoUrl: e.target.value })}
@@ -566,7 +566,7 @@ export default function PlayerDetail({
               </div>
             )}
             {!ocrRunning && ocrHint && (
-              <div className="flex items-start gap-1.5 text-xs text-brand-700">
+              <div className="flex items-start gap-1.5 text-xs text-navy-600">
                 <ScanSearch className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {ocrHint}
               </div>
@@ -730,7 +730,7 @@ export default function PlayerDetail({
               onClick={() => updateTax({ managedByUs: true, notNeeded: false })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 player.tax.managedByUs && !player.tax.notNeeded
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-navy-500 text-white'
                   : 'bg-slate-200 text-slate-600'
               }`}
             >
@@ -740,7 +740,7 @@ export default function PlayerDetail({
               onClick={() => updateTax({ managedByUs: false, notNeeded: false })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 !player.tax.managedByUs && !player.tax.notNeeded
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-navy-500 text-white'
                   : 'bg-slate-200 text-slate-600'
               }`}
             >
@@ -873,7 +873,7 @@ export default function PlayerDetail({
           </Field>
           <button
             onClick={() => addContact(new Date().toISOString().slice(0, 10))}
-            className="mt-2 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+            className="mt-2 flex items-center gap-1.5 rounded-lg bg-navy-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-600"
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
             Jetzt als Kontakt eintragen
@@ -915,7 +915,7 @@ export default function PlayerDetail({
           </Field>
           <button
             onClick={() => addPersonalVisit(new Date().toISOString().slice(0, 10))}
-            className="mt-2 flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+            className="mt-2 flex items-center gap-1.5 rounded-lg bg-navy-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-600"
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
             Jetzt als Besuch eintragen
@@ -957,7 +957,7 @@ export default function PlayerDetail({
           <SatisfactionScore value={draftSatisfaction} onChange={setDraftSatisfaction} />
           <button
             onClick={() => setSatisfactionValue(currentMonthKey, draftSatisfaction)}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-navy-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-600"
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
             Jetzt eintragen ({currentMonthLabel})
@@ -1062,7 +1062,7 @@ export default function PlayerDetail({
           </Field>
           <button
             onClick={addTodo}
-            className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            className="flex items-center gap-1 rounded-lg bg-navy-500 px-3 py-2 text-sm font-medium text-white hover:bg-navy-600"
           >
             <Plus className="h-4 w-4" />
             Hinzufügen
@@ -1074,7 +1074,7 @@ export default function PlayerDetail({
             onClick={() => setTodoTab('open')}
             className={`px-3 py-1.5 text-sm font-medium ${
               todoTab === 'open'
-                ? 'border-b-2 border-brand-600 text-brand-700'
+                ? 'border-b-2 border-brand-400 text-navy-600'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -1084,7 +1084,7 @@ export default function PlayerDetail({
             onClick={() => setTodoTab('done')}
             className={`px-3 py-1.5 text-sm font-medium ${
               todoTab === 'done'
-                ? 'border-b-2 border-brand-600 text-brand-700'
+                ? 'border-b-2 border-brand-400 text-navy-600'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -1264,7 +1264,7 @@ export default function PlayerDetail({
           <button
             onClick={() => updateOutfitter({ has: !player.outfitter.has })}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              player.outfitter.has ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
+              player.outfitter.has ? 'bg-navy-500 text-white' : 'bg-slate-200 text-slate-600'
             }`}
           >
             {player.outfitter.has ? 'Ja' : 'Nein'}

@@ -50,14 +50,27 @@ export default function Home() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-3 border-b-4 border-brand-400 bg-navy-700 px-6 py-4 text-white">
-        <Users className="h-5 w-5 text-brand-400" />
-        <h1 className="font-heading text-xl font-semibold uppercase tracking-wide">
-          Player Relations <span className="text-brand-400">CRM</span>
-        </h1>
-        <span className="ml-auto text-xs text-navy-200">
-          Daten werden lokal im Browser gespeichert
-        </span>
+      <header className="relative overflow-hidden border-b-4 border-brand-400 bg-navy-500 text-white">
+        {/* Diagonale Markenformen wie auf rogon.tv */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-brand-400/15"
+          style={{ clipPath: 'polygon(42% 0, 100% 0, 100% 100%, 0 100%)' }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-2 right-24 h-10 w-40 bg-brand-400/25"
+          style={{ clipPath: 'polygon(28% 0, 100% 0, 72% 100%, 0 100%)' }}
+        />
+        <div className="relative flex items-center gap-3 px-6 py-4">
+          <Users className="h-5 w-5 text-brand-400" />
+          <h1 className="font-heading text-2xl font-semibold uppercase tracking-[0.12em]">
+            Player Relations <span className="text-brand-400">CRM</span>
+          </h1>
+          <span className="ml-auto text-xs text-navy-100">
+            Daten werden lokal im Browser gespeichert
+          </span>
+        </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-96 shrink-0 border-r border-slate-200 bg-slate-50">

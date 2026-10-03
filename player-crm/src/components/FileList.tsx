@@ -51,7 +51,7 @@ export default function FileList({
               <a
                 href={f.dataUrl}
                 download={f.name}
-                className="flex-1 truncate text-slate-600 hover:text-brand-700 hover:underline"
+                className="flex-1 truncate text-slate-600 hover:text-navy-600 hover:underline"
               >
                 {f.name}
               </a>

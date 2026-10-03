@@ -21,7 +21,7 @@ function CriticalDot(props: any) {
       cx={cx}
       cy={cy}
       r={4}
-      fill={isCriticalSatisfaction(value) ? '#ef4444' : '#8dc63f'}
+      fill={isCriticalSatisfaction(value) ? '#ef4444' : '#6aa913'}
       stroke="none"
     />
   )
@@ -68,7 +68,7 @@ export default function SatisfactionChart({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#8dc63f"
+            stroke="#6aa913"
             strokeWidth={2}
             dot={<CriticalDot />}
           />

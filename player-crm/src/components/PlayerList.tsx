@@ -60,7 +60,7 @@ export default function PlayerList({
   }, [players, query, clubFilter, prFilter, ceoFilter, scoutFilter])
 
   const filterSelectClass =
-    'w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none'
+    'w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-navy-500 focus:outline-none'
 
   return (
     <div className="flex h-full flex-col">
@@ -71,15 +71,15 @@ export default function PlayerList({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Spieler suchen…"
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-navy-500 focus:outline-none"
           />
         </div>
         <button
           onClick={() => setShowFilters((v) => !v)}
           className={`relative flex items-center gap-1 rounded-lg border px-2.5 py-2 text-sm ${
             showFilters || activeFilterCount > 0
-              ? 'border-brand-500 bg-brand-50 text-brand-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-brand-300'
+              ? 'border-navy-400 bg-navy-50 text-navy-600'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-navy-300'
           }`}
           title="Filter"
         >
@@ -90,7 +90,7 @@ export default function PlayerList({
         </button>
         <button
           onClick={onCreate}
-          className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className="flex items-center gap-1 rounded-lg bg-navy-500 px-3 py-2 text-sm font-medium text-white hover:bg-navy-600"
         >
           <Plus className="h-4 w-4" />
           Neu
@@ -196,8 +196,8 @@ export default function PlayerList({
                   onClick={() => onSelect(p.id)}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     selectedId === p.id
-                      ? 'border-brand-500 bg-brand-50'
-                      : 'border-slate-200 bg-white hover:border-brand-300'
+                      ? 'border-navy-500 bg-navy-50'
+                      : 'border-slate-200 bg-white hover:border-navy-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
