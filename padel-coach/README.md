@@ -21,6 +21,10 @@ Skizze, eine Quizfrage und einen Fakt.
   pro Woche und Playtomic-Level (auf der Startseite eintragen, mit Veränderung zur Vorwoche, zum
   Vormonat und seit Start sowie Verlauf). Mit Wettkampfdatum plant der Coach in Phasen:
   Grundlage → Aufbau → spezifischer Aufbau (mehr Hyrox) → wettkampfnah → Tapering.
+- **Zone-2-Grundlage am Anfang** (Standard 6 Wochen, im Setup 0–10 Wochen): 3 × Zone 2 und
+  2 × Kraft pro Woche, in der zweiten Hälfte 1 kurzer VO2max-Reiz, noch kein Hyrox. Danach folgt
+  der gezielte VO2max-Aufbau. Startet mit dem ersten Check-in (oder eingestelltem Datum); ein
+  Wettkampf in weniger als 8 Wochen hat Vorrang.
 - **Training des Tages** aus Oura Readiness, HRV, Ruhepuls, Temperatur, Schlaf,
   Garmin Body Battery, Training Readiness und Aktivitäten:
   - **Nach einem Padel-Match** entscheiden die Daten: bei guter Bereitschaft

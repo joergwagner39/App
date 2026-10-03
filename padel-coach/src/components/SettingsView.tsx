@@ -181,8 +181,26 @@ export default function SettingsView({
               <option value={3}>alle 3 Tage</option>
             </select>
           </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Zone-2-Grundlage am Anfang</span>
+            <select className={input} value={s.baseWeeks ?? 6} onChange={(e) => set({ baseWeeks: Number(e.target.value) })}>
+              <option value={0}>aus</option>
+              <option value={4}>4 Wochen</option>
+              <option value={6}>6 Wochen</option>
+              <option value={8}>8 Wochen</option>
+              <option value={10}>10 Wochen</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-400 space-y-1">
+            <span>Start der Grundlage</span>
+            <input type="date" className={input} value={s.baseStart ?? ''} onChange={(e) => set({ baseStart: e.target.value || undefined })} />
+          </label>
         </div>
         <p className="text-xs text-gray-500 mt-3">
+          Zone-2-Grundlage: zuerst 3 × Zone 2 und 2 × Kraft pro Woche, in der zweiten Hälfte dazu 1 kurzer VO2max-Reiz – danach gezielter VO2max-Aufbau.
+          Ohne Startdatum beginnt sie mit deinem ersten Check-in. Liegt der Hyrox-Wettkampf näher als 8 Wochen, hat er Vorrang.
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
           Mit Wettkampfdatum plant der Coach in Phasen: Grundlage → Aufbau → spezifischer Aufbau (mehr Hyrox) → wettkampfnah → Tapering.
         </p>
       </Card>

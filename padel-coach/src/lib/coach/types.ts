@@ -87,6 +87,10 @@ export interface CoachSettings {
   hyroxTargetTime?: string
   /** Neuro & Ballgefühl: alle N Tage (Standard 2) */
   neuroEvery?: 1 | 2 | 3
+  /** Zone-2-Grundlage am Anfang: Dauer in Wochen (Standard 6, 0 = aus) */
+  baseWeeks?: number
+  /** Start der Grundlage; leer = erster Check-in */
+  baseStart?: string
   /** Padel-Einheiten pro Woche als Ziel */
   padelPerWeek: number
   /** Ziel-Level bei Playtomic, z. B. 3.5 */

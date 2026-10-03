@@ -12,7 +12,7 @@ import { Card, SectionTitle, SESSION_STYLE } from './ui'
 export default function TrainingView({ state, signals, today }: { state: CoachState; signals: Signals; today: string }) {
   const [filter, setFilter] = useState<SessionType | 'all'>('all')
   const [openId, setOpenId] = useState<string | null>(null)
-  const phase = phaseFor(state.settings, today)
+  const phase = phaseFor(state, today)
   const TARGETS: { t: SessionType; target: number }[] = [
     { t: 'hyrox', target: phase.targets.hyrox },
     { t: 'vo2max', target: phase.targets.vo2max },

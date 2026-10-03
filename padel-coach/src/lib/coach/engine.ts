@@ -219,10 +219,47 @@ export interface Phase {
   defaultDose: DoseLevel
 }
 
-export function phaseFor(settings: CoachSettings, today: string): Phase {
+/** Start der Zone-2-Grundlage: eingestellt, sonst erster Check-in, sonst heute */
+export function baseStartFor(state: CoachState, today: string): string {
+  if (state.settings.baseStart) return state.settings.baseStart
+  const first = Object.values(state.days)
+    .filter((d) => d.checkIn)
+    .map((d) => d.date)
+    .sort()[0]
+  return first && first <= today ? first : today
+}
+
+/** Zone-2-Grundlage am Anfang: viel locker, kaum intensiv – die Basis für spätere VO2max-Steigerung */
+function basePhase(state: CoachState, today: string, daysLeft?: number, weeksLeft?: number): Phase | undefined {
+  const weeks = state.settings.baseWeeks ?? 6
+  if (weeks <= 0) return undefined
+  const start = baseStartFor(state, today)
+  const day = dayNumber(today) - dayNumber(start)
+  if (day < 0 || day >= weeks * 7) return undefined
+  const week = Math.floor(day / 7) + 1
+  const late = week > Math.ceil(weeks / 2)
+  return {
+    name: 'Zone-2-Grundlage',
+    description: `Woche ${week}/${weeks}: viel lockere Ausdauer (Zone 2) und Kraft als Basis${
+      late ? ', dazu ein kurzer VO2max-Reiz pro Woche' : ', noch ohne VO2max-Intervalle'
+    }. Danach geht es gezielt an die VO2max.`,
+    daysLeft,
+    weeksLeft,
+    targets: { vo2max: late ? 1 : 0, hyrox: 0, strength: 2, zone2: 3 },
+    defaultDose: 'normal',
+  }
+}
+
+export function phaseFor(state: CoachState, today: string): Phase {
+  const settings = state.settings
   const race = settings.hyroxRaceDate
   const daysLeft = race ? dayNumber(race) - dayNumber(today) : undefined
   const weeksLeft = daysLeft !== undefined ? Math.ceil(daysLeft / 7) : undefined
+  // Grundlage zuerst – außer der Wettkampf ist schon in 8 Wochen oder näher
+  if (daysLeft === undefined || daysLeft < -2 || daysLeft > 56) {
+    const base = basePhase(state, today, daysLeft, weeksLeft)
+    if (base) return base
+  }
   if (daysLeft === undefined || daysLeft < -2) {
     return {
       name: 'Grundlagen & Fitness',
@@ -300,7 +337,7 @@ export function planDay(state: CoachState, s: Signals, c: CheckIn | undefined, t
   const score = readiness.score
   const why: string[] = []
   const seed = dayNumber(today)
-  const phase = phaseFor(settings, today)
+  const phase = phaseFor(state, today)
   let type: SessionType
   let workoutId: string | undefined
   let optional: string | undefined
@@ -373,7 +410,11 @@ export function planDay(state: CoachState, s: Signals, c: CheckIn | undefined, t
     const deficits = candidates.filter((d) => d.need > 0 && score >= d.min)
     deficits.sort((a, b) => b.need - a.need)
     type = deficits[0]?.t ?? 'zone2'
-    why.push(`Bereitschaft ${score}/100 – ein Qualitätstag ist drin`)
+    why.push(
+      phase.name === 'Zone-2-Grundlage' && type === 'zone2'
+        ? `Bereitschaft ${score}/100 – in der Grundlagenphase hat lockere Ausdauer Vorrang`
+        : `Bereitschaft ${score}/100 – ein Qualitätstag ist drin`,
+    )
     why.push(
       `Phase „${phase.name}“ – diese Woche: VO2max ${vo2Done}/${t.vo2max}, Hyrox ${hyroxDone}/${t.hyrox}, Kraft ${strengthDone}/${t.strength}, Zone 2 ${zone2Done}/${t.zone2}, Padel ${padelDone}/${settings.padelPerWeek}`,
     )
