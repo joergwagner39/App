@@ -42,6 +42,32 @@ function resolveConfig(): { url: string; authToken?: string } {
   return { url: `file:${filePath}` }
 }
 
+/**
+ * Prüft die Konfiguration, ohne eine Verbindung aufzubauen.
+ *
+ * Ein fehlendes Turso-Ziel auf Vercel führte vorher zu einer nackten
+ * Fehlerseite ohne Hinweis, was zu tun ist. Die Oberfläche fragt diesen Zustand
+ * deshalb vorab ab und erklärt ihn.
+ *
+ * @returns Beschreibung des Problems, oder null wenn die Konfiguration trägt
+ */
+export function configProblem(): string | null {
+  const tursoUrl = process.env.TURSO_DATABASE_URL?.trim()
+
+  if (tursoUrl) {
+    if (!process.env.TURSO_AUTH_TOKEN?.trim() && !tursoUrl.startsWith('file:')) {
+      return 'TURSO_DATABASE_URL ist gesetzt, TURSO_AUTH_TOKEN fehlt.'
+    }
+    return null
+  }
+
+  if (process.env.VERCEL) {
+    return 'Auf Vercel fehlt die Datenbank: TURSO_DATABASE_URL und TURSO_AUTH_TOKEN sind nicht gesetzt.'
+  }
+
+  return null
+}
+
 let clientPromise: Promise<Client> | null = null
 
 export function getDb(): Promise<Client> {

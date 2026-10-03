@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Antonio } from 'next/font/google'
 import { getCurrentUser } from '@/lib/scouting/auth'
+import { configProblem } from '@/lib/scouting/db'
+import { SetupNeeded } from '@/components/scouting/SetupNeeded'
 import { logoutAction } from './actions'
 
 /**
@@ -29,6 +31,19 @@ const NAV = [
 ]
 
 export default async function ScoutingLayout({ children }: { children: React.ReactNode }) {
+  // Vor jedem Datenbankzugriff: fehlt die Konfiguration, wird sie erklärt statt
+  // in eine Fehlerseite zu laufen.
+  const problem = configProblem()
+  if (problem) {
+    return (
+      <div className={`${antonio.variable} min-h-screen bg-rogon-950`}>
+        <main className="mx-auto max-w-6xl px-4 py-6">
+          <SetupNeeded problem={problem} />
+        </main>
+      </div>
+    )
+  }
+
   const user = await getCurrentUser()
 
   return (

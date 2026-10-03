@@ -60,6 +60,23 @@ zu verlieren.
 4. Deployen. Beim ersten Aufruf von `/scouting` legt die App die Tabellen selbst
    an und führt zur Ersteinrichtung.
 
+Fehlt die Datenbankkonfiguration, zeigt `/scouting` statt einer Fehlerseite eine
+Anleitung mit genau diesen Schritten. Umgebungsvariablen greifen erst beim nächsten
+Deployment — nach dem Eintragen ist also ein *Redeploy* nötig.
+
+### Preview oder Production
+
+Vercel baut aus jedem Branch eine **Preview**-Bereitstellung und nur aus dem
+Produktionsbranch eine **Production**-Bereitstellung. Solange die Arbeit auf einem
+Feature-Branch liegt, ist „Preview“ also der erwartete Zustand und kein Fehler — die
+Preview-Adresse ist voll funktionsfähig und teilbar.
+
+Für die Hauptadresse gibt es zwei Wege: den Branch in den Produktionsbranch
+übernehmen, oder unter *Settings → Git* den Produktionsbranch umstellen.
+
+Wichtig in beiden Fällen: Die Anwendung liegt unter **`/scouting`**, nicht auf der
+Startseite — dort läuft das Oura-Dashboard aus demselben Repository.
+
 Das kostenlose Kontingent von Turso und Vercel reicht für diesen Umfang.
 
 ## Erscheinungsbild
